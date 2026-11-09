@@ -1,0 +1,15 @@
+# Configuration sans aucun modèle à télécharger : mots seuls + règles. Pour un premier essai en 1 minute.
+name: rapide
+data_dir: data
+
+llm:
+  provider: ollama
+  model: qwen2.5:1.5b
+
+embedder:
+  kind: hashing               # pas de sens, juste la ressemblance des mots : référence frugale
+  dim: 512
+
+search:
+  reranker: lexical
+  min_dense_sim: 0.15          # seuil pour les vecteurs « hashing »

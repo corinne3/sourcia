@@ -1,0 +1,7 @@
+Institut technique - Fiche technique 2021
+Ventilation des bâtiments d'engraissement porcin en période de canicule
+La température intérieure doit rester sous 26 °C. Les brumisateurs et la ventilation dynamique limitent le stress thermique des porcs.
+
+Le guide présente les réglages des ventilateurs et le dimensionnement des entrées d'air.
+
+Document fictif, inventé pour tester SourcIA : ne pas citer.

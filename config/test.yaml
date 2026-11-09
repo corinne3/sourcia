@@ -1,0 +1,20 @@
+# Tests automatiques : modèle factice, embeddings sans modèle, dossier de données séparé.
+name: test
+data_dir: data/test-run
+
+llm:
+  provider: fake
+  cache: false
+
+embedder:
+  kind: hashing
+  dim: 256
+
+search:
+  min_dense_sim: 0.15         # calibré sur les exemples avec « sourcia search » (colonne sim)
+
+collect:
+  delay_s: 0.0
+
+observability:
+  traces: false

@@ -1,0 +1,210 @@
+# Référentiel extrait par SourcIA. statut « valide » seulement après relecture par un enseignant.
+id: capa-ma
+nom: CAPa Métiers de l'agriculture
+type: capa
+niveau: 3
+version: '2024'
+sources:
+- fichier: capama-ref-diplome-2024.pdf
+  url: https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/capa/ma/capama-ref-diplome-2024.pdf
+  sha1: a84341f7e15ea384a27b84d412bea76e3bd77360
+statut: extrait_automatiquement
+valide_par: ''
+capacites:
+- code: C4
+  libelle: Réaliser des travaux quotidiens d’alimentation et de suivi des chiens ou des chats
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4.1
+  libelle: Réaliser des travaux d’alimentation des chiens ou des chats
+  parent: C4
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4.2
+  libelle: Réaliser le suivi et les soins courants des chiens ou des chats
+  parent: C4
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5
+  libelle: Stimuler le développement comportemental des chiens ou des chats
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5.1
+  libelle: Assurer une primo-éducation de chiots ou de chatons jusqu’à leur cession
+  parent: C5
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5.2
+  libelle: Mettre en œuvre des actions de socialisation et d’expression des comportements spécifiques des adultes
+  parent: C5
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6
+  libelle: Réaliser des travaux liés à l’entretien courant des installations et de leurs équipements
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6.1
+  libelle: Réaliser des travaux de nettoyage et de désinfection des locaux et des équipements
+  parent: C6
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6.2
+  libelle: Effectuer des travaux simples d’entretien des extérieurs et de réparation
+  parent: C6
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CG1
+  libelle: Agir dans des situations de la vie courante à l’aide de repères sociaux
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CG1.1
+  libelle: Prendre position dans une situation à caractère social et civique
+  parent: CG1
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CG1.2
+  libelle: Utiliser des outils dans des situations de la vie courante
+  parent: CG1
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CG2
+  libelle: Mettre en œuvre des actions contribuant à sa construction personnelle
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CG2.1
+  libelle: S’exprimer à travers une réalisation personnelle
+  parent: CG2
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CG2.2
+  libelle: Adopter des comportements favorisant son équil ibre personnel
+  parent: CG2
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CG3
+  libelle: Interagir avec son environnement social
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CG3.1
+  libelle: Adapter son langage et son comportement aux situations de communication
+  parent: CG3
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CG3.2
+  libelle: S’approprier les normes et cadres de références d’un collectif
+  parent: CG3
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP4
+  libelle: Réaliser des travaux liés à la conduite de l’élevage
+  parent: null
+  variantes:
+  - Réaliser des travaux sur les végétaux
+  - Réaliser des travaux mécanisés des cultures
+  - Réaliser des travaux sur les végétaux OU
+  - Réaliser des travaux mécanisés de cultures
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP4.1
+  libelle: Réaliser des observations, interventions et soins courants sur les animaux
+  parent: CP4
+  variantes:
+  - Réaliser des travaux du sol et le semis C P4.2 Réaliser des travaux de récolte
+  - Réaliser des travaux du sol et le semis
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP4.2
+  libelle: Réaliser des travaux et la surveillance liés à l’alimentation
+  parent: CP4
+  variantes:
+  - Effectuer le suivi des animaux
+  - Réaliser des travaux de mise en place des végétaux
+  - Réaliser des travaux de récolte
+  - Effectuer le suivi des animaux OU
+  - Réaliser des travaux de mise en place des végétaux OU
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP5
+  libelle: Réaliser des travaux liés à la production des aliments de l’élevage
+  parent: null
+  variantes:
+  - Réaliser des travaux de suivi des cultures de l’implantation à la récolte et au conditionnement
+  - Réaliser des observations et des opérations d’entretien des cultures et de préservation des sols
+  - Réaliser des travaux de suivi des cultures de l’implantation à
+  - Réaliser des observations et des opérations d’ entretien des cultures et de préservation des sols
+  - Réaliser des travaux de suivi des cultures de l’implantation à la récolte et au conditionnement OU
+  - Réaliser des observations et des opérations d’entretien des cultures et de préservation des sols MP31 ou M P33
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP5.1
+  libelle: Réaliser les travaux mécanisés des surfaces destinées à l’alimentation de l’élevage
+  parent: CP5
+  variantes:
+  - Alimenter les animaux
+  - Réaliser des observations et opérations techni ques liées au cycle de production
+  - Appliquer en sécurité des produits phytopharmaceutiques
+  - Réaliser des observations et opérations techn iques liées au cycle de production
+  - Réaliser des observations et opérations techniques liées au cycle de production
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP5.2
+  libelle: Mettre en œuvre le pâturage
+  parent: CP5
+  variantes:
+  - Effectuer des travaux liés aux surfaces associées à l’élevage
+  - Effectuer des travaux de récolte, de conservation* et de conditionnement*
+  - Utiliser des techniques alternatives d’entretien des cultures
+  - Effectuer des travaux de récolte, de conservati on* et de conditionnement* * Concerne exclusivement l’arboriculture et
+    l’horticulture
+  - Effectuer des travaux liés aux surfaces associées à l’élevage OU
+  - Effectuer des travaux de récolte, de conservation* et de conditionnement* OU
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP6
+  libelle: Effectuer des travaux liés à l’entretien courant des matériels, équipements, installations et bâtiments
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP6.1
+  libelle: Réaliser des opérations de maintenance conditi onnelle des matériels, équipements, installations et bâtiments
+  parent: CP6
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP6.2
+  libelle: Effectuer des travaux simples d’aménagement et de réparation
+  parent: CP6
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: CP7
+  libelle: S’adapter à des enjeux professionnels locaux
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''

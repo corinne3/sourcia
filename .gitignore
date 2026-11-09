@@ -1,0 +1,29 @@
+# DonnÃ©es : jamais de PDF, de textes extraits ni d'index dans le dÃ©pÃ´t
+data/*
+!data/samples/
+!data/samples/**
+
+# Secrets
+.env
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+build/
+dist/
+
+# ModÃ¨les
+models/
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Données réelles (PDF de tiers, caches, traces, exports) : jamais dans le dépôt
+data_*/

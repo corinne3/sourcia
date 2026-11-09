@@ -1,0 +1,42 @@
+# Demande structurée SourcIA : les 7 critères du métier. Les valeurs ci-dessous sont les valeurs PAR DÉFAUT.
+# Usage : sourcia select --demande-fichier <ce fichier> --export json   puis   sourcia formation --demande-fichier <ce fichier>
+
+sujet: "sorgho fourrager en conditions sèches"   # ce que tu veux traiter, en une phrase
+
+# 1. Profil du demandeur : enseignant | formateur | conseiller | intervenant_exterieur | autre
+profil: formateur
+
+# 2. Type de formation
+diplomante: false            # true : rattachement au référentiel du diplôme
+diplome: null                # capa-ma | bacpro-cgea | btsa-acsagri  (sourcia referentiel liste)
+capacites: []                # codes visés, ex. [C4.2, C4.3] ou [C4] (toutes les capacités du bloc)
+modalite: presentiel         # presentiel | distanciel | hybride
+supports: [ecrit]            # ecrit | oral | pratique
+duree_min: 120
+
+# 3. Public cible
+apprenants: etudiants        # eleves | apprentis | etudiants | salaries | chefs_entreprise | conseillers | autre
+niveau: bts                  # sans_diplome | cap | bac_pro | bac | bts | licence | master_ingenieur
+experience: debutant         # debutant | intermediaire | confirme
+effectif: null
+
+# 4. Types de ressources (vide = toutes)
+# resultats_rd | experimentation | temoignage | synthese | guide_technique | donnees | photo | video | audio
+ressources: []
+
+# 5. Formes de résultat
+# plan | points_cles | quiz | fiche_technique | synthese | cas_concret | glossaire | podcast | deroule_oral
+sorties: [plan, points_cles, quiz, glossaire, cas_concret]
+
+# 6. Précisions sur les sources
+annee_min: null
+annee_max: null
+sources_publiques_seulement: false
+region: null                 # ta région : alerte si le contexte d'un essai est éloigné
+organismes: []               # à privilégier (bonus de score, pas un filtre)
+nombre_sources: 30
+
+# 7. Contenu personnel
+notes_personnelles: ""       # ton texte, intégré au corpus (privé)
+fichiers_personnels: []      # tes dossiers ou fichiers (privés)
+autoriser_cloud_personnel: false   # true : tes contenus peuvent aller à un modèle en ligne

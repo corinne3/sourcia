@@ -1,0 +1,37 @@
+# Catalogue des référentiels connus. Source : chlorofil.fr (portail pédagogique de l'enseignement agricole).
+# « fichiers » : les PDF qui contiennent la liste des capacités. « page » : où chercher une nouvelle version
+# (sourcia referentiel verifier ; sinon on essaie l'année suivante dans le nom du fichier). Adresses relevées le 09/11/2026 ; à revérifier si un téléchargement échoue.
+# Priorité proposée pour le fil rouge (fourrages, sorgho) : BTSA ACS'Agri (bloc C4), bac pro CGEA (C5, C7), CAPa MA (CP5).
+referentiels:
+  - id: capa-ma
+    nom: "CAPa Métiers de l'agriculture"
+    type: capa
+    niveau: 3
+    version: "2024"
+    page: ""   # page du diplôme sur chlorofil.fr (à renseigner) : explorée pour trouver une nouvelle version
+    motif: "capa/ma/.*ref.*\\.pdf$"
+    fichiers:
+      - https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/capa/ma/capama-ref-diplome-2024.pdf
+  - id: bacpro-cgea
+    nom: "Bac pro Conduite et gestion de l'entreprise agricole (CGEA)"
+    type: bacpro
+    niveau: 4
+    version: "2024"
+    page: ""   # page du diplôme sur chlorofil.fr (à renseigner) : explorée pour trouver une nouvelle version
+    motif: "bacpro/cgea/.*ref.*\\.pdf$"
+    fichiers:
+      - https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/bacpro/cgea/bacpro-cgea-ref-2024.pdf
+  - id: btsa-acsagri
+    nom: "BTSA ACS'Agri : Analyse, conduite et stratégie de l'entreprise agricole"
+    type: btsa
+    niveau: 5
+    version: "2025"
+    page: ""   # page du diplôme sur chlorofil.fr (à renseigner) : explorée pour trouver une nouvelle version
+    motif: "btsa/acsagri-2025/.*\\.pdf$"
+    note: "Capacités C4 à C8 tirées des documents d'accompagnement des modules M4 à M8 ; C1 à C3 (capacités générales) à compléter avec le référentiel de diplôme."
+    fichiers:
+      - https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m4.pdf
+      - https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m5.pdf
+      - https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m6.pdf
+      - https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m7.pdf
+      - https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m8.pdf

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SourcIA</title>
+<style>
+  :root{--ink:#17241d;--muted:#5d6b63;--line:#d8e0db;--bg:#f5f7f4;--card:#fff;--accent:#1f7a4d;--accent2:#e3f1e8;--warn:#9a5a12;--warn2:#fbf0e1}
+  @media (prefers-color-scheme: dark){:root{--ink:#e6ece8;--muted:#9aa8a0;--line:#2f3b35;--bg:#121815;--card:#1a221e;--accent:#5cc28f;--accent2:#1f3329;--warn:#e7a95a;--warn2:#3a2c1b}}
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+  header,main{max-width:1040px;margin:auto;padding:0 16px}
+  header{padding-top:18px}
+  h1{margin:0;font-size:24px}
+  h2{font-size:18px;margin:22px 0 8px}
+  .sub{color:var(--muted)}
+  form,.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:12px}
+  fieldset{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0}
+  legend{font-weight:600;padding:0 6px}
+  textarea{width:100%;min-height:56px;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+  label{font-size:13px;color:var(--muted);display:grid;gap:3px}
+  .chk{display:flex;flex-wrap:wrap;gap:6px 14px}
+  .chk label{display:flex;gap:5px;align-items:center;color:var(--ink);font-size:14px}
+  input,select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+  input[type=number]{width:90px}
+  input[type=checkbox]{width:auto}
+  button{font:inherit;font-weight:600;padding:9px 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
+  button:disabled{opacity:.5}
+  .status{color:var(--muted);margin:10px 0}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
+  .doc h3{margin:0 0 4px;font-size:16px}
+  a{color:var(--accent)}
+  .meta{font-size:13px;color:var(--muted)}
+  .alert{display:inline-block;background:var(--warn2);color:var(--warn);border-radius:6px;padding:1px 7px;font-size:12px;margin:4px 4px 0 0}
+  .tag{display:inline-block;background:var(--accent2);color:var(--accent);border-radius:6px;padding:1px 7px;font-size:12px;margin-right:4px}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  td,th{border-top:1px solid var(--line);padding:5px 6px;vertical-align:top;text-align:left}
+  td.q{color:var(--muted);font-style:italic}
+  .caps{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  .caps label{display:flex;gap:6px;align-items:flex-start;color:var(--ink)}
+  .caps .child{margin-left:18px}
+  pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}
+  .exports a{margin-right:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>SourcIA</h1>
+  <div class="sub">Trouver et qualifier les sources de R&amp;D, puis préparer sa formation : chaque contenu renvoie à sa source.</div>
+  <div class="sub" id="etat"></div>
+</header>
+<main>
+  <h2>1. Ma demande</h2>
+  <form id="f">
+    <label>Sujet<textarea id="sujet" placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
+    <fieldset><legend>Moi et ma formation</legend>
+      <div class="row">
+        <label>Je suis
+          <select id="profil"><option value="formateur">formateur</option><option value="enseignant">enseignant</option>
+            <option value="conseiller">conseiller</option><option value="intervenant_exterieur">intervenant extérieur</option><option value="autre">autre</option></select></label>
+        <label>Modalité
+          <select id="modalite"><option value="presentiel">présentiel</option><option value="distanciel">distanciel</option><option value="hybride">hybride</option></select></label>
+        <label>Durée (min)<input type="number" id="duree_min" value="120"></label>
+        <div class="chk" id="supports"><label><input type="checkbox" value="ecrit" checked>écrit</label><label><input type="checkbox" value="oral">oral</label><label><input type="checkbox" value="pratique">pratique</label></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label><span><input type="checkbox" id="diplomante"> formation diplômante</span></label>
+        <label id="dipl_wrap" hidden>Diplôme <select id="diplome"></select></label>
+      </div>
+      <div id="caps_wrap" hidden><div class="sub">Capacités visées (référentiel officiel) :</div><div class="caps" id="caps"></div></div>
+    </fieldset>
+    <fieldset><legend>Le public</legend>
+      <div class="row">
+        <label>Apprenants
+          <select id="apprenants"><option value="etudiants">étudiants</option><option value="eleves">élèves</option><option value="apprentis">apprentis</option>
+            <option value="salaries">salariés</option><option value="chefs_entreprise">chefs d'entreprise</option><option value="conseillers">conseillers</option><option value="autre">autre</option></select></label>
+        <label>Niveau
+          <select id="niveau"><option value="cap">CAP</option><option value="bac_pro">bac pro</option><option value="bac">bac</option><option value="bts" selected>BTS</option>
+            <option value="licence">licence</option><option value="master_ingenieur">master / ingénieur</option><option value="sans_diplome">sans diplôme</option></select></label>
+        <label>Expérience
+          <select id="experience"><option value="debutant">débutant</option><option value="intermediaire">intermédiaire</option><option value="confirme">confirmé</option></select></label>
+        <label>Effectif<input type="number" id="effectif"></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Les ressources (aucune case = toutes)</legend>
+      <div class="chk" id="ressources">
+        <label><input type="checkbox" value="resultats_rd">résultats R&amp;D</label><label><input type="checkbox" value="experimentation">expérimentations</label>
+        <label><input type="checkbox" value="temoignage">témoignages</label><label><input type="checkbox" value="synthese">synthèses</label>
+        <label><input type="checkbox" value="guide_technique">guides techniques</label><label><input type="checkbox" value="donnees">données</label>
+        <label><input type="checkbox" value="photo">photos</label><label><input type="checkbox" value="video">vidéos</label><label><input type="checkbox" value="audio">audio</label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Année min.<input type="number" id="annee_min" placeholder="2015"></label>
+        <label>Année max.<input type="number" id="annee_max"></label>
+        <label>Ma région<input id="region" placeholder="Pays de la Loire"></label>
+        <label>Organismes à privilégier<input id="organismes" placeholder="Arvalis, Idele"></label>
+        <label>Nombre de sources<input type="number" id="nombre_sources" value="30"></label>
+        <label><span><input type="checkbox" id="publiques"> sources publiques seulement</span></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Ce que je veux obtenir</legend>
+      <div class="chk" id="sorties">
+        <label><input type="checkbox" value="plan" checked>plan</label><label><input type="checkbox" value="points_cles" checked>points clés</label>
+        <label><input type="checkbox" value="quiz" checked>quiz</label><label><input type="checkbox" value="fiche_technique">fiche technique</label>
+        <label><input type="checkbox" value="synthese">synthèse</label><label><input type="checkbox" value="cas_concret" checked>cas concret</label>
+        <label><input type="checkbox" value="glossaire" checked>glossaire</label><label><input type="checkbox" value="podcast">script de podcast</label>
+        <label><input type="checkbox" value="deroule_oral">déroulé de séance</label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Mon contenu personnel (privé : jamais envoyé à un modèle en ligne)</legend>
+      <textarea id="notes" placeholder="Tes notes, exemples, consignes : elles sont ajoutées aux sources et citées comme « contenu personnel »."></textarea>
+    </fieldset>
+    <div class="row"><button id="go">Trouver les sources</button>
+      <label>Lecture par le modèle des N premières<input type="number" id="llm_top" value="0"></label></div>
+  </form>
+
+  <div class="status" id="status"></div>
+  <div class="exports" id="exports"></div>
+  <div id="res"></div>
+
+  <div id="fpanel" hidden>
+    <h2>2. Ma formation à partir de ces sources</h2>
+    <div class="panel">
+      <div class="row">
+        <label>Séquences<input type="number" id="nseq" value="4"></label>
+        <label>QCM par séquence<input type="number" id="nquiz" value="4"></label>
+        <button id="gof">Créer la formation</button>
+      </div>
+      <div class="sub">Compter 1 à 3 minutes par appel au modèle en local. Ce qui n'est pas retrouvé dans les sources est retiré et listé.</div>
+    </div>
+    <div class="status" id="fstatus"></div>
+    <div class="exports" id="fexports"></div>
+    <div id="rpanel" hidden>
+      <h2>3. Validation du rattachement au référentiel (enseignant)</h2>
+      <div class="panel"><table id="rtable"></table>
+        <div class="row"><label>Validé par<input id="valideur" placeholder="Nom de l'enseignant"></label><button id="gov">Enregistrer la validation</button></div>
+        <div class="status" id="vstatus"></div></div>
+    </div>
+    <pre id="fsupport" hidden></pre>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const checked = id => [...$(id).querySelectorAll("input:checked")].map(i => i.value);
+const num = id => $(id).value ? parseInt($(id).value, 10) : null;
+const LABEL = {organisme:"Organisme",annee:"Année des résultats",annee_publication:"Année de publication",lieu:"Lieu",contexte_pedoclimatique:"Contexte pédoclimatique",type:"Type",modalites:"Modalités",repetitions:"Répétitions",chiffrage_economique:"Chiffrage économique"};
+let LAST = null, REFS = [], DOSSIER = null;
+
+fetch("/api/etat").then(r => r.json()).then(e => {
+  $("etat").textContent = `${e.documents.documents ?? 0} documents · ${e.fiches} fiches · modèle ${e.modele} · ${e.build}` + (e.index ? "" : " · ⚠️ index absent");
+}).catch(() => {});
+fetch("/api/referentiels").then(r => r.json()).then(list => {
+  REFS = list;
+  $("diplome").innerHTML = list.map(r => `<option value="${esc(r.id)}">${esc(r.nom)} (v${esc(r.version)})</option>`).join("");
+  showCaps();
+}).catch(() => {});
+function showCaps() {
+  const r = REFS.find(x => x.id === $("diplome").value);
+  $("caps").innerHTML = r ? r.capacites.map(c => `<label class="${c.parent ? "child" : ""}"><input type="checkbox" value="${esc(c.code)}"><span><b>${esc(c.code)}</b> ${esc(c.libelle)}</span></label>`).join("") : "";
+}
+$("diplome").addEventListener("change", showCaps);
+$("diplomante").addEventListener("change", () => { const on = $("diplomante").checked; $("dipl_wrap").hidden = !on; $("caps_wrap").hidden = !on; });
+
+function demande() {
+  const dip = $("diplomante").checked;
+  return {sujet: $("sujet").value.trim(), profil: $("profil").value, diplomante: dip, diplome: dip ? $("diplome").value : null,
+    capacites: dip ? checked("caps") : [], modalite: $("modalite").value, supports: checked("supports").length ? checked("supports") : ["ecrit"],
+    duree_min: num("duree_min") || 120, apprenants: $("apprenants").value, niveau: $("niveau").value, experience: $("experience").value,
+    effectif: num("effectif"), ressources: checked("ressources"), sorties: checked("sorties"), annee_min: num("annee_min"), annee_max: num("annee_max"),
+    sources_publiques_seulement: $("publiques").checked, region: $("region").value || null,
+    organismes: $("organismes").value.split(",").map(s => s.trim()).filter(Boolean), nombre_sources: num("nombre_sources") || 30,
+    notes_personnelles: $("notes").value};
+}
+
+$("f").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const d = demande();
+  if (!d.sujet) return;
+  $("go").disabled = true; $("res").innerHTML = ""; $("exports").innerHTML = ""; $("fpanel").hidden = true;
+  $("status").textContent = "Recherche et qualification en cours…";
+  const t0 = performance.now();
+  try {
+    const r = await fetch("/api/selection", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({demande: d, llm_top: num("llm_top") || 0})});
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const data = await r.json();
+    LAST = {demande: d, doc_ids: data.documents.map(x => x.id)};
+    $("fpanel").hidden = !data.documents.length;
+    $("status").textContent = `${data.documents.length} sources en ${((performance.now() - t0) / 1000).toFixed(1)} s.`;
+    $("exports").innerHTML = data.exports.length ? "Exporter (pour NotebookLM ou un tableur) : " + data.exports.map(n => `<a href="/api/export/${encodeURIComponent(n)}">${esc(n.split(".").pop().toUpperCase())}</a>`).join("") : "";
+    $("res").innerHTML = data.documents.map(x => `
+      <div class="doc">
+        <h3>${x.rang}. ${x.prive ? esc(x.titre) + ' <span class="tag">privé</span>' : `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre || x.url)}</a>`}</h3>
+        <div class="meta">${esc(x.source)} · score ${x.score} ${x.type ? `· <span class="tag">${esc(x.type)}</span>` : ""}${x.nature && x.nature !== "pdf" ? `<span class="tag">${esc(x.nature)}</span>` : ""}</div>
+        <div>${esc(x.justification.split(" — ⚠️")[0])}</div>
+        ${(x.alertes ? x.alertes.split(" ; ") : []).map(a => `<span class="alert">⚠️ ${esc(a)}</span>`).join("")}
+        <details data-id="${esc(x.id)}"><summary>Fiche et preuves</summary><div>…</div></details>
+      </div>`).join("");
+    document.querySelectorAll("details[data-id]").forEach(el => el.addEventListener("toggle", async () => {
+      if (!el.open || el.dataset.loaded) return;
+      el.dataset.loaded = 1;
+      const f = await (await fetch("/api/fiche/" + el.dataset.id)).json();
+      el.querySelector("div").innerHTML = "<table>" + Object.entries(f.champs).map(([k, c]) =>
+        `<tr><td>${LABEL[k] || k}</td><td>${c.value === null ? "—" : esc(c.value)}<br><small>confiance ${c.confidence.toFixed(2)} (${esc(c.method)})</small></td><td class="q">${c.evidence ? "« " + esc(c.evidence) + " »" : ""}</td></tr>`).join("") + "</table>";
+    }));
+  } catch (e) {
+    $("status").textContent = "Erreur : " + e.message;
+  } finally { $("go").disabled = false; }
+});
+
+$("gof").addEventListener("click", async ev => {
+  ev.preventDefault();
+  if (!LAST) return;
+  $("gof").disabled = true; $("fsupport").hidden = true; $("fexports").innerHTML = ""; $("rpanel").hidden = true;
+  $("fstatus").textContent = "Création du support en cours…";
+  try {
+    const r = await fetch("/api/formation", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({...LAST, sequences: num("nseq") || 4, quiz: num("nquiz") ?? 4})});
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const f = await r.json();
+    DOSSIER = f.dossier;
+    $("fstatus").textContent = `Support prêt : ${f.appels_modele} appels au modèle, ${f.duree_s} s. À relire avant diffusion.`;
+    $("fexports").innerHTML = "Télécharger : " + f.fichiers.map(n => `<a href="/api/formation/${encodeURIComponent(f.dossier)}/${encodeURIComponent(n)}">${esc(n)}</a>`).join("");
+    $("fsupport").textContent = f.support; $("fsupport").hidden = false;
+    if (f.rattachements.length) {
+      $("rpanel").hidden = false;
+      $("rtable").innerHTML = "<tr><th>#</th><th>Séquence</th><th>Capacité proposée</th><th>Statut</th><th>Valider</th><th>Code corrigé</th></tr>" +
+        f.rattachements.map(x => `<tr><td>${x.n}</td><td>${esc(x.sequence)}</td><td>${x.capacite ? `<b>${esc(x.capacite)}</b> ${esc(x.libelle)}` : "—"}</td><td>${esc(x.statut)}</td>
+          <td><input type="checkbox" data-n="${x.n}" ${x.capacite ? "checked" : ""}></td><td><input data-c="${x.n}" size="6"></td></tr>`).join("");
+    }
+  } catch (e) {
+    $("fstatus").textContent = "Erreur : " + e.message;
+  } finally { $("gof").disabled = false; }
+});
+
+$("gov").addEventListener("click", async ev => {
+  ev.preventDefault();
+  if (!DOSSIER || !$("valideur").value.trim()) { $("vstatus").textContent = "Indiquer le nom de l'enseignant."; return; }
+  const decisions = [...document.querySelectorAll("#rtable input[data-n]")].map(i => ({n: +i.dataset.n, valide: i.checked,
+    code_corrige: document.querySelector(`#rtable input[data-c="${i.dataset.n}"]`).value.trim()}));
+  const r = await fetch(`/api/formation/${encodeURIComponent(DOSSIER)}/rattachements`, {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({valideur: $("valideur").value.trim(), decisions})});
+  const s = await r.json();
+  $("vstatus").textContent = r.ok ? `Validés : ${s.valides} · corrigés : ${s.corriges} · refusés : ${s.refuses}. Le support a été mis à jour.` : "Erreur : " + (s.detail || r.status);
+});
+</script>
+</body>
+</html>

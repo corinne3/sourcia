@@ -1,0 +1,17 @@
+# Exemple 2 : formation NON diplômante, chefs d'exploitation, conseiller, distanciel, fiche technique + podcast
+sujet: "cultures fourragères d'été pour sécuriser le stock en année sèche"
+profil: conseiller
+diplomante: false
+modalite: distanciel
+supports: [ecrit]
+duree_min: 90
+apprenants: chefs_entreprise
+niveau: bac_pro
+experience: confirme
+ressources: []
+sorties: [plan, points_cles, quiz, fiche_technique, synthese, podcast]
+sources_publiques_seulement: true
+nombre_sources: 15
+notes_personnelles: |
+  Dans notre groupe d'éleveurs, trois exploitations ont testé le sorgho multicoupe depuis 2022.
+  Le semis a été fait après un méteil récolté en ensilage, vers le 20 mai.

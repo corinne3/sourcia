@@ -1,0 +1,223 @@
+# Référentiel extrait par SourcIA. statut « valide » seulement après relecture par un enseignant.
+id: bacpro-cgea
+nom: Bac pro Conduite et gestion de l'entreprise agricole (CGEA)
+type: bacpro
+niveau: 4
+version: '2024'
+sources:
+- fichier: bacpro-cgea-ref-2024.pdf
+  url: https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/bacpro/cgea/bacpro-cgea-ref-2024.pdf
+  sha1: 00dd98dcc4a6083ef0fe316a13b3524ad04ecc91
+statut: extrait_automatiquement
+valide_par: ''
+capacites:
+- code: C1
+  libelle: Construire son raisonnement autour des enjeux du monde actuel
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C1.1
+  libelle: Interpréter des faits en s’appuyant sur une démarche scientifique
+  parent: C1
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C1.2
+  libelle: Étudier un phénomène social ou professionnel à l’aide de données notamment en nombre
+  parent: C1
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C1.3
+  libelle: Exploiter la modélisation d’un phénomène
+  parent: C1
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C2
+  libelle: Débattre à l’ère de la mondialisation
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C2.1
+  libelle: Analyser l’information
+  parent: C2
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C2.2
+  libelle: Élaborer une pensée construite
+  parent: C2
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C2.3
+  libelle: Formuler un point de vue argumenté et nuancé
+  parent: C2
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C3
+  libelle: Développer son identité culturelle
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C3.1
+  libelle: Exprimer ses aspirations dans une culture commune
+  parent: C3
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C3.2
+  libelle: Positionner son projet professionnel
+  parent: C3
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C3.3
+  libelle: Communiquer avec le monde
+  parent: C3
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4
+  libelle: Agir collectivement dans des situations sociales et professionnelles
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4.1
+  libelle: Développer un mode de vie actif et solidaire
+  parent: C4
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4.2
+  libelle: Mettre en œuvre un projet collectif
+  parent: C4
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4.3
+  libelle: Conduire une analyse réflexive de son action au sein d’un collectif
+  parent: C4
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5
+  libelle: Réaliser des choix techniques dans le cadre d’un système de production
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5.1
+  libelle: Définir des actions de préservation ou d’amélioration de l’état des ressources dans un agroécosystème
+  parent: C5
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5.2
+  libelle: Réaliser des choix techniques dans le cadre d’un processus de production
+  parent: C5
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6
+  libelle: Piloter une entreprise agricole
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6.1
+  libelle: Évaluer le fonctionnement de l’entreprise dans son contexte
+  parent: C6
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6.2
+  libelle: Identifier des pistes d’évolution de l’entreprise
+  parent: C6
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C7
+  libelle: Assurer la conduite technique des productions
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C7.1
+  libelle: Réaliser des observations, des suivis et des contrôles
+  parent: C7
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C7.2
+  libelle: Réaliser les opérations de conduite dans le cadre d'un système de production
+  parent: C7
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C8
+  libelle: Gérer le travail dans l’entreprise agricole
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C8.1
+  libelle: Organiser le travail
+  parent: C8
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C8.2
+  libelle: Gérer la main d’œuvre
+  parent: C8
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C9
+  libelle: Réaliser des opérations de gestion et d’administration de l’entreprise dans son contexte
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C9.1
+  libelle: Réaliser des opérations de gestion technico-économique et financière
+  parent: C9
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C9.2
+  libelle: Assurer la gestion administrative de l’entreprise
+  parent: C9
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C10
+  libelle: Mettre en œuvre des activités de valorisation de l’entreprise, de ses produits et services
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C10.1
+  libelle: Assurer la commercialisation des produits et services de l'entreprise
+  parent: C10
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C10.2
+  libelle: Coopérer à des actions collectives sur le territoire
+  parent: C10
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C11
+  libelle: S’adapter à des enjeux professionnels particuliers
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''

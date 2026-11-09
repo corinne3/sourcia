@@ -1,0 +1,19 @@
+# Sites candidats (à VALIDER par le métier : pertinence, conditions d'utilisation, licences).
+# Usage : sourcia add-site <url> --source <nom> --include "<filtre>"
+# Les adresses de départ sont des pages d'accueil ou de publications ; vérifier qu'elles répondent.
+sites:
+  - nom: arvalis
+    url: https://www.arvalis.fr
+    filtre: "fourrag|sorgho|prairie|maïs|mais|secheresse|sécheresse"
+  - nom: idele
+    url: https://idele.fr
+    filtre: "fourrag|prairie|sorgho|autonomie|paturage|pâturage"
+  - nom: terres-inovia
+    url: https://www.terresinovia.fr
+    filtre: "luzerne|proteagineux|protéagineux|legumineuse|légumineuse"
+  - nom: chambres-agriculture
+    url: https://chambres-agriculture.fr
+    filtre: "fourrag|prairie|sorgho|climat"
+notes:
+  - "RD Agri (ACTA, CC BY-NC-SA) : passer par le catalogue du Lexicon (sourcia import-catalog) ou le MCP quand il sera documenté."
+  - "Respect : robots.txt, 1 requête par seconde au plus, pas de téléchargement massif sans accord."

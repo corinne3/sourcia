@@ -1,0 +1,17 @@
+# Exemple 1 : formation DIPLÔMANTE, BTSA ACS'Agri, capacités C4.2 et C4.3, enseignant, présentiel
+sujet: "sorgho fourrager et adaptation des systèmes de culture et d'élevage à la sécheresse"
+profil: enseignant
+diplomante: true
+diplome: btsa-acsagri
+capacites: [C4.2, C4.3]
+modalite: presentiel
+supports: [ecrit, oral]
+duree_min: 180
+apprenants: etudiants
+niveau: bts
+experience: debutant
+ressources: [experimentation, temoignage, synthese]
+sorties: [plan, points_cles, quiz, cas_concret, glossaire, deroule_oral]
+annee_min: 2015
+region: "Pays de la Loire"
+nombre_sources: 20

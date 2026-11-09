@@ -1,0 +1,153 @@
+# Référentiel extrait par SourcIA. statut « valide » seulement après relecture par un enseignant.
+# C1 à C3 (capacités générales) absentes des documents fournis (modules M4 à M8) : à compléter avec le référentiel de diplôme.
+id: btsa-acsagri
+nom: 'BTSA ACS''Agri : Analyse, conduite et stratégie de l''entreprise agricole'
+type: btsa
+niveau: 5
+version: '2025'
+sources:
+- fichier: btsa-acsagri-da-m4.pdf
+  url: https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m4.pdf
+  sha1: 08b002ff7d19fc099036a06712bd3954ba6867bf
+- fichier: btsa-acsagri-da-m5.pdf
+  url: https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m5.pdf
+  sha1: f54c6018559013bf68b9bcf5609c9c4e88b6c6a3
+- fichier: btsa-acsagri-da-m6.pdf
+  url: https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m6.pdf
+  sha1: b901112e0612dae88bd6a369d1a279df5d3d11bc
+- fichier: btsa-acsagri-da-m7.pdf
+  url: https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m7.pdf
+  sha1: 15036154e82f3fdee0d4e6a2621f198c7f782688
+- fichier: btsa-acsagri-da-m8.pdf
+  url: https://chlorofil.fr/fileadmin/user_upload/02-diplomes/referentiels/secondaire/btsa/acsagri-2025/btsa-acsagri-da-m8.pdf
+  sha1: 173c94eff78d119ee620813e723513a297634214
+statut: extrait_automatiquement
+valide_par: ''
+capacites:
+- code: C4
+  libelle: Piloter des systèmes de culture et d’élevage dans une perspective de multiperformance
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4.1
+  libelle: Evaluer la performance globale d’un système biotechnique
+  parent: C4
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4.2
+  libelle: Ajuster, dans un contexte de transitions, la conduite d’un système de culture
+  parent: C4
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4.3
+  libelle: Ajuster, dans un contexte de transitions, la conduite d’un système d’élevage
+  parent: C4
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C4.4
+  libelle: Concevoir un système biotechnique durable et résilient
+  parent: C4
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5
+  libelle: Assurer la gestion administrative, fiscale, juridique et financière de l’entreprise agricole
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5.1
+  libelle: Répondre aux échéances réglementaires, fiscales, sociales, comptables et juridiques
+  parent: C5
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5.2
+  libelle: Evaluer la performance économique et financière de l'entreprise agricole
+  parent: C5
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C5.3
+  libelle: Estimer les conséquences économiques, sociales, juridiques et financières de la mise en œuvre d’un projet
+  parent: C5
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6
+  libelle: Manager l’activité d’une entreprise agricole
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6.1
+  libelle: Organiser la combinaison des facteurs de production
+  parent: C6
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6.2
+  libelle: Manager une équipe de travail
+  parent: C6
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C6.3
+  libelle: Mettre en œuvre une démarche intégrant Qualité Hygiène Sécurité Environnement
+  parent: C6
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C7
+  libelle: Piloter un projet stratégique d’entreprise agricole dans une perspective de multiperformance et de résilience
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C7.1
+  libelle: Evaluer la performance globale de l’entreprise agricole
+  parent: C7
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C7.2
+  libelle: Conduire une évaluation prospective de la résilience de l’entreprise agricole
+  parent: C7
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C7.3
+  libelle: Concevoir un projet stratégique d’entreprise multiperformante et résiliente et son suivi dans le temps
+  parent: C7
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C8
+  libelle: Accompagner le changement stratégique territorialisé dans les entreprises agricoles
+  parent: null
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C8.1
+  libelle: Faire émerger les besoins d’ accompagnement stratégique d’un acteur et/ou d’un collectif d’acteurs dans un contexte
+    territorial donné
+  parent: C8
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C8.2
+  libelle: Contribuer à la mise à disposition de ressources utiles à l’accompagnement d’un acteur et/ou d’un collectif d’acteurs
+  parent: C8
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''
+- code: C8.3
+  libelle: Contribuer à la construction d’un plan d’accompagnement stratégique d’un acteur et/ou d’un collectif d’acteurs
+  parent: C8
+  variantes: []
+  statut: extrait_automatiquement
+  commentaire: ''

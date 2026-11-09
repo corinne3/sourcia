@@ -1,0 +1,14 @@
+# Exemple 3 : formation DIPLÔMANTE niveau CAP, CAPa Métiers de l'agriculture, capacité CP5 (alimentation de l'élevage)
+sujet: "alimenter le troupeau en été sec : pâturage et fourrages d'appoint"
+profil: formateur
+diplomante: true
+diplome: capa-ma
+capacites: [CP5]
+modalite: presentiel
+supports: [oral, pratique]
+duree_min: 120
+apprenants: apprentis
+niveau: cap
+experience: debutant
+sorties: [plan, points_cles, quiz, glossaire, deroule_oral]
+nombre_sources: 10

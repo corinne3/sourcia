@@ -1,0 +1,13 @@
+# Petit lexique métier (facultatif) : chaque groupe = des mots équivalents pour la recherche par mots.
+# La recherche par le sens (embeddings) couvre déjà beaucoup de synonymes ; on n'ajoute ici
+# que ce que la mesure montre comme manquant. À compléter par le métier.
+groupes:
+  - [fissurateur, décompacteur, sous-soleuse]
+  - [sorgho, sorgho fourrager, sorgho multicoupe, sudan-grass]
+  - [prairie temporaire, prairie, PT, prairie multi-espèces]
+  - [méteil, mélange céréales-protéagineux, association céréales légumineuses]
+  - [sécheresse, déficit hydrique, stress hydrique, canicule]
+  - [dérobée, culture dérobée, interculture fourragère]
+  - [ensilage, silo, enrubannage]
+  - [autonomie fourragère, autonomie alimentaire, stock fourrager]
+  - [luzerne, légumineuse fourragère]

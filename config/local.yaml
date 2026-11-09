@@ -1,0 +1,23 @@
+# Configuration locale : tout tourne sur le PC, aucune donnée ne sort (documents privés compris).
+name: local
+data_dir: data
+
+llm:
+  provider: ollama
+  model: qwen2.5:3b            # la passe « modèle » de la qualification ; 1.5b possible, moins fiable en JSON
+  temperature: 0.0
+  num_ctx: 4096
+  max_tokens: 600
+  timeout_s: 600
+
+embedder:
+  kind: sentence-transformers
+  model: intfloat/multilingual-e5-small
+
+search:
+  dense_only_margin: 0.03     # e5 : sens seul gardé si sim ≥ meilleure − 0,03 (calibré à l'étape 6 ; à revoir sur un vrai corpus)
+  min_dense_sim: 0.0           # à calibrer à l'étape 4 du plan de tests (colonne sim de « sourcia search »)
+  reranker: lexical            # cross-encoder : plus précis, plus lent (modèle à télécharger)
+
+qualify:
+  llm_pass: true

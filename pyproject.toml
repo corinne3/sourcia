@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sourcia"
+version = "0.3.0"
+description = "SourcIA : trouver et qualifier les sources de R&D agricole pour un formateur (hackathon SAED, défi 1)."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Corinne Bergès" }]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "pydantic>=2.5",
+    "pyyaml>=6",
+    "requests>=2.31",
+    "pypdf>=4",
+]
+
+[project.optional-dependencies]
+local = ["sentence-transformers>=3", "pymupdf>=1.24"]
+api = ["fastapi>=0.110", "uvicorn>=0.29"]
+mcp = ["mcp>=1.2"]
+cloud = ["litellm>=1.40"]
+obs = ["psutil>=5.9"]
+media = ["openpyxl>=3.1", "faster-whisper>=1.0"]
+dev = ["pytest>=8", "httpx>=0.27"]
+recommended = [
+    "sentence-transformers>=3", "pymupdf>=1.24", "fastapi>=0.110", "uvicorn>=0.29",
+    "mcp>=1.2", "psutil>=5.9", "pytest>=8", "httpx>=0.27", "openpyxl>=3.1",
+]
+
+[project.scripts]
+sourcia = "sourcia.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sourcia = ["api/static/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
