@@ -22,6 +22,7 @@ from urllib.parse import urldefrag, urljoin, urlparse
 
 import requests
 
+from sourcia.collect.article import main_text, published_date
 from sourcia.collect.store import file_sha1
 from sourcia.collect.media import parse_media
 from sourcia.core.models import Document, doc_id_for
@@ -96,6 +97,7 @@ class CrawlReport:
     errors: list[str] = field(default_factory=list)
     blocked_by_robots: int = 0
     medias_found: int = 0
+    articles_found: int = 0
     start_page_empty: bool = False       # page de départ sans lien vers le site : collecte impossible en l'état
 
 
@@ -142,8 +144,9 @@ class WebCollector:
 
     # ------------------------------------------------------------------ exploration
     def crawl(self, start_url: str, source: str | None = None, include: str | None = None,
-              medias: bool = False, exclude: str | None = None) -> tuple[list[Document], CrawlReport]:
-        """Trouve les PDF d'un site à partir d'une adresse de départ.
+              medias: bool = False, exclude: str | None = None, articles: str | None = None,
+              pages_dir: Path | None = None) -> tuple[list[Document], CrawlReport]:
+        """Trouve les PDF (et, si demandé, les articles) d'un site à partir d'une adresse de départ.
 
         ``include`` : expression régulière facultative pour ne garder que certaines pages ou PDF
         (ex. ``"fourrage|prairie|sorgho"``). Les pages dont l'adresse ou le texte du lien la contient
@@ -153,16 +156,26 @@ class WebCollector:
         ou le titre de la page où il a été trouvé (``meta`` : ``page``, ``titre_page``, ``texte_lien``).
 
         ``exclude`` : expression régulière facultative ; les pages et PDF dont l'adresse la contient
-        ne sont ni visités ni listés (ex. ``"edition_summary"`` : sommaires de brochures chez arvalis)."""
+        ne sont ni visités ni listés (ex. ``"edition_summary"`` : sommaires de brochures chez arvalis).
+
+        ``articles`` : expression régulière facultative sur le chemin des pages d'articles
+        (ex. ``"^/infos-techniques/"``). Une page d'article qui passe le filtre (adresse ou titre) et
+        compte au moins ``min_article_words`` mots devient un document ``kind="page"`` : titre, date de
+        publication, texte du corps de l'article seul (voir ``collect/article.py``). Ces pages sont
+        visitées avant les autres. Avec ``pages_dir``, le texte est enregistré (``<id>.txt``) et le
+        document est « downloaded », prêt pour l'extraction ; sinon il est seulement listé."""
         host = urlparse(start_url).netloc
         root = f"{urlparse(start_url).scheme}://{host}"
         source = source or host.removeprefix("www.")
         report = CrawlReport(site=source)
         inc = re.compile(include, re.I) if include else None
         excl = re.compile(exclude, re.I) if exclude else None
+        art = re.compile(articles, re.I) if articles else None
         pdfs: dict[str, dict] = {}                         # adresse du PDF → texte du lien, page, titre de la page
+        arts: dict[str, tuple] = {}                        # adresse de l'article → (titre, date, texte, mots)
         media: dict[str, tuple] = {}
-        first: deque[str] = deque()                        # pages qui passent le filtre : visitées d'abord
+        top: deque[str] = deque()                          # articles qui passent le filtre : visités en premier
+        first: deque[str] = deque()                        # autres pages qui passent le filtre
         queue: deque[str] = deque([start_url])
         seen: set[str] = {start_url}
         refused: set[str] = set()                          # PDF interdits par robots.txt (comptés une fois)
@@ -171,7 +184,9 @@ class WebCollector:
             seen.add(url)
             if excl and excl.search(url):
                 return
-            (first if inc and (inc.search(url) or inc.search(text)) else queue).append(url)
+            match = not inc or inc.search(url) or inc.search(text)
+            is_article = art and art.search(urlparse(url).path)
+            (top if is_article and match else first if inc and match else queue).append(url)
 
         def add_pdf(url: str, text: str = "", page: str | None = None, page_title: str = "") -> None:
             if url in refused or (excl and excl.search(url)):
@@ -194,9 +209,9 @@ class WebCollector:
                         add_pdf(url)
                     elif urlparse(url).netloc == host and url not in seen:
                         enqueue(url)
-            while (first or queue) and report.pages_visited < self.cfg.max_pages_per_site \
+            while (top or first or queue) and report.pages_visited < self.cfg.max_pages_per_site \
                     and len(pdfs) < self.cfg.max_pdfs_per_site:             # 2. exploration
-                url = first.popleft() if first else queue.popleft()
+                url = (top or first or queue).popleft()
                 if not self.allowed(url):
                     report.blocked_by_robots += 1
                     continue
@@ -216,6 +231,13 @@ class WebCollector:
                 if "html" not in ctype:
                     continue
                 raw_title = _page_title(r.text)
+                if art and art.search(urlparse(url).path) and url not in arts:          # 3. articles
+                    title = _clean_title(raw_title) or _title_from_url(url)
+                    if not inc or inc.search(url) or inc.search(title):
+                        text = main_text(r.text)
+                        n_words = len(text.split())
+                        if n_words >= self.cfg.min_article_words:        # sinon : page de liste, trop courte
+                            arts[url] = (title, published_date(r.text), text, n_words)
                 if medias:
                     for murl, mtitle, mkind in parse_media(r.text, url):
                         media.setdefault(murl, (mtitle, mkind, url, raw_title))
@@ -238,13 +260,23 @@ class WebCollector:
             meta = {"page": page, "titre_page": page_title, "texte_lien": text} if page else {}
             docs.append(Document(id=doc_id_for(url), url=url, source=source, title=title, meta=meta))
         report.pdfs_found = len(docs)
+        for url, (title, date, text, n_words) in arts.items():
+            doc = Document(id=doc_id_for(url), url=url, source=source, kind="page", title=title, date=date,
+                           meta={"mots": n_words})
+            if pages_dir is not None:
+                pages_dir.mkdir(parents=True, exist_ok=True)
+                path = pages_dir / f"{doc.id}.txt"
+                path.write_text(f"{title}\n\n{text}\n", encoding="utf-8")
+                doc.local_path, doc.sha1, doc.status = str(path), file_sha1(path), "downloaded"
+            docs.append(doc)
+        report.articles_found = len(arts)
         for murl, (mtitle, mkind, page, ptitle) in media.items():
             if inc and not (inc.search(murl) or inc.search(mtitle or "") or inc.search(ptitle or "")):
                 continue
             docs.append(Document(id=doc_id_for(murl), url=murl, source=source, kind=mkind,
                                  title=mtitle or ptitle or _title_from_url(murl),
                                  meta={"page": page, "titre_page": ptitle}))
-        report.medias_found = len(docs) - report.pdfs_found
+        report.medias_found = len(docs) - report.pdfs_found - report.articles_found
         return docs, report
 
     def _sitemap_urls(self, url: str, report: CrawlReport, depth: int) -> list[str]:

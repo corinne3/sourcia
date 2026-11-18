@@ -9,11 +9,14 @@
 #   filtre   expression régulière : pages visitées d'abord ; PDF gardés si elle se retrouve dans
 #            leur adresse, le texte du lien, ou l'adresse ou le titre de la page d'origine
 #   exclure  expression régulière : pages et PDF dont l'adresse la contient, jamais visités ni listés
+#   articles expression régulière sur le chemin des pages d'articles : chaque article qui passe le filtre
+#            (adresse ou titre) est gardé comme document « page » (texte de l'article seul, date)
 sites:
   - nom: arvalis
     url: https://www.arvalis.fr
     filtre: "fourrag|sorgho|prairie|maïs|mais|secheresse|sécheresse"
-    exclure: "edition_summary"          # sommaires de brochures payantes (1 à 4 pages, sans résultats)
+    articles: "^/infos-techniques/"     # le contenu utile d'arvalis : articles et résultats d'essais
+    exclure: "edition_summary|/editions/"   # brochures payantes : pages de vente et sommaires (1 à 4 pages)
   - nom: idele
     url: https://idele.fr
     filtre: "fourrag|prairie|sorgho|autonomie|paturage|pâturage"

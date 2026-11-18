@@ -1,5 +1,6 @@
 """M1 Collecte : magasin de documents, exploration d'un site (réseau simulé), dossiers, catalogues."""
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -269,3 +270,86 @@ def test_cli_collect_sites(tmp_path, capsys, monkeypatch):
     assert exc.value.code == 1 and "panne" in capsys.readouterr().out
     with pytest.raises(SystemExit, match="site inconnu"):
         main(["-c", str(cfg), "collect-sites", "--sites-file", str(sites), "--site", "inconnu"])
+
+
+# ---------------------------------------------------------------------------- articles web (champ « articles »)
+BODY = " ".join(["Essai sorgho fourrager conduit en 2023 sur trois sites avec quatre répétitions."] * 30)
+ARTICLE_PAGE = f"""<html><head><title>Sorgho fourrager : résultats d&#039;essais | EX</title>
+<meta property="og:article:published_time" content="2024-03-12T07:00:00" /></head><body>
+<header><nav><a href="/">Accueil</a> Menu du site</nav></header>
+<main><section class="hero">Fil d'Ariane Accueil Infos techniques</section>
+  <article class="node node--view-mode-full"><h1>Sorgho fourrager : résultats d'essais</h1><p>{BODY}</p>
+    <div class="sharer__content">Partager : Facebook</div>
+    <div class="related-posts">Sur le même sujet
+      <article class="card node--view-mode-teaser"><p>Autre article : la luzerne en 1998</p></article></div>
+  </article>
+  <aside class="sidebar"><article class="card-event">19 Nov 2026 Réunion technique</article></aside>
+</main><footer>Mentions légales</footer></body></html>"""
+
+
+def test_article_main_text_keeps_only_the_article():
+    from sourcia.collect.article import main_text, published_date
+
+    text = main_text(ARTICLE_PAGE)
+    assert text.startswith("Sorgho fourrager : résultats d'essais") and "quatre répétitions" in text
+    for noise in ("Autre article", "luzerne", "Réunion technique", "Partager", "Fil d'Ariane", "Menu", "Mentions"):
+        assert noise not in text                                            # rien des autres articles ni du décor
+    assert published_date(ARTICLE_PAGE) == "2024-03-12"
+    assert published_date('<script type="application/ld+json">{"datePublished": "2019-05-02T09:00"}</script>') == "2019-05-02"
+    assert published_date("<p>sans date</p>") is None
+    assert main_text("<body><p>page sans balise article ni main</p></body>") == "page sans balise article ni main"
+
+
+ART_SITE = {
+    "https://ex.org/": resp('<a href="/infos-techniques/sorgho-essais">Essais</a>'),
+    "https://ex.org/sitemap.xml": resp("<urlset>" + "".join(f"<url><loc>https://ex.org/{p}</loc></url>" for p in (
+        "editions/sorgho-brochure", "infos-techniques/liste-sorgho", "infos-techniques/sorgho-essais",
+        "infos-techniques/porcs")) + "</urlset>", ctype="text/xml"),
+    "https://ex.org/infos-techniques/sorgho-essais": resp(ARTICLE_PAGE),
+    "https://ex.org/infos-techniques/liste-sorgho": resp("<title>Liste sorgho</title><main><p>trois liens</p></main>"),
+    "https://ex.org/infos-techniques/porcs": resp(ARTICLE_PAGE.replace("Sorgho fourrager", "Porcs")
+                                                  .replace("sorgho", "porc")),
+}
+
+
+def test_crawl_collects_articles_first(settings, tmp_path):
+    visited = []
+
+    def fetch(url):
+        visited.append(url)
+        return ART_SITE.get(url, resp("<p>rien</p>"))
+
+    settings.collect.max_pages_per_site = 3
+    docs, rep = WebCollector(settings, fetch=fetch).crawl(
+        "https://ex.org/", include="sorgho", articles="^/infos-techniques/", pages_dir=tmp_path / "pages")
+    pages = [u for u in visited if not u.endswith((".txt", ".xml"))]
+    # les deux pages d'articles qui passent le filtre d'abord (avant /editions/ et la page d'accueil)
+    assert pages[:2] == ["https://ex.org/infos-techniques/liste-sorgho", "https://ex.org/infos-techniques/sorgho-essais"]
+    assert rep.articles_found == 1 and rep.pdfs_found == 0                 # page de liste trop courte, porcs hors filtre
+    [d] = docs
+    assert d.kind == "page" and d.date == "2024-03-12" and d.status == "downloaded" and d.sha1
+    assert d.title == "Sorgho fourrager : résultats d'essais" and d.meta["mots"] >= 250
+    saved = Path(d.local_path).read_text(encoding="utf-8")
+    assert saved.startswith("Sorgho fourrager : résultats d'essais\n\n") and "Autre article" not in saved
+    docs, _ = WebCollector(settings, fetch=fetch).crawl("https://ex.org/", include="sorgho", articles="^/infos-techniques/")
+    assert docs[0].status == "listed" and docs[0].local_path is None        # sans dossier : listé seulement
+
+
+def test_collect_site_articles_then_extract(settings, tmp_path):
+    from sourcia.extract.pdf import extract
+
+    settings.collect.max_pages_per_site = 5
+    wc = WebCollector(settings, fetch=lambda u: ART_SITE.get(u, resp("<p>rien</p>")))
+    store = DocumentStore(tmp_path / "documents.jsonl")
+    site = load_sites(_sites(tmp_path, "sites:\n  - {nom: ex, url: 'https://ex.org/', filtre: sorgho,"
+                                       " articles: '^/infos-techniques/', exclure: '/editions/'}\n"))[0]
+    [rep] = collect_sites(wc, store, [site], tmp_path / "pdfs")
+    assert rep["articles_trouves"] == 1 and rep["nouveaux"] == 1 and rep["ok"]
+    [d] = list(store)
+    assert Path(d.local_path).parent == tmp_path / "pages"
+    out = extract(d, tmp_path / "text", 40)                                 # la suite du pipeline sait le lire
+    assert "quatre répétitions" in out["pages"][0] and d.status == "extracted"
+    [rep] = collect_sites(wc, store, [site], tmp_path / "pdfs")             # second passage : rien de nouveau
+    assert rep["nouveaux"] == 0 and list(store)[0].status == "extracted"
+    with pytest.raises(ValueError, match="articles invalide"):
+        load_sites(_sites(tmp_path, "sites:\n  - {nom: a, url: u, articles: '(x'}\n"))

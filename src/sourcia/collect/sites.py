@@ -36,6 +36,7 @@ class SiteConfig(BaseModel):
     url: str                      # adresse de départ de l'exploration
     filtre: str | None = None     # expression régulière : pages visitées d'abord, PDF gardés (adresse, lien, page)
     exclure: str | None = None    # expression régulière : pages et PDF jamais visités ni listés (adresse)
+    articles: str | None = None   # expression régulière sur le chemin des pages d'articles (ex. "^/infos-techniques/")
 
 
 def load_sites(path: Path) -> list[SiteConfig]:
@@ -56,7 +57,7 @@ def load_sites(path: Path) -> list[SiteConfig]:
             raise ValueError(f"{path} : site n° {i} incomplet ou invalide ({champs or exc})") from None
         if site.nom in names:
             raise ValueError(f"{path} : le nom « {site.nom} » apparaît deux fois")
-        for champ in ("filtre", "exclure"):
+        for champ in ("filtre", "exclure", "articles"):
             if getattr(site, champ):
                 try:
                     re.compile(getattr(site, champ))
@@ -80,13 +81,24 @@ def select_sites(sites: list[SiteConfig], names: list[str] | None) -> list[SiteC
 
 def collect_site(wc: WebCollector, store: DocumentStore, site: SiteConfig, pdf_dir: Path,
                  download: bool = True) -> dict:
-    """Explore un site, met à jour le catalogue, télécharge les PDF en attente. Renvoie le rapport du site."""
+    """Explore un site, met à jour le catalogue, télécharge les PDF en attente. Renvoie le rapport du site.
+
+    Les articles (champ ``articles``) sont enregistrés pendant l'exploration dans ``pdf_dir/../pages``."""
     t0 = time.monotonic()
     rep = CrawlReport(site=site.nom)
     failed_downloads = 0
     try:
-        docs, rep = wc.crawl(site.url, source=site.nom, include=site.filtre, exclude=site.exclure)
-        rep.pdfs_new = sum(store.add(d) for d in docs)
+        pages_dir = pdf_dir.parent / "pages" if download else None
+        docs, rep = wc.crawl(site.url, source=site.nom, include=site.filtre, exclude=site.exclure,
+                             articles=site.articles, pages_dir=pages_dir)
+        for d in docs:
+            if store.add(d):
+                rep.pdfs_new += 1
+            elif d.local_path:                     # article déjà connu, relu aujourd'hui : on garde le texte à jour
+                old = store.get(d.id)
+                old.local_path, old.sha1 = d.local_path, d.sha1
+                if old.status == "listed":
+                    old.status = "downloaded"
         store.save()
         if download:
             todo = [d for d in store if d.source == site.nom and d.kind == "pdf" and d.status == "listed"]
@@ -111,6 +123,7 @@ def collect_site(wc: WebCollector, store: DocumentStore, site: SiteConfig, pdf_d
         "exclure": site.exclure,
         "pages_visitees": rep.pages_visited,
         "pdf_trouves": rep.pdfs_found,
+        "articles_trouves": rep.articles_found,
         "nouveaux": rep.pdfs_new,
         "telecharges": rep.downloaded,
         "echecs_telechargement": failed_downloads,
@@ -139,7 +152,7 @@ def collect_sites(wc: WebCollector, store: DocumentStore, sites: list[SiteConfig
 
 def run_report(reports: list[dict], options: dict, started: datetime) -> dict:
     """Le rapport complet d'un lancement (ce qui est écrit en JSON)."""
-    keys = ("pages_visitees", "pdf_trouves", "nouveaux", "telecharges", "echecs_telechargement", "bloques_robots")
+    keys = ("pages_visitees", "pdf_trouves", "articles_trouves", "nouveaux", "telecharges", "echecs_telechargement", "bloques_robots")
     total = {k: sum(r[k] for r in reports) for k in keys}
     total["erreurs"] = sum(len(r["erreurs"]) for r in reports)
     total["sites_en_echec"] = [r["site"] for r in reports if not r["ok"]]
@@ -161,6 +174,7 @@ def format_site(rep: dict, max_errors: int = 5) -> str:
     """Une ligne lisible par site (et ses premières erreurs)."""
     mark = "✓" if rep["ok"] else "✗"
     line = (f"  {mark} {rep['site']} : {rep['pages_visitees']} pages · {rep['pdf_trouves']} PDF trouvés"
+            f" · {rep['articles_trouves']} articles"
             f" · {rep['nouveaux']} nouveaux · {rep['telecharges']} téléchargés"
             f" · {rep['bloques_robots']} bloqués (robots.txt) · {len(rep['erreurs'])} erreurs · {rep['duree_s']} s")
     lines = [line] + [f"      ⚠ {e[:150]}" for e in rep["erreurs"][:max_errors]]
@@ -172,6 +186,7 @@ def format_site(rep: dict, max_errors: int = 5) -> str:
 def format_total(report: dict) -> str:
     t = report["total"]
     line = (f"Total : {len(report['sites'])} sites · {t['pages_visitees']} pages · {t['pdf_trouves']} PDF trouvés"
+            f" · {t['articles_trouves']} articles"
             f" · {t['nouveaux']} nouveaux · {t['telecharges']} téléchargés · {t['bloques_robots']} bloqués"
             f" · {t['erreurs']} erreurs")
     if t["sites_en_echec"]:

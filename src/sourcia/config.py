@@ -46,6 +46,7 @@ class CollectSettings(BaseModel):
     max_pdf_mb: float = 30.0
     respect_robots: bool = True
     download_pdfs: bool = True           # False : on ne garde que les liens (indexation par titre seulement)
+    min_article_words: int = 250         # article web plus court : page de liste ou brève, ignorée
 
 
 class ExtractSettings(BaseModel):
