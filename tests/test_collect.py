@@ -84,6 +84,23 @@ def test_crawl_visits_matching_pages_first(settings):
     assert [d.url for d in docs] == ["https://ex.org/docs/essai.pdf"]
 
 
+def test_crawl_judges_pdf_by_its_page(settings):
+    """Cas réel (arvalis) : lien « Feuilleter la brochure » vers un PDF à l'adresse sans mot utile."""
+    site = {
+        "https://ex.org/": resp('<a href="/editions/atlas-du-mais-fourrage">Atlas</a><a href="/porcs">Porcs</a>'),
+        "https://ex.org/editions/atlas-du-mais-fourrage": resp(
+            '<title>Atlas du maïs fourrage | EX</title><a href="/files/3644_x.pdf">Feuilleter la brochure</a>'),
+        "https://ex.org/porcs": resp('<title>Élevage porcin | EX</title><a href="/files/99_y.pdf">Télécharger</a>'),
+    }
+    wc = WebCollector(settings, fetch=lambda u: site.get(u, resp("", 404)))
+    docs, _ = wc.crawl("https://ex.org/", include="fourrag")
+    assert [d.url for d in docs] == ["https://ex.org/files/3644_x.pdf"]    # gardé grâce à sa page ; 99_y écarté
+    d = docs[0]
+    assert d.title == "Atlas du maïs fourrage"                              # titre de la page, sans le nom du site
+    assert d.meta == {"page": "https://ex.org/editions/atlas-du-mais-fourrage",
+                      "titre_page": "Atlas du maïs fourrage", "texte_lien": "Feuilleter la brochure"}
+
+
 def test_download_rejects_non_pdf(settings, tmp_path):
     settings.collect.delay_s = 0
     wc = WebCollector(settings, fetch=lambda u: resp("<html>erreur</html>"))

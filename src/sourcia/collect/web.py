@@ -28,6 +28,9 @@ from sourcia.observability.tracing import span
 
 PDF_RE = re.compile(r"\.pdf($|\?)", re.I)
 SKIP_RE = re.compile(r"\.(jpe?g|png|gif|svg|webp|zip|docx?|xlsx?|pptx?|mp4|mp3|css|js|ico)($|\?)", re.I)
+# texte de lien qui ne dit rien du document (« Télécharger », « Feuilleter la brochure »…) : on prend le titre de la page
+GENERIC_LINK_RE = re.compile(r"^\W*(t[ée]l[ée]charger|feuilleter|voir|lire|consulter|ouvrir|acc[ée]der|cliquez|ici\b"
+                             r"|en savoir plus|pdf\b|download|document\b|fichier\b)", re.I)
 
 
 class _LinkParser(HTMLParser):
@@ -143,13 +146,15 @@ class WebCollector:
         ``include`` : expression régulière facultative pour ne garder que certaines pages ou PDF
         (ex. ``"fourrage|prairie|sorgho"``). Les pages dont l'adresse ou le texte du lien la contient
         sont visitées en premier : avec une limite de pages, l'exploration va d'abord au plus pertinent
-        (un plan de site de plusieurs milliers d'adresses est souvent trié par ordre alphabétique)."""
+        (un plan de site de plusieurs milliers d'adresses est souvent trié par ordre alphabétique).
+        Un PDF est gardé si le filtre se retrouve dans son adresse, le texte de son lien, ou l'adresse
+        ou le titre de la page où il a été trouvé (``meta`` : ``page``, ``titre_page``, ``texte_lien``)."""
         host = urlparse(start_url).netloc
         root = f"{urlparse(start_url).scheme}://{host}"
         source = source or host.removeprefix("www.")
         report = CrawlReport(site=source)
         inc = re.compile(include, re.I) if include else None
-        pdfs: dict[str, str] = {}
+        pdfs: dict[str, dict] = {}                         # adresse du PDF → texte du lien, page, titre de la page
         media: dict[str, tuple] = {}
         first: deque[str] = deque()                        # pages qui passent le filtre : visitées d'abord
         queue: deque[str] = deque([start_url])
@@ -160,18 +165,25 @@ class WebCollector:
             seen.add(url)
             (first if inc and (inc.search(url) or inc.search(text)) else queue).append(url)
 
+        def add_pdf(url: str, text: str = "", page: str | None = None, page_title: str = "") -> None:
+            if url in refused:
+                return
+            if url not in pdfs and not self.allowed(url):                # robots.txt : PDF interdit
+                refused.add(url)
+                report.blocked_by_robots += 1
+                return
+            info = pdfs.setdefault(url, {"texte_lien": "", "page": None, "titre_page": ""})
+            # on garde le meilleur contexte : un vrai texte de lien plutôt qu'un « Télécharger »
+            better = text and (not info["texte_lien"] or (_generic_link(info["texte_lien"]) and not _generic_link(text)))
+            if better or (page and not info["page"]):
+                info.update(texte_lien=text or info["texte_lien"], page=page, titre_page=page_title)
+
         with span("collect.crawl", site=source):
             self.allowed(start_url)
             for sm in self.sitemaps(root):                    # 1. plans de site
                 for url in self._sitemap_urls(sm, report, depth=0):
                     if PDF_RE.search(url):
-                        if url in refused:
-                            continue
-                        if url not in pdfs and not self.allowed(url):  # robots.txt : PDF interdit
-                            refused.add(url)
-                            report.blocked_by_robots += 1
-                            continue
-                        pdfs.setdefault(url, "")
+                        add_pdf(url)
                     elif urlparse(url).netloc == host and url not in seen:
                         enqueue(url)
             while (first or queue) and report.pages_visited < self.cfg.max_pages_per_site \
@@ -188,33 +200,30 @@ class WebCollector:
                 report.pages_visited += 1
                 ctype = r.headers.get("content-type", "")
                 if "pdf" in ctype:
-                    pdfs.setdefault(url, "")
+                    add_pdf(url)
                     continue
                 if r.status_code != 200:
                     report.errors.append(f"{url} : HTTP {r.status_code}")      # lien mort ou page en erreur
                     continue
                 if "html" not in ctype:
                     continue
+                raw_title = _page_title(r.text)
                 if medias:
                     for murl, mtitle, mkind in parse_media(r.text, url):
-                        media.setdefault(murl, (mtitle, mkind, url, _page_title(r.text)))
+                        media.setdefault(murl, (mtitle, mkind, url, raw_title))
                 for link, text in parse_links(r.text, url):
                     if PDF_RE.search(link):
-                        if link in refused:
-                            continue
-                        if link not in pdfs and not self.allowed(link):  # robots.txt : PDF interdit
-                            refused.add(link)
-                            report.blocked_by_robots += 1
-                            continue
-                        if not pdfs.get(link):
-                            pdfs[link] = text
+                        add_pdf(link, text, url, _clean_title(raw_title))
                     elif urlparse(link).netloc == host and link not in seen and not SKIP_RE.search(link):
                         enqueue(link, text)
         docs = []
-        for url, text in list(pdfs.items())[: self.cfg.max_pdfs_per_site]:
-            if inc and not (inc.search(url) or inc.search(text or "")):
+        for url, info in list(pdfs.items())[: self.cfg.max_pdfs_per_site]:
+            text, page, page_title = info["texte_lien"], info["page"], info["titre_page"]
+            if inc and not any(inc.search(x) for x in (url, text, page, page_title) if x):
                 continue
-            docs.append(Document(id=doc_id_for(url), url=url, source=source, title=text or _title_from_url(url)))
+            title = text if text and not _generic_link(text) else (page_title or text or _title_from_url(url))
+            meta = {"page": page, "titre_page": page_title, "texte_lien": text} if page else {}
+            docs.append(Document(id=doc_id_for(url), url=url, source=source, title=title, meta=meta))
         report.pdfs_found = len(docs)
         for murl, (mtitle, mkind, page, ptitle) in media.items():
             if inc and not (inc.search(murl) or inc.search(mtitle or "") or inc.search(ptitle or "")):
@@ -277,6 +286,16 @@ def _short_error(exc: Exception) -> str:
 def _page_title(html_text: str) -> str:
     m = re.search(r"(?is)<title[^>]*>(.*?)</title>", html_text or "")
     return " ".join(m.group(1).split())[:200] if m else ""
+
+
+def _generic_link(text: str) -> bool:
+    """Texte de lien qui ne dit rien du document (« Télécharger », « Feuilleter la brochure », « PDF »…)."""
+    return len(text.strip()) < 4 or bool(GENERIC_LINK_RE.match(text))
+
+
+def _clean_title(title: str) -> str:
+    """Titre de page sans le nom du site (« Atlas du maïs fourrage | ARVALIS » → « Atlas du maïs fourrage »)."""
+    return re.split(r"\s+[|–—]\s+", title, maxsplit=1)[0].strip()
 
 
 def _title_from_url(url: str) -> str:
