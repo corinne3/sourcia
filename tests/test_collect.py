@@ -47,6 +47,15 @@ def test_crawl_respects_robots_and_finds_pdfs(settings, tmp_path):
     assert d.status == "downloaded" and d.sha1
 
 
+def test_crawl_notes_dead_links_and_skips_forbidden_pdfs(settings):
+    site = dict(SITE)
+    site["https://ex.org/"] = resp('<a href="/pub">Publications</a><a href="/vieux">v</a>')
+    wc = WebCollector(settings, fetch=lambda u: site.get(u, resp("", 404)))
+    docs, rep = wc.crawl("https://ex.org/")
+    assert "https://ex.org/vieux : HTTP 404" in rep.errors                 # lien mort noté dans le rapport
+    assert "https://ex.org/prive/secret.pdf" not in {d.url for d in docs}  # PDF interdit par robots.txt : pas listé
+    assert rep.blocked_by_robots == 1
+
 def test_download_rejects_non_pdf(settings, tmp_path):
     settings.collect.delay_s = 0
     wc = WebCollector(settings, fetch=lambda u: resp("<html>erreur</html>"))

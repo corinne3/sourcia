@@ -151,11 +151,18 @@ class WebCollector:
         media: dict[str, tuple] = {}
         queue: deque[str] = deque([start_url])
         seen: set[str] = {start_url}
+        refused: set[str] = set()                          # PDF interdits par robots.txt (comptés une fois)
         with span("collect.crawl", site=source):
             self.allowed(start_url)
             for sm in self.sitemaps(root):                    # 1. plans de site
                 for url in self._sitemap_urls(sm, report, depth=0):
                     if PDF_RE.search(url):
+                        if url in refused:
+                            continue
+                        if url not in pdfs and not self.allowed(url):  # robots.txt : PDF interdit
+                            refused.add(url)
+                            report.blocked_by_robots += 1
+                            continue
                         pdfs.setdefault(url, "")
                     elif urlparse(url).netloc == host and url not in seen:
                         seen.add(url)
@@ -176,13 +183,22 @@ class WebCollector:
                 if "pdf" in ctype:
                     pdfs.setdefault(url, "")
                     continue
-                if r.status_code != 200 or "html" not in ctype:
+                if r.status_code != 200:
+                    report.errors.append(f"{url} : HTTP {r.status_code}")      # lien mort ou page en erreur
+                    continue
+                if "html" not in ctype:
                     continue
                 if medias:
                     for murl, mtitle, mkind in parse_media(r.text, url):
                         media.setdefault(murl, (mtitle, mkind, url, _page_title(r.text)))
                 for link, text in parse_links(r.text, url):
                     if PDF_RE.search(link):
+                        if link in refused:
+                            continue
+                        if link not in pdfs and not self.allowed(link):  # robots.txt : PDF interdit
+                            refused.add(link)
+                            report.blocked_by_robots += 1
+                            continue
                         if not pdfs.get(link):
                             pdfs[link] = text
                     elif urlparse(link).netloc == host and link not in seen and not SKIP_RE.search(link):
