@@ -114,7 +114,8 @@ def collect_site(wc: WebCollector, store: DocumentStore, site: SiteConfig, pdf_d
         "bloques_robots": rep.blocked_by_robots,
         "erreurs": rep.errors,
         "duree_s": round(time.monotonic() - t0, 1),
-        "ok": rep.pages_visited > 0,               # aucune page lue : site injoignable ou adresse à revoir
+        # échec : aucune page lue (site injoignable, adresse à revoir) ou page de départ sans lien (site bloqué)
+        "ok": rep.pages_visited > 0 and not rep.start_page_empty,
     }
 
 
@@ -171,5 +172,5 @@ def format_total(report: dict) -> str:
             f" · {t['nouveaux']} nouveaux · {t['telecharges']} téléchargés · {t['bloques_robots']} bloqués"
             f" · {t['erreurs']} erreurs")
     if t["sites_en_echec"]:
-        line += f"\nSites sans aucune page lue : {', '.join(t['sites_en_echec'])}"
+        line += f"\nSites en échec (injoignables ou bloqués) : {', '.join(t['sites_en_echec'])}"
     return line

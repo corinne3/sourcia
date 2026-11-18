@@ -214,6 +214,18 @@ def test_collect_sites_no_download_then_download(settings, tmp_path):
     assert rep["nouveaux"] == 0 and rep["telecharges"] == 1
 
 
+def test_collect_site_flags_blocked_start_page(settings, tmp_path):
+    """Cas réel (idele.fr) : page « Vérification de la connexion… JavaScript est nécessaire », un seul lien externe."""
+    page = resp('<title>Vérification de la connexion...</title><p>JavaScript est nécessaire</p>'
+                '<a href="https://d.cx/x">protégé</a>')
+    wc = WebCollector(settings, fetch=lambda u: page)
+    store = DocumentStore(tmp_path / "documents.jsonl")
+    site = load_sites(_sites(tmp_path, "sites:\n  - {nom: bloque, url: 'https://bloque.org/'}\n"))[0]
+    [rep] = collect_sites(wc, store, [site], tmp_path / "pdfs")
+    assert rep["pages_visitees"] == 1 and not rep["ok"]                       # ✗ et non ✓ avec 0 PDF
+    assert any("protection anti-robots" in e for e in rep["erreurs"])
+
+
 def test_cli_collect_sites(tmp_path, capsys, monkeypatch):
     from sourcia.cli import main
 

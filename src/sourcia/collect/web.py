@@ -96,6 +96,7 @@ class CrawlReport:
     errors: list[str] = field(default_factory=list)
     blocked_by_robots: int = 0
     medias_found: int = 0
+    start_page_empty: bool = False       # page de départ sans lien vers le site : collecte impossible en l'état
 
 
 class WebCollector:
@@ -212,7 +213,12 @@ class WebCollector:
                 if medias:
                     for murl, mtitle, mkind in parse_media(r.text, url):
                         media.setdefault(murl, (mtitle, mkind, url, raw_title))
-                for link, text in parse_links(r.text, url):
+                links = parse_links(r.text, url)
+                if url == start_url and not any(urlparse(link).netloc == host for link, _ in links):
+                    report.start_page_empty = True                 # ex. idele.fr : « JavaScript est nécessaire »
+                    report.errors.append(f"{url} : aucun lien vers {host} sur la page de départ"
+                                         " (protection anti-robots ou site en JavaScript ?)")
+                for link, text in links:
                     if PDF_RE.search(link):
                         add_pdf(link, text, url, _clean_title(raw_title))
                     elif urlparse(link).netloc == host and link not in seen and not SKIP_RE.search(link):
