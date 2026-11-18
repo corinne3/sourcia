@@ -142,7 +142,7 @@ class WebCollector:
 
     # ------------------------------------------------------------------ exploration
     def crawl(self, start_url: str, source: str | None = None, include: str | None = None,
-              medias: bool = False) -> tuple[list[Document], CrawlReport]:
+              medias: bool = False, exclude: str | None = None) -> tuple[list[Document], CrawlReport]:
         """Trouve les PDF d'un site à partir d'une adresse de départ.
 
         ``include`` : expression régulière facultative pour ne garder que certaines pages ou PDF
@@ -150,12 +150,16 @@ class WebCollector:
         sont visitées en premier : avec une limite de pages, l'exploration va d'abord au plus pertinent
         (un plan de site de plusieurs milliers d'adresses est souvent trié par ordre alphabétique).
         Un PDF est gardé si le filtre se retrouve dans son adresse, le texte de son lien, ou l'adresse
-        ou le titre de la page où il a été trouvé (``meta`` : ``page``, ``titre_page``, ``texte_lien``)."""
+        ou le titre de la page où il a été trouvé (``meta`` : ``page``, ``titre_page``, ``texte_lien``).
+
+        ``exclude`` : expression régulière facultative ; les pages et PDF dont l'adresse la contient
+        ne sont ni visités ni listés (ex. ``"edition_summary"`` : sommaires de brochures chez arvalis)."""
         host = urlparse(start_url).netloc
         root = f"{urlparse(start_url).scheme}://{host}"
         source = source or host.removeprefix("www.")
         report = CrawlReport(site=source)
         inc = re.compile(include, re.I) if include else None
+        excl = re.compile(exclude, re.I) if exclude else None
         pdfs: dict[str, dict] = {}                         # adresse du PDF → texte du lien, page, titre de la page
         media: dict[str, tuple] = {}
         first: deque[str] = deque()                        # pages qui passent le filtre : visitées d'abord
@@ -165,10 +169,12 @@ class WebCollector:
 
         def enqueue(url: str, text: str = "") -> None:
             seen.add(url)
+            if excl and excl.search(url):
+                return
             (first if inc and (inc.search(url) or inc.search(text)) else queue).append(url)
 
         def add_pdf(url: str, text: str = "", page: str | None = None, page_title: str = "") -> None:
-            if url in refused:
+            if url in refused or (excl and excl.search(url)):
                 return
             if url not in pdfs and not self.allowed(url):                # robots.txt : PDF interdit
                 refused.add(url)

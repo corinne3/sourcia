@@ -107,6 +107,28 @@ def test_crawl_judges_pdf_by_its_page(settings):
                       "titre_page": "Atlas du maïs fourrage", "texte_lien": "Feuilleter la brochure"}
 
 
+def test_crawl_exclude_skips_pages_and_pdfs(settings):
+    """``exclure`` : ni visité ni listé (ex. les sommaires de brochures d'arvalis)."""
+    site = {
+        "https://ex.org/": resp('<a href="/files/edition_summary/1_s.pdf">Sommaire maïs</a>'
+                                '<a href="/files/essai-mais.pdf">Essai maïs</a><a href="/edition_summary/p">p</a>'
+                                '<a href="/panne">x</a><a href="/suite">s</a>'),
+        "https://ex.org/suite": resp('<a href="/autre">a</a>'),          # liens trouvés APRÈS une page en erreur
+    }
+    visited = []
+
+    def fetch(url):
+        visited.append(url)
+        if url.endswith("/panne"):
+            raise requests.ConnectionError("injoignable")
+        return site.get(url, resp("", 404))
+
+    docs, _ = WebCollector(settings, fetch=fetch).crawl("https://ex.org/", include="mais|maïs", exclude="edition_summary")
+    assert "https://ex.org/autre" in visited                                 # l'exploration continue après l'erreur
+    assert [d.url for d in docs] == ["https://ex.org/files/essai-mais.pdf"]
+    assert not any("edition_summary" in u for u in visited)
+
+
 def test_download_rejects_non_pdf(settings, tmp_path):
     settings.collect.delay_s = 0
     wc = WebCollector(settings, fetch=lambda u: resp("<html>erreur</html>"))
@@ -167,6 +189,7 @@ def test_load_sites_validates(tmp_path):
     for bad, msg in [("sites:\n  - nom: a\n", "url"),
                      ("sites:\n  - {nom: a, url: u}\n  - {nom: a, url: v}\n", "deux fois"),
                      ("sites:\n  - {nom: a, url: u, filtre: '(sorgho'}\n", "filtre invalide"),
+                     ("sites:\n  - {nom: a, url: u, exclure: '[x'}\n", "exclure invalide"),
                      ("notes: []\n", "aucune entrée")]:
         with pytest.raises(ValueError, match=msg):
             load_sites(_sites(tmp_path, bad))

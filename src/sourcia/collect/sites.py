@@ -34,7 +34,8 @@ class SiteConfig(BaseModel):
 
     nom: str                      # nom court, sert aussi de « source » des documents
     url: str                      # adresse de départ de l'exploration
-    filtre: str | None = None     # expression régulière sur l'adresse ou le texte du lien des PDF
+    filtre: str | None = None     # expression régulière : pages visitées d'abord, PDF gardés (adresse, lien, page)
+    exclure: str | None = None    # expression régulière : pages et PDF jamais visités ni listés (adresse)
 
 
 def load_sites(path: Path) -> list[SiteConfig]:
@@ -55,11 +56,12 @@ def load_sites(path: Path) -> list[SiteConfig]:
             raise ValueError(f"{path} : site n° {i} incomplet ou invalide ({champs or exc})") from None
         if site.nom in names:
             raise ValueError(f"{path} : le nom « {site.nom} » apparaît deux fois")
-        if site.filtre:
-            try:
-                re.compile(site.filtre)
-            except re.error as exc:
-                raise ValueError(f"{path} : filtre invalide pour « {site.nom} » ({exc})") from None
+        for champ in ("filtre", "exclure"):
+            if getattr(site, champ):
+                try:
+                    re.compile(getattr(site, champ))
+                except re.error as exc:
+                    raise ValueError(f"{path} : {champ} invalide pour « {site.nom} » ({exc})") from None
         names.add(site.nom)
         sites.append(site)
     return sites
@@ -83,7 +85,7 @@ def collect_site(wc: WebCollector, store: DocumentStore, site: SiteConfig, pdf_d
     rep = CrawlReport(site=site.nom)
     failed_downloads = 0
     try:
-        docs, rep = wc.crawl(site.url, source=site.nom, include=site.filtre)
+        docs, rep = wc.crawl(site.url, source=site.nom, include=site.filtre, exclude=site.exclure)
         rep.pdfs_new = sum(store.add(d) for d in docs)
         store.save()
         if download:
@@ -106,6 +108,7 @@ def collect_site(wc: WebCollector, store: DocumentStore, site: SiteConfig, pdf_d
         "site": site.nom,
         "url": site.url,
         "filtre": site.filtre,
+        "exclure": site.exclure,
         "pages_visitees": rep.pages_visited,
         "pdf_trouves": rep.pdfs_found,
         "nouveaux": rep.pdfs_new,

@@ -1,10 +1,19 @@
 # Sites candidats (à VALIDER par le métier : pertinence, conditions d'utilisation, licences).
-# Usage : sourcia add-site <url> --source <nom> --include "<filtre>"
+# Usage : sourcia collect-sites [--site <nom>] [--no-download] [--max-pages N]
+#    (ou un site à la main : sourcia add-site <url> --source <nom> --include "<filtre>")
 # Les adresses de départ sont des pages d'accueil ou de publications ; vérifier qu'elles répondent.
+#
+# Champs d'un site (nom et url obligatoires, les autres facultatifs) :
+#   nom      nom court, sert aussi de « source » des documents
+#   url      adresse de départ de l'exploration
+#   filtre   expression régulière : pages visitées d'abord ; PDF gardés si elle se retrouve dans
+#            leur adresse, le texte du lien, ou l'adresse ou le titre de la page d'origine
+#   exclure  expression régulière : pages et PDF dont l'adresse la contient, jamais visités ni listés
 sites:
   - nom: arvalis
     url: https://www.arvalis.fr
     filtre: "fourrag|sorgho|prairie|maïs|mais|secheresse|sécheresse"
+    exclure: "edition_summary"          # sommaires de brochures payantes (1 à 4 pages, sans résultats)
   - nom: idele
     url: https://idele.fr
     filtre: "fourrag|prairie|sorgho|autonomie|paturage|pâturage"
@@ -17,3 +26,4 @@ sites:
 notes:
   - "RD Agri (ACTA, CC BY-NC-SA) : passer par le catalogue du Lexicon (sourcia import-catalog) ou le MCP quand il sera documenté."
   - "Respect : robots.txt, 1 requête par seconde au plus, pas de téléchargement massif sans accord."
+  - "idele.fr (novembre 2026) : page « Vérification de la connexion » contre les robots ; collecte automatique impossible, ne pas contourner. Demander un accès ou un export, ou passer par RD Agri."
