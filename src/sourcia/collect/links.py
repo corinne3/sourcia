@@ -142,3 +142,25 @@ def check_links(wc: WebCollector, store: DocumentStore, docs: list[Document], to
     store.save()
     return {"date": datetime.now().isoformat(timespec="seconds"), "verifies": sum(counts.values()), "etats": counts,
             "bloques_robots": blocked, "ignores_prives": skipped, "changements": changes}
+
+
+_LABELS = {"nouveau_mort": "✗ mort", "nouveau_deplace": "↪ déplacé", "revenu": "✓ revenu", "injoignable": "… injoignable"}
+
+
+def format_report(report: dict, max_lines: int = 30) -> str:
+    """Résumé lisible : les états, puis ce qui a changé depuis la dernière vérification."""
+    e = report["etats"]
+    lines = [f"Résultat : {e['ok']} ok · {e['moved']} déplacés · {e['dead']} morts · {e['unreachable']} injoignables"
+             f" · {report['bloques_robots']} bloqués (robots.txt) · {report['ignores_prives']} privés ignorés"]
+    changes = sorted(report["changements"], key=lambda c: list(_LABELS).index(c["changement"]))
+    if not changes:
+        lines.append("Aucun changement depuis la dernière vérification.")
+    else:
+        lines.append(f"Changements depuis la dernière vérification ({len(changes)}) :")
+        for c in changes[:max_lines]:
+            where = f"→ {c['nouvelle_url']}" if c["changement"] == "nouveau_deplace" else f"← {c['url']}"
+            detail = f"  ({c['detail']})" if c["detail"] and c["changement"] != "nouveau_deplace" else ""
+            lines.append(f"  {_LABELS[c['changement']]:<14} [{c['source']}] {c['titre'][:60]}  {where[:110]}{detail}")
+        if len(changes) > max_lines:
+            lines.append(f"  … et {len(changes) - max_lines} autres (voir le rapport JSON)")
+    return "\n".join(lines)

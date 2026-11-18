@@ -1,6 +1,7 @@
 """Ligne de commande SourcIA : une commande par étape, pour tester module par module.
 
 Chaque jour :   ``sourcia collect-sites``  (sites de config/sites.yaml : exploration + nouveaux PDF + rapport)
+                ``sourcia check-links``    (liens du catalogue : déplacés, morts, injoignables + rapport)
 Ordre normal :  add-site / add-folder / import-catalog  →  download  →  extract  →  qualify  →  index
                 →  search / select  →  (eval)
 Puis (M7) :     ``sourcia formation``  (support de formation à partir de la dernière sélection exportée)
@@ -149,6 +150,28 @@ def cmd_collect_sites(args) -> None:
     print(f"Rapport : {path}")
     if report["total"]["sites_en_echec"]:
         sys.exit(1)                                    # pour un lancement automatique : signaler le problème
+
+
+def cmd_check_links(args) -> None:
+    from sourcia.collect.links import check_links, format_report
+    from sourcia.collect.sites import write_report
+    from sourcia.collect.web import WebCollector
+
+    ctx = _ctx(args)
+    states = {s.strip() for s in (args.etat or "").split(",") if s.strip()}
+    docs = [d for d in ctx.store if not d.private and d.url.startswith(("http://", "https://"))
+            and (not args.source or d.source in args.source)
+            and (not states or (d.link.state if d.link else "jamais") in states)]
+    if args.limit:
+        docs = docs[: args.limit]
+    print(f"Vérification de {len(docs)} liens (en-têtes seulement, rien n'est téléchargé ;"
+          f" {ctx.settings.collect.delay_s} s entre deux requêtes, robots.txt respecté)…")
+    report = check_links(WebCollector(ctx.settings), ctx.store, docs,
+                         progress=lambda i, n, d: _bar(i, n, d.title))
+    report["options"] = {"sources": args.source, "etat": sorted(states) or None, "limit": args.limit}
+    path = write_report(report, ctx.settings.data / "liens")
+    print("\n" + format_report(report))
+    print(f"Rapport : {path}")
 
 
 def cmd_add_folder(args) -> None:
@@ -648,6 +671,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--no-download", action="store_true", help="lister seulement (pas de téléchargement)")
     sp.add_argument("--max-pages", type=int, help="pages HTML visitées au maximum par site")
     sp.add_argument("--sites-file", default="config/sites.yaml", help="liste des sites (défaut : config/sites.yaml)")
+
+    sp = add("check-links", cmd_check_links,
+             "M1 : vérifier les liens du catalogue (déplacés, morts, injoignables) sans rien télécharger")
+    sp.add_argument("--source", action="append", help="seulement cette source (ex. arvalis) ; répétable")
+    sp.add_argument("--etat", help="seulement ces états : ok,moved,dead,unreachable,jamais (jamais vérifiés)")
+    sp.add_argument("--limit", type=int, help="nombre de liens au plus")
 
     sp = add("add-folder", cmd_add_folder, "M1 : ajouter un dossier de documents (privés par défaut)")
     sp.add_argument("folder")

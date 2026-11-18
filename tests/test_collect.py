@@ -463,3 +463,28 @@ def test_check_links_report_and_moved_doc_followed(settings, tmp_path):
     finally:
         PROBES.clear()
         PROBES.update(PROBES_BACKUP)
+
+
+def test_cli_check_links(tmp_path, capsys, monkeypatch):
+    from sourcia.cli import main
+
+    cfg = tmp_path / "t.yaml"
+    cfg.write_text((ROOT / "config/test.yaml").read_text(encoding="utf-8").replace("data/test-run", str(tmp_path / "d")),
+                   encoding="utf-8")
+    store = DocumentStore(tmp_path / "d" / "documents.jsonl")
+    for d in (doc("ok.pdf"), doc("ancien.pdf"), doc("supprime.pdf")):
+        store.add(d)
+    store.save()
+    monkeypatch.setattr(requests.Session, "get", lambda self, url, timeout=None: resp("", 404))      # robots.txt absent
+    monkeypatch.setattr(requests.Session, "request",
+                        lambda self, method, url, **kw: PROBES.get(url, hresp(404)))
+    main(["-c", str(cfg), "check-links"])
+    out = capsys.readouterr().out
+    assert "1 ok · 1 déplacés · 1 morts" in out and "✗ mort" in out and "→ https://ex.org/nouveau.pdf" in out
+    report = json.loads((tmp_path / "d" / "liens" / "dernier.json").read_text(encoding="utf-8"))
+    assert report["etats"]["dead"] == 1 and len(report["changements"]) == 2
+    main(["-c", str(cfg), "check-links", "--etat", "dead"])                       # revérifier seulement les morts
+    out = capsys.readouterr().out
+    assert "Vérification de 1 liens" in out and "Aucun changement" in out
+    links = {d.url.rsplit("/", 1)[1]: d.link.state for d in DocumentStore(tmp_path / "d" / "documents.jsonl")}
+    assert links == {"ok.pdf": "ok", "ancien.pdf": "moved", "supprime.pdf": "dead"}
