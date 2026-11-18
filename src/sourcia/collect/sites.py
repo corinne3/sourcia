@@ -23,6 +23,7 @@ from typing import Callable
 import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError
 
+from sourcia.collect.links import relink_by_content
 from sourcia.collect.store import DocumentStore
 from sourcia.collect.web import CrawlReport, WebCollector, _short_error
 
@@ -87,6 +88,7 @@ def collect_site(wc: WebCollector, store: DocumentStore, site: SiteConfig, pdf_d
     t0 = time.monotonic()
     rep = CrawlReport(site=site.nom)
     failed_downloads = 0
+    relinked: list = []
     try:
         pages_dir = pdf_dir.parent / "pages" if download else None
         docs, rep = wc.crawl(site.url, source=site.nom, include=site.filtre, exclude=site.exclure,
@@ -112,7 +114,8 @@ def collect_site(wc: WebCollector, store: DocumentStore, site: SiteConfig, pdf_d
                 else:
                     failed_downloads += 1
                     rep.errors.append(f"{d.url} : {d.error}")
-            store.save()
+        relinked = relink_by_content(store)        # liens morts dont le contenu est retrouvé ailleurs
+        store.save()
     except Exception as exc:                       # un site en panne n'arrête pas la collecte
         rep.errors.append(f"{site.url} : {_short_error(exc)}")
         store.save()
@@ -127,6 +130,7 @@ def collect_site(wc: WebCollector, store: DocumentStore, site: SiteConfig, pdf_d
         "nouveaux": rep.pdfs_new,
         "telecharges": rep.downloaded,
         "echecs_telechargement": failed_downloads,
+        "deplaces_retrouves": [{"id": old.id, "ancienne_url": old.url, "nouvelle_url": new.url} for old, new in relinked],
         "bloques_robots": rep.blocked_by_robots,
         "erreurs": rep.errors,
         "duree_s": round(time.monotonic() - t0, 1),
@@ -177,7 +181,9 @@ def format_site(rep: dict, max_errors: int = 5) -> str:
             f" · {rep['articles_trouves']} articles"
             f" · {rep['nouveaux']} nouveaux · {rep['telecharges']} téléchargés"
             f" · {rep['bloques_robots']} bloqués (robots.txt) · {len(rep['erreurs'])} erreurs · {rep['duree_s']} s")
-    lines = [line] + [f"      ⚠ {e[:150]}" for e in rep["erreurs"][:max_errors]]
+    lines = [line] + [f"      ↪ déplacé (même contenu) : {m['ancienne_url'][:70]} → {m['nouvelle_url'][:70]}"
+                      for m in rep.get("deplaces_retrouves", [])]
+    lines += [f"      ⚠ {e[:150]}" for e in rep["erreurs"][:max_errors]]
     if len(rep["erreurs"]) > max_errors:
         lines.append(f"      … et {len(rep['erreurs']) - max_errors} autres (voir le rapport JSON)")
     return "\n".join(lines)

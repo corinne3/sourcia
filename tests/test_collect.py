@@ -488,3 +488,28 @@ def test_cli_check_links(tmp_path, capsys, monkeypatch):
     assert "Vérification de 1 liens" in out and "Aucun changement" in out
     links = {d.url.rsplit("/", 1)[1]: d.link.state for d in DocumentStore(tmp_path / "d" / "documents.jsonl")}
     assert links == {"ok.pdf": "ok", "ancien.pdf": "moved", "supprime.pdf": "dead"}
+
+
+def test_collect_site_relinks_dead_doc_by_content(settings, tmp_path):
+    """Un PDF mort (404) réapparaît, identique, à une autre adresse : l'ancien document devient « déplacé »."""
+    import hashlib
+
+    from sourcia.collect.sites import format_site
+    from sourcia.core.models import LinkCheck
+
+    store = DocumentStore(tmp_path / "documents.jsonl")
+    old = doc("vieux-dossier/sorgho-2023.pdf", sha1=hashlib.sha1(b"%PDF-1.4 fake").hexdigest(), status="extracted",
+              link=LinkCheck(state="dead", checked_at="2026-11-17", http_status=404, detail="HTTP 404"))
+    other_dead = doc("autre.pdf", sha1="0" * 40, link=LinkCheck(state="dead", checked_at="2026-11-17"))
+    store.add(old)
+    store.add(other_dead)
+    wc = WebCollector(settings, fetch=fake_fetch2)
+    site = load_sites(_sites(tmp_path, "sites:\n  - {nom: ex, url: 'https://ex.org/', filtre: sorgho}\n"))[0]
+    [rep] = collect_sites(wc, store, [site], tmp_path / "pdfs")
+    assert rep["deplaces_retrouves"] == [{"id": old.id, "ancienne_url": old.url,
+                                          "nouvelle_url": "https://ex.org/docs/sorgho-2023.pdf"}]
+    assert old.link.state == "moved" and old.current_url == "https://ex.org/docs/sorgho-2023.pdf"
+    assert "même contenu" in old.link.detail and old.status == "extracted"     # fiche et texte gardés
+    assert other_dead.link.state == "dead"                                      # contenu jamais retrouvé
+    assert "↪ déplacé (même contenu)" in format_site(rep)
+    assert DocumentStore(tmp_path / "documents.jsonl").get(old.id).link.state == "moved"

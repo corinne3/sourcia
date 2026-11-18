@@ -144,6 +144,27 @@ def check_links(wc: WebCollector, store: DocumentStore, docs: list[Document], to
             "bloques_robots": blocked, "ignores_prives": skipped, "changements": changes}
 
 
+
+def relink_by_content(store: DocumentStore, today: str | None = None) -> list[tuple[Document, Document]]:
+    """Document mort dont le contenu exact (même ``sha1``) existe à une autre adresse : « déplacé » vers elle.
+
+    Cas typique : un site réorganise ses dossiers, l'ancienne adresse donne 404, et la collecte du jour
+    télécharge le même fichier à sa nouvelle adresse. Renvoie les paires (ancien, nouveau)."""
+    today = today or date.today().isoformat()
+    alive: dict[str, Document] = {}
+    for d in store:
+        if d.sha1 and not (d.link and d.link.state == "dead"):
+            alive.setdefault(d.sha1, d)
+    pairs = []
+    for d in store:
+        new = alive.get(d.sha1) if d.sha1 and d.link and d.link.state == "dead" else None
+        if new is not None and new.url != d.url:
+            was = f" ; avant : {d.link.detail}" if d.link.detail else ""
+            d.link = LinkCheck(state="moved", checked_at=today, new_url=new.url,
+                               detail=f"même contenu retrouvé à une nouvelle adresse{was}")
+            pairs.append((d, new))
+    return pairs
+
 _LABELS = {"nouveau_mort": "✗ mort", "nouveau_deplace": "↪ déplacé", "revenu": "✓ revenu", "injoignable": "… injoignable"}
 
 
