@@ -141,7 +141,9 @@ class WebCollector:
         """Trouve les PDF d'un site à partir d'une adresse de départ.
 
         ``include`` : expression régulière facultative pour ne garder que certaines pages ou PDF
-        (ex. ``"fourrage|prairie|sorgho"``)."""
+        (ex. ``"fourrage|prairie|sorgho"``). Les pages dont l'adresse ou le texte du lien la contient
+        sont visitées en premier : avec une limite de pages, l'exploration va d'abord au plus pertinent
+        (un plan de site de plusieurs milliers d'adresses est souvent trié par ordre alphabétique)."""
         host = urlparse(start_url).netloc
         root = f"{urlparse(start_url).scheme}://{host}"
         source = source or host.removeprefix("www.")
@@ -149,9 +151,15 @@ class WebCollector:
         inc = re.compile(include, re.I) if include else None
         pdfs: dict[str, str] = {}
         media: dict[str, tuple] = {}
+        first: deque[str] = deque()                        # pages qui passent le filtre : visitées d'abord
         queue: deque[str] = deque([start_url])
         seen: set[str] = {start_url}
         refused: set[str] = set()                          # PDF interdits par robots.txt (comptés une fois)
+
+        def enqueue(url: str, text: str = "") -> None:
+            seen.add(url)
+            (first if inc and (inc.search(url) or inc.search(text)) else queue).append(url)
+
         with span("collect.crawl", site=source):
             self.allowed(start_url)
             for sm in self.sitemaps(root):                    # 1. plans de site
@@ -165,11 +173,10 @@ class WebCollector:
                             continue
                         pdfs.setdefault(url, "")
                     elif urlparse(url).netloc == host and url not in seen:
-                        seen.add(url)
-                        queue.append(url)
-            while queue and report.pages_visited < self.cfg.max_pages_per_site \
+                        enqueue(url)
+            while (first or queue) and report.pages_visited < self.cfg.max_pages_per_site \
                     and len(pdfs) < self.cfg.max_pdfs_per_site:             # 2. exploration
-                url = queue.popleft()
+                url = first.popleft() if first else queue.popleft()
                 if not self.allowed(url):
                     report.blocked_by_robots += 1
                     continue
@@ -202,8 +209,7 @@ class WebCollector:
                         if not pdfs.get(link):
                             pdfs[link] = text
                     elif urlparse(link).netloc == host and link not in seen and not SKIP_RE.search(link):
-                        seen.add(link)
-                        queue.append(link)
+                        enqueue(link, text)
         docs = []
         for url, text in list(pdfs.items())[: self.cfg.max_pdfs_per_site]:
             if inc and not (inc.search(url) or inc.search(text or "")):

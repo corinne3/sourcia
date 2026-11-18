@@ -62,6 +62,28 @@ def test_crawl_notes_dead_links_and_skips_forbidden_pdfs(settings):
     assert "https://ex.org/prive/secret.pdf" not in {d.url for d in docs}  # PDF interdit par robots.txt : pas listé
     assert rep.blocked_by_robots == 1
 
+
+def test_crawl_visits_matching_pages_first(settings):
+    """Plan de site trié par ordre alphabétique : avec une limite de pages, la page « sorgho » passe d'abord."""
+    site = {
+        "https://ex.org/sitemap.xml": resp("<urlset>" + "".join(f"<url><loc>https://ex.org/{p}</loc></url>"
+                                           for p in ("a-porc", "b-ble", "z-sorgho")) + "</urlset>", ctype="text/xml"),
+        "https://ex.org/z-sorgho": resp('<a href="/docs/essai.pdf">Essai 2023</a>'),
+    }
+    visited = []
+
+    def fetch(url):
+        visited.append(url)
+        return site.get(url, resp("<p>rien</p>"))
+
+    settings.collect.max_pages_per_site = 1
+    wc = WebCollector(settings, fetch=fetch)
+    docs, rep = wc.crawl("https://ex.org/", include="sorgho|essai")
+    pages = [u for u in visited if not u.endswith((".txt", ".xml"))]
+    assert pages == ["https://ex.org/z-sorgho"] and rep.pages_visited == 1
+    assert [d.url for d in docs] == ["https://ex.org/docs/essai.pdf"]
+
+
 def test_download_rejects_non_pdf(settings, tmp_path):
     settings.collect.delay_s = 0
     wc = WebCollector(settings, fetch=lambda u: resp("<html>erreur</html>"))
