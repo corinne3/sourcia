@@ -102,12 +102,16 @@ class CrawlReport:
 
 
 class WebCollector:
-    def __init__(self, settings, fetch: Callable[[str], requests.Response] | None = None):
+    def __init__(self, settings, fetch: Callable[[str], requests.Response] | None = None,
+                 probe: Callable[[str, str], requests.Response] | None = None):
         self.cfg = settings.collect
         self.settings = settings
         self.session = requests.Session()
         self.session.headers["User-Agent"] = self.cfg.user_agent
         self._fetch = fetch or (lambda url: self.session.get(url, timeout=self.cfg.timeout_s))
+        # en-têtes seulement (vérification des liens) : pas de redirection suivie, corps non téléchargé
+        self._probe = probe or (lambda url, method: self.session.request(
+            method, url, timeout=self.cfg.timeout_s, allow_redirects=False, stream=True))
         self._last: dict[str, float] = {}
         self._robots: dict[str, urllib.robotparser.RobotFileParser | None] = {}
 
@@ -121,6 +125,14 @@ class WebCollector:
     def get(self, url: str):
         self._wait(urlparse(url).netloc)
         return self._fetch(url)
+
+    def probe(self, url: str, method: str = "HEAD"):
+        """Réponse sans le contenu (``HEAD``, ou ``GET`` interrompu) : statut et en-têtes, poliment."""
+        self._wait(urlparse(url).netloc)
+        r = self._probe(url, method)
+        if hasattr(r, "close"):
+            r.close()                                  # GET en flux : on ne lit pas le corps
+        return r
 
     def allowed(self, url: str) -> bool:
         if not self.cfg.respect_robots:

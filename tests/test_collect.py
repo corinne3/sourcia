@@ -367,3 +367,99 @@ def test_collect_site_articles_then_extract(settings, tmp_path):
     assert rep["nouveaux"] == 0 and list(store)[0].status == "extracted"
     with pytest.raises(ValueError, match="articles invalide"):
         load_sites(_sites(tmp_path, "sites:\n  - {nom: a, url: u, articles: '(x'}\n"))
+
+
+# ---------------------------------------------------------------------------- suivi des liens (check-links)
+def hresp(status=200, ctype="application/pdf", location=None):
+    headers = {"content-type": ctype} | ({"location": location} if location else {})
+    return SimpleNamespace(status_code=status, headers=headers, text="", content=b"")
+
+
+ROBOTS = resp("User-agent: *\nDisallow: /prive/\n", ctype="text/plain")
+PROBES = {
+    "https://ex.org/ok.pdf": hresp(),
+    "https://ex.org/ancien.pdf": hresp(301, location="/nouveau.pdf"),
+    "https://ex.org/nouveau.pdf": hresp(),
+    "https://ex.org/supprime.pdf": hresp(404),
+    "https://ex.org/vers-accueil.pdf": hresp(302, location="https://ex.org/"),
+    "https://ex.org/": hresp(ctype="text/html; charset=utf-8"),
+    "https://ex.org/article": hresp(ctype="text/html"),
+    "https://ex.org/telecharger.pdf": hresp(302, location="https://cdn.ex.org/f.pdf?signature=abc&expire=1"),
+    "https://cdn.ex.org/f.pdf?signature=abc&expire=1": hresp(),
+}
+
+
+def link_collector(settings, down=(), no_head=()):
+    def probe(url, method):
+        if url in down:
+            raise requests.ConnectionError("Max retries exceeded")
+        if url in no_head and method == "HEAD":
+            return hresp(405)
+        return PROBES.get(url, hresp(404))
+    return WebCollector(settings, fetch=lambda u: ROBOTS if u.endswith("robots.txt") else resp("", 404), probe=probe)
+
+
+def doc(path, **kw):
+    url = "https://ex.org/" + path
+    return Document(id=doc_id_for(url), url=url, source="ex", **kw)
+
+
+def test_check_document_rules(settings):
+    from sourcia.collect.links import Blocked, check_document
+
+    wc = link_collector(settings, no_head={"https://ex.org/ok.pdf"})
+    assert check_document(wc, doc("ok.pdf"), "2026-11-18").state == "ok"           # HEAD refusé → GET
+    moved = check_document(wc, doc("ancien.pdf"), "2026-11-18")
+    assert moved.state == "moved" and moved.new_url == "https://ex.org/nouveau.pdf" and moved.detail == "redirection 301"
+    temp = check_document(wc, doc("telecharger.pdf"), "2026-11-18")              # lien signé qui expire : on garde l'origine
+    assert temp.state == "ok" and temp.new_url is None and "redirection temporaire" in temp.detail
+    gone = check_document(wc, doc("supprime.pdf"), "2026-11-18")
+    assert gone.state == "dead" and gone.http_status == 404 and gone.since == "2026-11-18"
+    soft = check_document(wc, doc("vers-accueil.pdf"), "2026-11-18")             # cas réel arvalis : HTML au lieu du PDF
+    assert soft.state == "dead" and "page HTML à la place du PDF" in soft.detail
+    assert check_document(wc, doc("article", kind="page"), "2026-11-18").state == "ok"   # une page HTML, c'est normal
+    assert check_document(wc, doc("x.pdf", private=True), "2026-11-18") is None
+    with pytest.raises(Blocked):
+        check_document(wc, doc("prive/x.pdf"), "2026-11-18")
+
+
+def test_check_links_three_failures_then_back(settings, tmp_path):
+    from sourcia.collect.links import check_links
+
+    store = DocumentStore(tmp_path / "documents.jsonl")
+    d = doc("ok.pdf")
+    store.add(d)
+    down = link_collector(settings, down={"https://ex.org/ok.pdf"})
+    states = []
+    for day in ("2026-11-18", "2026-11-19", "2026-11-20"):
+        rep = check_links(down, store, [d], today=day)
+        states.append((d.link.state, d.link.failures, rep["changements"][0]["changement"] if rep["changements"] else None))
+    assert states == [("unreachable", 1, "injoignable"), ("unreachable", 2, None), ("dead", 3, "nouveau_mort")]
+    assert d.link.since == "2026-11-18" and "3 vérifications de suite" in d.link.detail
+    rep = check_links(link_collector(settings), store, [d], today="2026-11-21")   # le site remarche
+    assert d.link.state == "ok" and d.link.failures == 0 and rep["changements"][0]["changement"] == "revenu"
+    assert DocumentStore(tmp_path / "documents.jsonl").get(d.id).link.state == "ok"   # enregistré dans le catalogue
+
+
+def test_check_links_report_and_moved_doc_followed(settings, tmp_path):
+    from sourcia.collect.links import check_links
+
+    store = DocumentStore(tmp_path / "documents.jsonl")
+    docs = [doc("ok.pdf"), doc("ancien.pdf"), doc("supprime.pdf"), doc("prive/x.pdf"), doc("p.pdf", private=True)]
+    for d in docs:
+        store.add(d)
+    wc = link_collector(settings)
+    rep = check_links(wc, store, docs, today="2026-11-18")
+    assert rep["etats"] == {"ok": 1, "moved": 1, "dead": 1, "unreachable": 0}
+    assert rep["bloques_robots"] == 1 and rep["ignores_prives"] == 1 and rep["verifies"] == 3
+    assert {c["changement"] for c in rep["changements"]} == {"nouveau_deplace", "nouveau_mort"}
+    rep = check_links(wc, store, docs, today="2026-11-19")                        # rien n'a changé
+    assert rep["changements"] == [] and docs[1].current_url == "https://ex.org/nouveau.pdf"
+    PROBES_BACKUP = dict(PROBES)
+    try:                                                                           # la nouvelle adresse meurt à son tour
+        PROBES["https://ex.org/nouveau.pdf"] = hresp(404)
+        rep = check_links(wc, store, [docs[1]], today="2026-11-20")
+        assert docs[1].link.state == "dead" and docs[1].current_url == docs[1].url
+    finally:
+        PROBES.clear()
+        PROBES.update(PROBES_BACKUP)
