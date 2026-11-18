@@ -1,4 +1,5 @@
 """M1 Collecte : magasin de documents, exploration d'un site (réseau simulé), dossiers, catalogues."""
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -166,3 +167,25 @@ def test_collect_sites_no_download_then_download(settings, tmp_path):
     assert {d.status for d in store} == {"listed"}
     [rep] = collect_sites(wc, store, sites, tmp_path / "pdfs")                # les PDF en attente sont téléchargés
     assert rep["nouveaux"] == 0 and rep["telecharges"] == 1
+
+
+def test_cli_collect_sites(tmp_path, capsys, monkeypatch):
+    from sourcia.cli import main
+
+    cfg = tmp_path / "t.yaml"
+    cfg.write_text((ROOT / "config/test.yaml").read_text(encoding="utf-8").replace("data/test-run", str(tmp_path / "d")),
+                   encoding="utf-8")
+    monkeypatch.setattr(requests.Session, "get", lambda self, url, timeout=None: fake_fetch2(url))
+    sites = _sites(tmp_path)
+    main(["-c", str(cfg), "collect-sites", "--sites-file", str(sites), "--site", "ex", "--max-pages", "5"])
+    out = capsys.readouterr().out
+    assert "✓ ex : " in out and "2 nouveaux" in out and "Rapport :" in out
+    report = json.loads((tmp_path / "d" / "collecte" / "dernier.json").read_text(encoding="utf-8"))
+    assert report["options"]["max_pages"] == 5 and report["total"]["nouveaux"] == 2
+    assert [s["site"] for s in report["sites"]] == ["ex"]
+    assert len(list((tmp_path / "d" / "collecte").glob("rapport-*.json"))) == 1
+    with pytest.raises(SystemExit) as exc:                                    # un site sans page lue → code 1
+        main(["-c", str(cfg), "collect-sites", "--sites-file", str(sites), "--no-download"])
+    assert exc.value.code == 1 and "panne" in capsys.readouterr().out
+    with pytest.raises(SystemExit, match="site inconnu"):
+        main(["-c", str(cfg), "collect-sites", "--sites-file", str(sites), "--site", "inconnu"])
