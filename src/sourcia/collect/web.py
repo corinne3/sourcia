@@ -9,6 +9,7 @@ Politesse : robots.txt respecté, un délai entre deux requêtes, un User-Agent 
 """
 from __future__ import annotations
 
+import html
 import re
 import time
 import urllib.robotparser
@@ -285,7 +286,7 @@ def _short_error(exc: Exception) -> str:
 
 def _page_title(html_text: str) -> str:
     m = re.search(r"(?is)<title[^>]*>(.*?)</title>", html_text or "")
-    return " ".join(m.group(1).split())[:200] if m else ""
+    return " ".join(html.unescape(m.group(1)).split())[:200] if m else ""     # « d&#039;agriculture » → « d'agriculture »
 
 
 def _generic_link(text: str) -> bool:

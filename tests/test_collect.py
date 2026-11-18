@@ -39,6 +39,12 @@ def test_parse_helpers():
     assert subs == ["https://ex.org/s1.xml"] and pages == []
 
 
+def test_page_title_decodes_html_entities():
+    from sourcia.collect.web import _page_title
+
+    assert _page_title("<title>Chambre d&#039;agriculture &amp; climat</title>") == "Chambre d'agriculture & climat"
+
+
 def test_crawl_respects_robots_and_finds_pdfs(settings, tmp_path):
     settings.collect.delay_s = 0
     wc = WebCollector(settings, fetch=fake_fetch)
