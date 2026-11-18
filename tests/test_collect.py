@@ -147,6 +147,20 @@ def test_store_merge_and_duplicates(tmp_path):
     assert len(DocumentStore(tmp_path / "documents.jsonl")) == 2
 
 
+def test_document_link_field_is_optional_and_compatible():
+    """Contrat documents.jsonl : une ligne écrite avant le champ « link » se lit toujours."""
+    from sourcia.core.models import LinkCheck
+
+    old_line = '{"id": "abc", "url": "https://ex.org/a.pdf", "source": "ex", "status": "downloaded"}'
+    d = Document.model_validate_json(old_line)
+    assert d.link is None and d.current_url == "https://ex.org/a.pdf"
+    d.link = LinkCheck(state="moved", checked_at="2026-11-18", http_status=301, new_url="https://ex.org/b.pdf")
+    again = Document.model_validate_json(d.model_dump_json())
+    assert again.link == d.link and again.current_url == "https://ex.org/b.pdf" and again.url == "https://ex.org/a.pdf"
+    again.link = LinkCheck(state="dead", checked_at="2026-11-18", http_status=404)
+    assert again.current_url == "https://ex.org/a.pdf"                     # mort : pas de nouvelle adresse
+
+
 def test_import_catalog_guesses_columns(tmp_path):
     p = tmp_path / "cat.csv"
     p.write_text("Titre;Lien;Année;Mots-clés\nSorgho;https://x.org/a.pdf;2021;sorgho, sécheresse\nSans;;;\n",
