@@ -1,7 +1,12 @@
 """M1 Collecte : magasin de documents, exploration d'un site (réseau simulé), dossiers, catalogues."""
 from types import SimpleNamespace
 
+import pytest
+import requests
+
+from conftest import ROOT
 from sourcia.collect.catalog import import_catalog
+from sourcia.collect.sites import collect_sites, load_sites, select_sites
 from sourcia.collect.store import DocumentStore
 from sourcia.collect.web import WebCollector, parse_links, parse_sitemap
 from sourcia.core.models import Document, doc_id_for
@@ -80,3 +85,84 @@ def test_import_catalog_guesses_columns(tmp_path):
     docs, skipped = import_catalog(p, "rdagri")
     assert skipped == 1 and docs[0].title == "Sorgho" and docs[0].date == "2021"
     assert docs[0].keywords == ["sorgho", "sécheresse"]
+
+
+# ---------------------------------------------------------------------------- collect-sites (config/sites.yaml)
+SITES_YAML = """sites:
+  - nom: ex
+    url: https://ex.org/
+    filtre: "sorgho|porc"
+  - nom: panne
+    url: https://panne.org/
+notes:
+  - "une note"
+"""
+
+SITE2 = dict(SITE)
+SITE2["https://ex.org/"] = resp('<a href="/pub">Publications</a><a href="/prive/x">x</a><a href="/vieux">v</a>')
+
+
+def fake_fetch2(url):
+    if "panne.org" in url:
+        raise requests.ConnectionError("Max retries exceeded")
+    return SITE2.get(url, resp("", 404))
+
+
+def _sites(tmp_path, text=SITES_YAML):
+    p = tmp_path / "sites.yaml"
+    p.write_text(text, encoding="utf-8")
+    return p
+
+
+def test_load_sites_validates(tmp_path):
+    sites = load_sites(_sites(tmp_path))
+    assert [s.nom for s in sites] == ["ex", "panne"] and sites[1].filtre is None
+    assert len(load_sites(ROOT / "config" / "sites.yaml")) >= 4                # le vrai fichier est valide
+    for bad, msg in [("sites:\n  - nom: a\n", "url"),
+                     ("sites:\n  - {nom: a, url: u}\n  - {nom: a, url: v}\n", "deux fois"),
+                     ("sites:\n  - {nom: a, url: u, filtre: '(sorgho'}\n", "filtre invalide"),
+                     ("notes: []\n", "aucune entrée")]:
+        with pytest.raises(ValueError, match=msg):
+            load_sites(_sites(tmp_path, bad))
+
+
+def test_select_sites(tmp_path):
+    sites = load_sites(_sites(tmp_path))
+    assert [s.nom for s in select_sites(sites, ["panne"])] == ["panne"]
+    assert select_sites(sites, None) == sites
+    with pytest.raises(ValueError, match="disponibles : ex, panne"):
+        select_sites(sites, ["arvalis"])
+
+
+def test_collect_sites_report_new_then_nothing_new(settings, tmp_path):
+    wc = WebCollector(settings, fetch=fake_fetch2)
+    store = DocumentStore(tmp_path / "documents.jsonl")
+    sites = load_sites(_sites(tmp_path))
+    seen = []
+    ex, panne = collect_sites(wc, store, sites, tmp_path / "pdfs", progress=lambda s, r: seen.append((s.nom, r is None)))
+    assert seen == [("ex", True), ("ex", False), ("panne", True), ("panne", False)]
+    # site ex : 2 PDF retenus par le filtre (secret.pdf interdit par robots.txt n'est pas listé)
+    assert ex["ok"] and ex["pdf_trouves"] == 2 and ex["nouveaux"] == 2
+    assert ex["telecharges"] == 1 and ex["echecs_telechargement"] == 1       # porc.pdf : 404 au téléchargement
+    assert ex["bloques_robots"] == 2                                          # /prive/x et /prive/secret.pdf
+    assert any("/vieux : HTTP 404" in e for e in ex["erreurs"])               # lien mort sur une page
+    assert any("porc.pdf" in e and "HTTP 404" in e for e in ex["erreurs"])
+    assert {d.source for d in store} == {"ex"}                                # source = nom dans sites.yaml
+    # site en panne : n'arrête pas la collecte, signalé
+    assert not panne["ok"] and panne["pages_visitees"] == 0 and panne["erreurs"]
+    # le catalogue est enregistré
+    assert len(DocumentStore(tmp_path / "documents.jsonl")) == 2
+    # second passage : rien de nouveau, rien à retélécharger
+    ex2, _ = collect_sites(wc, store, sites, tmp_path / "pdfs")
+    assert ex2["pdf_trouves"] == 2 and ex2["nouveaux"] == 0 and ex2["telecharges"] == 0
+
+
+def test_collect_sites_no_download_then_download(settings, tmp_path):
+    wc = WebCollector(settings, fetch=fake_fetch2)
+    store = DocumentStore(tmp_path / "documents.jsonl")
+    sites = select_sites(load_sites(_sites(tmp_path)), ["ex"])
+    [rep] = collect_sites(wc, store, sites, tmp_path / "pdfs", download=False)
+    assert rep["nouveaux"] == 2 and rep["telecharges"] == 0 and not (tmp_path / "pdfs").exists()
+    assert {d.status for d in store} == {"listed"}
+    [rep] = collect_sites(wc, store, sites, tmp_path / "pdfs")                # les PDF en attente sont téléchargés
+    assert rep["nouveaux"] == 0 and rep["telecharges"] == 1
