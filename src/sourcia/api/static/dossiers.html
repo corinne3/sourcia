@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dossiers pédagogiques · SourcIA</title>
+<link rel="stylesheet" href="/assets/sourcia.css">
+</head>
+<body class="folders">
+<header class="page-header"><div class="header-content">
+  <a href="/">SourcIA</a>
+  <h1>Dossiers pédagogiques</h1>
+</div></header>
+<main>
+<form id="login">
+  <label>Jeton enseignant <input id="token" type="password" required autocomplete="off"></label>
+  <button>Accéder à mes dossiers</button>
+</form>
+<p id="message" role="status" aria-live="polite"></p>
+<div id="workspace" hidden>
+  <section>
+    <h2>Mes dossiers</h2>
+    <form id="create">
+      <label>Nom (facultatif) <input name="title" maxlength="200"></label>
+      <button>Créer un dossier</button>
+    </form>
+    <div class="folder-actions">
+      <label>Dossier ouvert <select id="folders"></select></label>
+      <button id="logout" class="secondary" type="button">Se déconnecter</button>
+    </div>
+  </section>
+  <div id="detail" hidden>
+    <section id="imports">
+      <h2>Ajouter une source</h2>
+      <form id="search"><label>Recherche dans le catalogue <input name="q" required></label><button>Rechercher</button></form>
+      <ul id="results"></ul>
+      <form id="upload"><label>PDF personnel <input name="file" type="file" accept=".pdf,application/pdf" required></label><button>Ajouter le PDF</button></form>
+    </section>
+    <section>
+      <h2>Documents du dossier</h2>
+      <p id="notification" role="status" aria-live="polite"></p>
+      <form id="filters">
+        <label>Recherche <input name="q"></label>
+        <label>Type <select name="kind"><option value="">Tous</option><option value="pdf">PDF</option><option value="page">Page web</option><option value="video">Vidéo</option></select></label>
+        <label>État <select name="status"><option value="">Tous</option><option value="en_attente">En attente</option><option value="traitement">En cours</option><option value="pret">Prêt</option><option value="erreur">Erreur</option></select></label>
+        <label>Tri <select name="sort"><option value="ajout">Ordre d’ajout</option><option value="titre">Titre</option><option value="date">Date</option></select></label>
+        <button>Appliquer</button>
+      </form>
+      <ul id="documents"></ul>
+      <h3>Connaissances du corpus sélectionné</h3>
+      <ul id="summary"></ul>
+      <button type="button" id="zip" disabled>Télécharger la sélection en ZIP</button>
+    </section>
+    <section id="sharing">
+      <h2>Partage du dossier</h2>
+      <form id="share">
+        <label>Adresse e-mail <input name="email" type="email" required></label>
+        <label>Accès <select name="role"><option value="lecture">Lecture</option><option value="modification">Modification</option><option value="">Retirer l’accès</option></select></label>
+        <button>Enregistrer</button>
+      </form>
+      <ul id="shares"></ul>
+    </section>
+  </div>
+</div>
+</main>
+<script>
+'use strict';
+const byId = id => document.getElementById(id);
+const base = '/api/dossiers';
+let token = '';
+let folder = '';
+let timer;
+let revision = 0;
+let exportInProgress = false;
+let exportAvailable = false;
+
+function message(text, error = false) {
+  byId('message').textContent = text;
+  byId('message').dataset.error = error;
+}
+
+async function request(path, options = {}) {
+  const headers = {Authorization: 'Bearer ' + token};
+  if (typeof options.body === 'string') headers['Content-Type'] = 'application/json';
+  const response = await fetch(path, {...options, headers, cache: 'no-store'});
+  if (!response.ok) {
+    const details = await response.json().catch(() => ({}));
+    throw new Error(typeof details.detail === 'string' ? details.detail : 'Échec de la requête (' + response.status + ')');
+  }
+  return response;
+}
+
+async function json(path, options) {
+  return (await request(path, options)).json();
+}
+
+function submit(id, action) {
+  byId(id).addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = event.submitter;
+    if (button) button.disabled = true;
+    try {
+      message('');
+      await action(new FormData(event.currentTarget));
+    } catch (error) {
+      message(error.message, true);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+}
+
+function item(text) {
+  const li = document.createElement('li');
+  li.textContent = text;
+  return li;
+}
+
+function button(text, action) {
+  const result = document.createElement('button');
+  result.type = 'button';
+  result.textContent = text;
+  result.addEventListener('click', async () => {
+    result.disabled = true;
+    try { await action(); }
+    catch (error) { message(error.message, true); }
+    finally { result.disabled = false; }
+  });
+  return result;
+}
+
+async function loadFolders(preferred) {
+  const folders = await json(base);
+  const options = [new Option('Choisir un dossier', '')];
+  for (const entry of folders) options.push(new Option(entry.title, entry.id));
+  byId('folders').replaceChildren(...options);
+  byId('folders').value = folders.some(entry => entry.id === preferred) ? preferred : '';
+  folder = byId('folders').value;
+  await loadDetail();
+}
+
+async function loadDetail() {
+  clearTimeout(timer);
+  const current = ++revision;
+  if (!folder) {
+    byId("detail").hidden = true;
+    return;
+  }
+  const url = base + '/' + folder;
+  const filters = new URLSearchParams(new FormData(byId('filters')));
+  const [data, corpus] = await Promise.all([json(url + '?' + filters), json(url + '/corpus?texte=false')]);
+  if (current !== revision) return;
+  byId("detail").hidden = false;
+  exportAvailable = data.export_disponible;
+  byId("zip").disabled = exportInProgress || !exportAvailable;
+  const editable = data.role !== 'lecture';
+  byId('imports').hidden = !editable;
+  byId('sharing').hidden = data.role !== 'proprietaire';
+  byId("notification").textContent = data.notification || (data.en_cours ? "Traitement des documents en cours…" : "");
+  byId('shares').replaceChildren(...data.shares.map(share => item(share.email + ' · ' + share.role)));
+  const statuses = {en_attente: 'en attente', traitement: 'en cours', pret: 'prêt', erreur: 'erreur'};
+  byId('documents').replaceChildren(...data.documents.map(doc => {
+    const li = item(doc.title);
+    const badge = document.createElement("span");
+    badge.className = "document-status";
+    badge.dataset.status = doc.status;
+    badge.textContent = statuses[doc.status];
+    li.append(badge);
+    if (doc.error) li.append(" · " + doc.error);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = doc.selected;
+    checkbox.disabled = !editable;
+    checkbox.setAttribute('aria-label', 'Inclure ' + doc.title);
+    checkbox.addEventListener('change', async () => {
+      const checked = checkbox.checked;
+      checkbox.disabled = true;
+      try {
+        await json(url + '/documents/' + doc.id, {method: 'PATCH', body: JSON.stringify({selected: checked})});
+        await loadDetail();
+      } catch (error) {
+        checkbox.checked = !checked;
+        checkbox.disabled = false;
+        message(error.message, true);
+      }
+    });
+    li.prepend(checkbox);
+    if (editable && doc.status !== 'pret') {
+      li.append(' ', button('Relancer', async () => {
+        await json(url + '/documents/' + doc.id + '/reessayer', {method: 'POST'});
+        await loadDetail();
+      }));
+    }
+    return li;
+  }));
+  if (!data.documents.length) byId("documents").append(item("Aucun document ne correspond à cette vue."));
+  byId('summary').replaceChildren(...corpus.documents.map(doc => {
+    const fiche = doc.fiche || {};
+    const details = [fiche.resume, ...(fiche.themes || []), fiche.type?.value].filter(Boolean);
+    return item(doc.title + (details.length ? ' · ' + details.join(' · ') : ''));
+  }));
+  if (!corpus.documents.length) byId("summary").append(item("Aucun document prêt dans la sélection."));
+  if (data.en_cours) timer = setTimeout(() => loadDetail().catch(error => message(error.message, true)), 2000);
+}
+
+submit('login', async () => {
+  token = byId('token').value.trim();
+  await loadFolders();
+  byId('token').value = '';
+  byId('workspace').hidden = false;
+  byId('login').hidden = true;
+});
+
+byId('logout').onclick = () => {
+  token = '';
+  folder = '';
+  ++revision;
+  clearTimeout(timer);
+  byId('folders').replaceChildren();
+  for (const id of ['results', 'documents', 'summary', 'shares']) byId(id).replaceChildren();
+  for (const id of ['login', 'create', 'search', 'upload', 'filters', 'share']) byId(id).reset();
+  byId('notification').textContent = '';
+  byId('workspace').hidden = true;
+  byId('detail').hidden = true;
+  byId('login').hidden = false;
+  message('');
+};
+
+submit('create', async data => {
+  const created = await json(base, {method: 'POST', body: JSON.stringify(Object.fromEntries(data))});
+  byId('create').reset();
+  byId('results').replaceChildren();
+  await loadFolders(created.id);
+});
+
+byId('folders').onchange = () => {
+  folder = byId('folders').value;
+  byId("detail").hidden = true;
+  byId("notification").textContent = "";
+  byId('results').replaceChildren();
+  byId('documents').replaceChildren();
+  byId('summary').replaceChildren();
+  byId('shares').replaceChildren();
+  loadDetail().catch(error => message(error.message, true));
+};
+
+submit('filters', loadDetail);
+submit('search', async data => {
+  const destination = folder;
+  const result = await json(base + '/' + destination + '/recherche-catalogue?' + new URLSearchParams(data));
+  if (destination !== folder) return;
+  byId('results').replaceChildren(...result.map(doc => {
+    const li = item(doc.titre + ' · ' + doc.source + ' ');
+    li.append(button('Ajouter', async () => {
+      await json(base + '/' + destination + '/catalogue',
+                 {method: 'POST', body: JSON.stringify({document_id: doc.id})});
+      if (destination === folder) await loadDetail();
+      message('Ressource ajoutée.');
+    }));
+    return li;
+  }));
+  if (!result.length) byId('results').append(item('Aucune ressource trouvée.'));
+});
+
+submit('upload', async data => {
+  await json(base + '/' + folder + '/documents', {method: 'POST', body: data});
+  byId('upload').reset();
+  await loadDetail();
+});
+
+submit('share', async data => {
+  const payload = {email: data.get('email'), role: data.get('role') || null};
+  await json(base + '/' + folder + '/partages', {method: 'PUT', body: JSON.stringify(payload)});
+  byId('share').reset();
+  await loadDetail();
+});
+
+byId('zip').onclick = async () => {
+  exportInProgress = true;
+  byId("zip").disabled = true;
+  try {
+    const response = await request(base + '/' + folder + '/export.zip');
+    const url = URL.createObjectURL(await response.blob());
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'corpus.zip';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    message(error.message, true);
+  } finally {
+    exportInProgress = false;
+    byId("zip").disabled = !exportAvailable;
+  }
+};
+</script>
+</body>
+</html>

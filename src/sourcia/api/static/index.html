@@ -4,57 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SourcIA</title>
-<style>
-  :root{--ink:#17241d;--muted:#5d6b63;--line:#d8e0db;--bg:#f5f7f4;--card:#fff;--accent:#1f7a4d;--accent2:#e3f1e8;--warn:#9a5a12;--warn2:#fbf0e1}
-  @media (prefers-color-scheme: dark){:root{--ink:#e6ece8;--muted:#9aa8a0;--line:#2f3b35;--bg:#121815;--card:#1a221e;--accent:#5cc28f;--accent2:#1f3329;--warn:#e7a95a;--warn2:#3a2c1b}}
-  *{box-sizing:border-box}
-  [hidden]{display:none!important}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-  header,main{max-width:1040px;margin:auto;padding:0 16px}
-  header{padding-top:18px}
-  h1{margin:0;font-size:24px}
-  h2{font-size:18px;margin:22px 0 8px}
-  .sub{color:var(--muted)}
-  form,.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:12px}
-  fieldset{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0}
-  legend{font-weight:600;padding:0 6px}
-  textarea{width:100%;min-height:56px;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
-  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
-  label{font-size:13px;color:var(--muted);display:grid;gap:3px}
-  .chk{display:flex;flex-wrap:wrap;gap:6px 14px}
-  .chk label{display:flex;gap:5px;align-items:center;color:var(--ink);font-size:14px}
-  input,select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
-  input[type=number]{width:90px}
-  input[type=checkbox]{width:auto}
-  button{font:inherit;font-weight:600;padding:9px 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
-  button:disabled{opacity:.5}
-  .status{color:var(--muted);margin:10px 0}
-  .doc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
-  .doc h3{margin:0 0 4px;font-size:16px}
-  a{color:var(--accent)}
-  .meta{font-size:13px;color:var(--muted)}
-  .alert{display:inline-block;background:var(--warn2);color:var(--warn);border-radius:6px;padding:1px 7px;font-size:12px;margin:4px 4px 0 0}
-  .tag{display:inline-block;background:var(--accent2);color:var(--accent);border-radius:6px;padding:1px 7px;font-size:12px;margin-right:4px}
-  table{border-collapse:collapse;width:100%;font-size:13px}
-  td,th{border-top:1px solid var(--line);padding:5px 6px;vertical-align:top;text-align:left}
-  td.q{color:var(--muted);font-style:italic}
-  .caps{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
-  .caps label{display:flex;gap:6px;align-items:flex-start;color:var(--ink)}
-  .caps .child{margin-left:18px}
-  pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}
-  .exports a{margin-right:10px}
-</style>
+<link rel="stylesheet" href="/assets/sourcia.css">
 </head>
-<body>
-<header>
+<body class="home">
+<header class="page-header"><div class="header-content">
   <h1>SourcIA</h1>
   <div class="sub">Trouver et qualifier les sources de R&amp;D, puis préparer sa formation : chaque contenu renvoie à sa source.</div>
   <div class="sub" id="etat"></div>
-</header>
+  <nav aria-label="Navigation SourcIA"><a href="/dossiers">Mes dossiers pédagogiques</a></nav>
+</div></header>
 <main>
   <h2>1. Ma demande</h2>
   <form id="f">
-    <label>Sujet<textarea id="sujet" placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
+    <label>Sujet<textarea id="sujet" required placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
     <fieldset><legend>Moi et ma formation</legend>
       <div class="row">
         <label>Je suis
@@ -116,7 +78,7 @@
       <label>Lecture par le modèle des N premières<input type="number" id="llm_top" value="0"></label></div>
   </form>
 
-  <div class="status" id="status"></div>
+  <div class="status" id="status" role="status"></div>
   <div class="exports" id="exports"></div>
   <div id="res"></div>
 
@@ -130,13 +92,13 @@
       </div>
       <div class="sub">Compter 1 à 3 minutes par appel au modèle en local. Ce qui n'est pas retrouvé dans les sources est retiré et listé.</div>
     </div>
-    <div class="status" id="fstatus"></div>
+    <div class="status" id="fstatus" role="status"></div>
     <div class="exports" id="fexports"></div>
     <div id="rpanel" hidden>
       <h2>3. Validation du rattachement au référentiel (enseignant)</h2>
-      <div class="panel"><table id="rtable"></table>
+      <div class="panel"><div class="table-scroll"><table id="rtable"></table></div>
         <div class="row"><label>Validé par<input id="valideur" placeholder="Nom de l'enseignant"></label><button id="gov">Enregistrer la validation</button></div>
-        <div class="status" id="vstatus"></div></div>
+        <div class="status" id="vstatus" role="status"></div></div>
     </div>
     <pre id="fsupport" hidden></pre>
   </div>
@@ -149,14 +111,44 @@ const num = id => $(id).value ? parseInt($(id).value, 10) : null;
 const LABEL = {organisme:"Organisme",annee:"Année des résultats",annee_publication:"Année de publication",lieu:"Lieu",contexte_pedoclimatique:"Contexte pédoclimatique",type:"Type",modalites:"Modalités",repetitions:"Répétitions",chiffrage_economique:"Chiffrage économique"};
 let LAST = null, REFS = [], DOSSIER = null;
 
-fetch("/api/etat").then(r => r.json()).then(e => {
+async function api(path, options) {
+  const response = await fetch(path, options);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const detail = Array.isArray(body.detail) ? body.detail.map(item => item.msg).join(" · ") : body.detail;
+    throw new Error(detail || "Le serveur a répondu avec le code " + response.status + ".");
+  }
+  return response.json();
+}
+
+function status(id, text, error = false) {
+  $(id).dataset.error = error;
+  $(id).textContent = text;
+}
+
+function sourceTitle(source) {
+  const title = esc(source.titre || source.url || "Source");
+  if (source.prive) return title + ' <span class="tag">privé</span>';
+  try {
+    const url = new URL(source.url);
+    if (url.protocol === "https:" || url.protocol === "http:") {
+      return `<a href="${esc(url.href)}" target="_blank" rel="noopener">${title}</a>`;
+    }
+  } catch {}
+  return title;
+}
+
+api("/api/etat").then(e => {
   $("etat").textContent = `${e.documents.documents ?? 0} documents · ${e.fiches} fiches · modèle ${e.modele} · ${e.build}` + (e.index ? "" : " · ⚠️ index absent");
-}).catch(() => {});
-fetch("/api/referentiels").then(r => r.json()).then(list => {
+}).catch(() => status("etat", "Impossible de lire l’état du catalogue."));
+api("/api/referentiels").then(list => {
   REFS = list;
   $("diplome").innerHTML = list.map(r => `<option value="${esc(r.id)}">${esc(r.nom)} (v${esc(r.version)})</option>`).join("");
   showCaps();
-}).catch(() => {});
+}).catch(() => {
+  $("diplomante").disabled = true;
+  status("status", "Les référentiels sont indisponibles.");
+});
 function showCaps() {
   const r = REFS.find(x => x.id === $("diplome").value);
   $("caps").innerHTML = r ? r.capacites.map(c => `<label class="${c.parent ? "child" : ""}"><input type="checkbox" value="${esc(c.code)}"><span><b>${esc(c.code)}</b> ${esc(c.libelle)}</span></label>`).join("") : "";
@@ -178,48 +170,67 @@ function demande() {
 $("f").addEventListener("submit", async ev => {
   ev.preventDefault();
   const d = demande();
-  if (!d.sujet) return;
+  if ($("go").disabled) return;
+  if (!d.sujet) {
+    status("status", "Indiquez le sujet de la formation.", true);
+    $("sujet").focus();
+    return;
+  }
+  LAST = null;
+  DOSSIER = null;
+  for (const id of ["fstatus", "fexports", "vstatus"]) status(id, "");
+  for (const id of ["fsupport", "rpanel"]) $(id).hidden = true;
   $("go").disabled = true; $("res").innerHTML = ""; $("exports").innerHTML = ""; $("fpanel").hidden = true;
-  $("status").textContent = "Recherche et qualification en cours…";
+  status("status", "Recherche et qualification en cours…");
   const t0 = performance.now();
   try {
-    const r = await fetch("/api/selection", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({demande: d, llm_top: num("llm_top") || 0})});
-    if (!r.ok) throw new Error((await r.json()).detail || r.status);
-    const data = await r.json();
+    const data = await api("/api/selection", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({demande: d, llm_top: num("llm_top") || 0})});
     LAST = {demande: d, doc_ids: data.documents.map(x => x.id)};
     $("fpanel").hidden = !data.documents.length;
-    $("status").textContent = `${data.documents.length} sources en ${((performance.now() - t0) / 1000).toFixed(1)} s.`;
+    status("status", data.documents.length
+      ? `${data.documents.length} source(s) trouvée(s) en ${((performance.now() - t0) / 1000).toFixed(1)} s.`
+      : "Aucune source trouvée. Essayez un autre sujet ou élargissez vos critères.");
     $("exports").innerHTML = data.exports.length ? "Exporter (pour NotebookLM ou un tableur) : " + data.exports.map(n => `<a href="/api/export/${encodeURIComponent(n)}">${esc(n.split(".").pop().toUpperCase())}</a>`).join("") : "";
     $("res").innerHTML = data.documents.map(x => `
       <div class="doc">
-        <h3>${x.rang}. ${x.prive ? esc(x.titre) + ' <span class="tag">privé</span>' : `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre || x.url)}</a>`}</h3>
+        <h3>${x.rang}. ${sourceTitle(x)}</h3>
         <div class="meta">${esc(x.source)} · score ${x.score} ${x.type ? `· <span class="tag">${esc(x.type)}</span>` : ""}${x.nature && x.nature !== "pdf" ? `<span class="tag">${esc(x.nature)}</span>` : ""}</div>
-        <div>${esc(x.justification.split(" — ⚠️")[0])}</div>
+        <div>${esc((x.justification || "").split(" — ⚠️")[0])}</div>
         ${(x.alertes ? x.alertes.split(" ; ") : []).map(a => `<span class="alert">⚠️ ${esc(a)}</span>`).join("")}
         <details data-id="${esc(x.id)}"><summary>Fiche et preuves</summary><div>…</div></details>
       </div>`).join("");
     document.querySelectorAll("details[data-id]").forEach(el => el.addEventListener("toggle", async () => {
       if (!el.open || el.dataset.loaded) return;
-      el.dataset.loaded = 1;
-      const f = await (await fetch("/api/fiche/" + el.dataset.id)).json();
-      el.querySelector("div").innerHTML = "<table>" + Object.entries(f.champs).map(([k, c]) =>
-        `<tr><td>${LABEL[k] || k}</td><td>${c.value === null ? "—" : esc(c.value)}<br><small>confiance ${c.confidence.toFixed(2)} (${esc(c.method)})</small></td><td class="q">${c.evidence ? "« " + esc(c.evidence) + " »" : ""}</td></tr>`).join("") + "</table>";
+      el.dataset.loaded = "loading";
+      const content = el.querySelector("div");
+      content.textContent = "Chargement de la fiche…";
+      try {
+        const f = await api("/api/fiche/" + encodeURIComponent(el.dataset.id));
+        content.className = "table-scroll";
+        content.innerHTML = "<table>" + Object.entries(f.champs).map(([k, c]) =>
+          `<tr><td>${esc(LABEL[k] || k)}</td><td>${c.value === null ? "—" : esc(c.value)}<br><small>confiance ${c.confidence.toFixed(2)} (${esc(c.method)})</small></td><td class="q">${c.evidence ? "« " + esc(c.evidence) + " »" : ""}</td></tr>`).join("") + "</table>";
+        el.dataset.loaded = "true";
+      } catch (error) {
+        delete el.dataset.loaded;
+        content.textContent = "Fiche indisponible. Refermez-la puis réessayez.";
+      }
     }));
   } catch (e) {
-    $("status").textContent = "Erreur : " + e.message;
+    status("status", "Erreur : " + e.message, true);
   } finally { $("go").disabled = false; }
 });
 
 $("gof").addEventListener("click", async ev => {
   ev.preventDefault();
-  if (!LAST) return;
+  if (!LAST || $("gof").disabled) return;
+  DOSSIER = null;
+  status("vstatus", "");
+  $("go").disabled = true;
   $("gof").disabled = true; $("fsupport").hidden = true; $("fexports").innerHTML = ""; $("rpanel").hidden = true;
-  $("fstatus").textContent = "Création du support en cours…";
+  status("fstatus", "Création du support en cours…");
   try {
-    const r = await fetch("/api/formation", {method: "POST", headers: {"Content-Type": "application/json"},
+    const f = await api("/api/formation", {method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({...LAST, sequences: num("nseq") || 4, quiz: num("nquiz") ?? 4})});
-    if (!r.ok) throw new Error((await r.json()).detail || r.status);
-    const f = await r.json();
     DOSSIER = f.dossier;
     $("fstatus").textContent = `Support prêt : ${f.appels_modele} appels au modèle, ${f.duree_s} s. À relire avant diffusion.`;
     $("fexports").innerHTML = "Télécharger : " + f.fichiers.map(n => `<a href="/api/formation/${encodeURIComponent(f.dossier)}/${encodeURIComponent(n)}">${esc(n)}</a>`).join("");
@@ -231,8 +242,8 @@ $("gof").addEventListener("click", async ev => {
           <td><input type="checkbox" data-n="${x.n}" ${x.capacite ? "checked" : ""}></td><td><input data-c="${x.n}" size="6"></td></tr>`).join("");
     }
   } catch (e) {
-    $("fstatus").textContent = "Erreur : " + e.message;
-  } finally { $("gof").disabled = false; }
+    status("fstatus", "Erreur : " + e.message, true);
+  } finally { $("gof").disabled = false; $("go").disabled = false; }
 });
 
 $("gov").addEventListener("click", async ev => {
@@ -240,10 +251,19 @@ $("gov").addEventListener("click", async ev => {
   if (!DOSSIER || !$("valideur").value.trim()) { $("vstatus").textContent = "Indiquer le nom de l'enseignant."; return; }
   const decisions = [...document.querySelectorAll("#rtable input[data-n]")].map(i => ({n: +i.dataset.n, valide: i.checked,
     code_corrige: document.querySelector(`#rtable input[data-c="${i.dataset.n}"]`).value.trim()}));
-  const r = await fetch(`/api/formation/${encodeURIComponent(DOSSIER)}/rattachements`, {method: "POST", headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({valideur: $("valideur").value.trim(), decisions})});
-  const s = await r.json();
-  $("vstatus").textContent = r.ok ? `Validés : ${s.valides} · corrigés : ${s.corriges} · refusés : ${s.refuses}. Le support a été mis à jour.` : "Erreur : " + (s.detail || r.status);
+  $("gov").disabled = $("go").disabled = $("gof").disabled = true;
+  status("vstatus", "Enregistrement en cours…");
+  try {
+    const result = await api(`/api/formation/${encodeURIComponent(DOSSIER)}/rattachements`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({valideur: $("valideur").value.trim(), decisions})
+    });
+    status("vstatus", `Validés : ${result.valides} · corrigés : ${result.corriges} · refusés : ${result.refuses}.`);
+  } catch (error) {
+    status("vstatus", "Erreur : " + error.message, true);
+  } finally {
+    $("gov").disabled = $("go").disabled = $("gof").disabled = false;
+  }
 });
 </script>
 </body>

@@ -70,6 +70,10 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
             raise HTTPException(404, "fichier introuvable")
         return p
 
+    @app.get("/assets/sourcia.css", include_in_schema=False)
+    def stylesheet():
+        return FileResponse(STATIC / "sourcia.css", media_type="text/css")
+
     @app.get("/", response_class=HTMLResponse)
     def home():
         return (STATIC / "index.html").read_text(encoding="utf-8")
@@ -163,5 +167,13 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
                                          refs.get(form.referentiel["id"]), req.valideur)
         write(form, ctx, form_dir, reprendre=folder)
         return stats
+
+    from sourcia.api.dossiers import create_dossiers_router
+
+    app.include_router(create_dossiers_router(ctx))
+
+    @app.get("/dossiers", response_class=HTMLResponse)
+    def teacher_folders():
+        return (STATIC / "dossiers.html").read_text(encoding="utf-8")
 
     return app
