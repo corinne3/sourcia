@@ -19,6 +19,7 @@ Hackathon SAED, défi 1 : passer de **milliers de documents** à **environ 50 so
 | **M5 Sélection** | entonnoir → ≈ 50 documents classés, filtrés, **justifiés**, diversifiés | `select` |
 | **M6 Sorties** | page web du formateur, exports (md, csv, txt, json, zip), API, serveur MCP | `serve`, `mcp`, `select --export` |
 | **M7 Formation** | créer **soi-même** le support : plan, points clés sourcés, QCM (et Moodle), fiche technique, synthèse, cas concret, glossaire, script de podcast, déroulé de séance, contenu personnel protégé | `formation` |
+| **Corpus pédagogique** (étape 3) | à partir des **seuls documents cochés** et des acquis visés : séquences rattachées aux capacités, points clés et synthèse avec **références vérifiables** (document, page, extrait exact, lien `#page=N` pour un PDF), bibliographie, dans `corpus.json` (sans QCM) | `corpus` |
 | **M8 Référentiels** | capacités des diplômes (chlorofil.fr), versions, rattachement des séquences, validation par l'enseignant, contrôle du niveau | `referentiel`, `valider-formation` |
 | **Évaluation** | comparer à une référence fournie par le métier | `eval trouver`, `eval qualifier`, `eval gabarit` |
 
