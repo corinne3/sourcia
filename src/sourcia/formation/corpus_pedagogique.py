@@ -5,13 +5,13 @@ C'est la matière vérifiée que l'étape 4 (supports : Word, diaporama, QCM…)
 - les points clés, chacun avec sa RÉFÉRENCE : document, page, EXTRAIT EXACT (phrase recopiée du document)
   et lien (``#page=N`` pour un PDF) ;
 - la synthèse, avec les mêmes références ;
-- les illustrations d'origine des documents (remplies plus tard, avec PyMuPDF) ;
+- les illustrations d'origine des pages citées (illustrations.py, PyMuPDF), copiées dans le dossier ;
 - la bibliographie (titre, organisme, année, adresse).
 
 On réutilise ``FormationBuilder`` (plan, rattachement, points clés, synthèse, contrôles de checks.py), sans QCM.
 Le contenu personnel du formateur n'est pas repris ici : seulement les documents cochés.
 
-Dossier : ``data/corpus/corpus-<date>/`` avec ``corpus.json`` (rechargeable) et ``demande.yaml``.
+Dossier : ``data/corpus/corpus-<date>/`` avec ``corpus.json`` (rechargeable), ``demande.yaml`` et ``illustrations/``.
 """
 from __future__ import annotations
 
@@ -67,9 +67,10 @@ class SyntheseCorpus(BaseModel):
 
 class Illustration(BaseModel):
     chemin: str                              # relatif au dossier du corpus
-    legende: str = ""
+    legende: str = ""                        # prise dans le document, sinon « Illustration tirée de … »
     doc_id: str
     page: int
+    sequence: int | None = None              # séquence qui cite cette page (None : synthèse ou photo cochée)
 
 
 class SourceBiblio(BaseModel):
@@ -220,14 +221,19 @@ def build_corpus(ctx, demande, doc_ids: list[str], *, llm=None, n_seq: int = 4,
 
 
 # ---------------------------------------------------------------------- fichiers
-def write_corpus(cp: CorpusPedagogique, out_root: Path) -> list[Path]:
-    """Écrit ``corpus-<date>/corpus.json`` et ``demande.yaml`` ; renvoie les chemins."""
+def write_corpus(cp: CorpusPedagogique, out_root: Path, ctx=None, max_illustrations: int = 12) -> list[Path]:
+    """Écrit ``corpus-<date>/corpus.json`` et ``demande.yaml`` ; renvoie les chemins.
+    Avec ``ctx`` : copie d'abord les illustrations des pages citées dans ``corpus-<date>/illustrations/``."""
     base = Path(out_root) / f"corpus-{datetime.now():%Y%m%d-%H%M%S}"
     out, k = base, 1
     while out.exists():                      # deux corpus dans la même seconde : on n'écrase pas le premier
         k += 1
         out = base.with_name(f"{base.name}-{k}")
     out.mkdir(parents=True)
+    if ctx is not None and max_illustrations > 0:
+        from sourcia.formation.illustrations import extract_illustrations
+
+        extract_illustrations(cp, ctx, out, max_total=max_illustrations)
     (out / "corpus.json").write_text(cp.model_dump_json(indent=1), encoding="utf-8")
     return [out / "corpus.json", cp.demande.save(out / "demande.yaml")]
 
