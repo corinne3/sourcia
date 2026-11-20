@@ -526,7 +526,8 @@ def cmd_corpus(args) -> None:
           f"{'diplômante ' + str(d.diplome) + ' ' + ','.join(d.capacites) if d.diplomante else 'non diplômante'}")
     print(f"Modèle : {ctx.settings.llm.provider} / {ctx.settings.llm.model} (compter 1 à 3 min par appel en local)")
     cp = build_corpus(ctx, d, doc_ids, n_seq=args.sequences, log=print)
-    paths = write_corpus(cp, ctx.settings.path("corpus", ".keep").parent)
+    paths = write_corpus(cp, ctx.settings.path("corpus", ".keep").parent,
+                         ctx=None if args.sans_illustrations else ctx, max_illustrations=args.max_illustrations)
     try:
         from sourcia.formation.export_word import corpus_to_docx
 
@@ -537,12 +538,13 @@ def cmd_corpus(args) -> None:
     n_r = sum(len(s.retires) for s in cp.sequences) + len(cp.retires)
     n_s = len(cp.synthese.paragraphes) if cp.synthese else 0
     print(f"\n{len(cp.sequences)} séquences · {n_p} points clés · {n_s} paragraphes de synthèse"
+          f" · {len(cp.illustrations)} illustrations"
           f" · {sum(b.citee for b in cp.bibliographie)} sources citées · {n_r} éléments retirés par les contrôles"
           f" · {cp.appels_modele} appels au modèle · {cp.duree_s} s")
     if cp.couverture:
         ok = sum(bool(c["sequences"]) for c in cp.couverture)
         print(f"Référentiel : {ok}/{len(cp.couverture)} capacités visées couvertes")
-    for r in cp.remarques[:6]:
+    for r in cp.remarques[:8]:
         print(f"  📝 {r}")
     print("Fichiers :")
     for p in paths:
@@ -762,6 +764,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("corpus", cmd_corpus, "étape 3 : corpus pédagogique (corpus.json) à partir des documents cochés, sans QCM")
     sp.add_argument("selection", nargs="?", help="fichier selection-*.json (défaut : la dernière sélection exportée)")
     sp.add_argument("--documents", help="identifiants des documents cochés, séparés par des virgules")
+    sp.add_argument("--sans-illustrations", action="store_true", help="ne pas reprendre les images des documents")
+    sp.add_argument("--max-illustrations", type=int, default=12, help="nombre d'illustrations au plus (défaut 12)")
     sp.add_argument("--sujet", help="sujet (sinon : celui de la demande ou de la sélection)")
     sp.add_argument("--sequences", type=int, default=4, help="nombre de séquences au plus (hors capacités à couvrir)")
     demande_opts(sp)
