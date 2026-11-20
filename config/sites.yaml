@@ -23,9 +23,15 @@ sites:
   - nom: terres-inovia
     url: https://www.terresinovia.fr
     filtre: "luzerne|proteagineux|protéagineux|legumineuse|légumineuse"
+    articles: "^/fr/(informations-techniques|actualites)/"   # fiches techniques et actualités (date « Publié le … »)
+    exclure: "/en/"                     # copie anglaise du site : mêmes contenus en double
   - nom: chambres-agriculture
     url: https://chambres-agriculture.fr
-    filtre: "fourrag|prairie|sorgho|climat"
+    # « climat » retiré (à valider par le métier) : il ramenait viticulture, affiches et communiqués de presse
+    filtre: "fourrag|prairie|sorgho|secheresse|sécheresse|paturage|pâturage"
+    articles: "^/(actualites/actualite|les-dossiers/detail-du-dossier)/"
+    exclure: "offres-demploi|/agenda/"  # offres d'emploi et agenda : pas de contenu technique
+    # /sinformer/nos-ressources/ : fiches courtes avec un PDF (guides techniques) ; le PDF est collecté, pas la fiche
 notes:
   - "RD Agri (ACTA, CC BY-NC-SA) : passer par le catalogue du Lexicon (sourcia import-catalog) ou le MCP quand il sera documenté."
   - "Respect : robots.txt, 1 requête par seconde au plus, pas de téléchargement massif sans accord."
