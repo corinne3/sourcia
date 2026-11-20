@@ -314,6 +314,20 @@ def test_article_main_text_keeps_only_the_article():
     assert main_text("<body><p>page sans balise article ni main</p></body>") == "page sans balise article ni main"
 
 
+def test_article_french_dates_and_related_list_cut():
+    """Cas réels : dates écrites en français (Terres Inovia, Chambres) ; « Dans le même thème… » (Chambres)."""
+    from sourcia.collect.article import main_text, published_date
+
+    assert published_date("<p>Publié le 25 mars 2019 | Mis à jour le 16 décembre 2025</p>") == "2019-03-25"
+    assert published_date("<span>Publiée le</span> <b>1er août 2020</b>") == "2020-08-01"
+    assert published_date("<dt>Date de publication</dt><dd>octobre 2022</dd>") == "2022"        # mois + année : AAAA
+    assert published_date("<p>Dernière mise à jour le 24 juillet 2024</p>") is None            # mise à jour ≠ publication
+    page = (f"<main><h1>Préserver les prairies</h1><p>{BODY}</p><h2>Dans le même thème...</h2>"
+            "<div class='single'><h3>Base-SPIE, un système d'information</h3><p>En savoir plus</p></div></main>")
+    text = main_text(page)
+    assert "quatre répétitions" in text and "Dans le même thème" not in text and "Base-SPIE" not in text
+
+
 ART_SITE = {
     "https://ex.org/": resp('<a href="/infos-techniques/sorgho-essais">Essais</a>'),
     "https://ex.org/sitemap.xml": resp("<urlset>" + "".join(f"<url><loc>https://ex.org/{p}</loc></url>" for p in (
