@@ -12,12 +12,27 @@ Nécessite python-docx (``pip install -e ".[word]"``), chargé seulement au mome
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from sourcia.formation.render import STATUT_LABEL
 
 LINK_COLOR = "0563C1"
 GREY = (0x59, 0x59, 0x59)
+# caractères interdits dans un fichier Word (XML) : certains PDF en laissent dans le texte extrait
+# (vu sur 1 texte réel sur 593 : \x00, \x10…) et python-docx refusait alors tout le document
+XML_FORBIDDEN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f￾￿]")
+
+
+def word_safe(value):
+    """Copie sans caractères interdits dans Word (chaînes, listes, dictionnaires)."""
+    if isinstance(value, str):
+        return XML_FORBIDDEN.sub("", value)
+    if isinstance(value, list):
+        return [word_safe(v) for v in value]
+    if isinstance(value, dict):
+        return {k: word_safe(v) for k, v in value.items()}
+    return value
 
 
 def _docx():
@@ -278,6 +293,7 @@ def corpus_to_docx(cp, path: Path, base_dir: Path | None = None) -> Path:
     """Écrit le document Word du corpus. ``base_dir`` : dossier où chercher les illustrations (chemins relatifs),
     par défaut celui du fichier Word (le dossier du corpus)."""
     path = Path(path)
+    cp = type(cp).model_validate(word_safe(cp.model_dump()))     # copie nettoyée ; le corpus reste intact
     w = _Writer(cp, base_dir if base_dir is not None else path.parent)
     w.title_page()
     w.capacities()

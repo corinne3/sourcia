@@ -124,6 +124,16 @@ def test_cli_corpus_writes_word(tmp_path, capsys):
     assert load_corpus(folder).titre in text_of(folder / "corpus_pedagogique.docx")
 
 
+def test_control_characters_from_pdf_do_not_break_word(cp, tmp_path):
+    """Vu sur 1 texte réel sur 593 : caractères de contrôle (\\x00, \\x0c…) refusés par python-docx."""
+    pt = cp.sequences[0].points[0]
+    pt.texte = "Le sorgho\x0c résiste\x00 à la sécheresse."
+    pt.reference.extrait = "Le sorgho\x10 résiste à la sécheresse."
+    txt = text_of(corpus_to_docx(cp, tmp_path / "c.docx"))
+    assert "Le sorgho résiste à la sécheresse." in txt
+    assert "\x00" in pt.texte                                         # le corpus lui-même n'est pas modifié
+
+
 def test_clear_message_without_python_docx(cp, tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "docx", None)                    # comme si python-docx n'était pas installé
     with pytest.raises(ImportError, match="pip install"):

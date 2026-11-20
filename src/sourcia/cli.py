@@ -534,6 +534,9 @@ def cmd_corpus(args) -> None:
         paths.append(corpus_to_docx(cp, paths[0].parent / "corpus_pedagogique.docx"))
     except ImportError as exc:                       # python-docx absent : le corpus.json suffit pour la suite
         print(f"  ⚠️ {exc}")
+    except Exception as exc:                         # le corpus.json est déjà écrit : on le dit, sans tout arrêter
+        print(f"  ⚠️ document Word non produit ({type(exc).__name__} : {str(exc)[:150]}) ; "
+              f"corpus.json est utilisable, réessayer avec : sourcia corpus-word {paths[0].parent}")
     n_p = sum(len(s.points) for s in cp.sequences)
     n_r = sum(len(s.retires) for s in cp.sequences) + len(cp.retires)
     n_s = len(cp.synthese.paragraphes) if cp.synthese else 0
