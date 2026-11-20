@@ -69,6 +69,7 @@ La liste des sites est dans [`config/sites.yaml`](config/sites.yaml) :
 | `filtre` | expression régulière : pages visitées en premier ; PDF gardés si elle se retrouve dans leur adresse, le texte du lien ou la page d'origine |
 | `articles` | chemin des pages d'articles (ex. `^/infos-techniques/`) : chaque article qui passe le filtre devient un document `page` (texte de l'article seul, date de publication) |
 | `exclure` | adresses jamais visitées ni listées (ex. sommaires de brochures payantes) |
+| `actif` | `false` : site mis de côté (ex. bloqué), collecté seulement si on le demande avec `--site` |
 
 ```powershell
 sourcia collect-sites                       # tous les sites : exploration, nouveaux PDF et articles, rapport par site
@@ -89,6 +90,28 @@ Chaque lancement écrit un rapport lisible à l'écran et en JSON : `data/collec
 | délai dépassé, erreur 5xx… | `unreachable`, puis `dead` après 3 échecs de suite |
 
 Si `collect-sites` télécharge un fichier identique (même empreinte) à celui d'un document mort, l'ancien passe en `moved` vers la nouvelle adresse.
+
+### Lancement automatique chaque jour
+
+[`scripts/collecte_quotidienne.ps1`](scripts/collecte_quotidienne.ps1) enchaîne `collect-sites` puis `check-links`, écrit un journal par jour (`data/journal/collecte-AAAA-MM-JJ.log`) et refuse de démarrer si une collecte est déjà en cours. Code de sortie : 0 tout va bien, 1 à vérifier.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\collecte_quotidienne.ps1                         # à la main
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\collecte_quotidienne.ps1 -Site arvalis -MaxPages 20
+```
+
+Pour le lancer chaque jour à 7 h avec le Planificateur de tâches Windows (à faire une fois, dans PowerShell, depuis le dossier du projet) :
+
+```powershell
+$projet = (Get-Location).Path
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -WorkingDirectory $projet `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$projet\scripts\collecte_quotidienne.ps1`""
+$quand = New-ScheduledTaskTrigger -Daily -At 7am
+$options = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+Register-ScheduledTask -TaskName "SourcIA collecte quotidienne" -Action $action -Trigger $quand -Settings $options
+```
+
+`-StartWhenAvailable` : si le PC était éteint à 7 h, la collecte part dès qu'il est rallumé. Pour l'arrêter : `Unregister-ScheduledTask -TaskName "SourcIA collecte quotidienne"`.
 
 ## Configurations
 
