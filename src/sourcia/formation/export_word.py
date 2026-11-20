@@ -82,6 +82,7 @@ class _Writer:
         self.doc = docx.Document()
         self.nums = {b.doc_id: b.numero for b in cp.bibliographie if b.numero}
         self.missing: list[str] = []
+        self.figures = 0                             # numérotation des figures dans l'ordre du document
 
     # ------------------------------------------------------------------ petits outils
     def ref_label(self, ref) -> str:
@@ -169,6 +170,8 @@ class _Writer:
                     self.add_item(pt.texte, pt.reference)
             else:
                 self.doc.add_paragraph("Aucun point clé retenu par les contrôles : à compléter.").runs[0].italic = True
+            for ill in [x for x in self.cp.illustrations if x.sequence == i]:
+                self.add_figure(ill)
             if s.a_retenir:
                 p = self.doc.add_paragraph()
                 p.add_run("À retenir : ").bold = True
@@ -186,26 +189,37 @@ class _Writer:
             p.add_run("Conclusion : ").bold = True
             p.add_run(syn.conclusion)
 
-    def illustrations(self) -> None:
-        if not self.cp.illustrations:
-            return
+    def add_figure(self, ill) -> bool:
+        """Image et sa légende « Figure n : … (S2, p. 4) » ; False si non insérée.
+        Largeur : 4,5 pouces au plus, sans agrandir une petite image au-delà de sa taille à l'écran (96 points par
+        pouce) ; la résolution d'origine (souvent 300 dpi dans les PDF) donnait des photos minuscules."""
+        from docx.image.image import Image
         from docx.shared import Inches
 
-        self.doc.add_heading("Illustrations", 1)
-        n = 0
-        for ill in self.cp.illustrations:
-            path = Path(ill.chemin)
-            path = path if path.is_absolute() else self.base_dir / path
-            try:
-                self.doc.add_picture(str(path), width=Inches(5.5))
-            except Exception as exc:                 # fichier absent ou format non lu : on le dit, sans planter
-                self.missing.append(f"illustration non insérée ({type(exc).__name__}) : {ill.chemin}")
-                continue
-            n += 1
-            p = self.doc.add_paragraph()
-            p.add_run(f"Figure {n}" + (f" : {ill.legende}" if ill.legende else "")).italic = True
-            num = self.nums.get(ill.doc_id)
-            p.add_run(f" ({num}, p. {ill.page})" if num else f" (p. {ill.page})").italic = True
+        path = Path(ill.chemin)
+        path = path if path.is_absolute() else self.base_dir / path
+        try:
+            px = Image.from_file(str(path)).px_width
+            self.doc.add_picture(str(path), width=min(Inches(4.5), Inches(px / 96)))
+            self.doc.paragraphs[-1].paragraph_format.keep_with_next = True     # image et légende sur la même page
+        except Exception as exc:                     # fichier absent ou format non lu : on le dit, sans planter
+            self.missing.append(f"illustration non insérée ({type(exc).__name__}) : {ill.chemin}")
+            return False
+        self.figures += 1
+        p = self.doc.add_paragraph()
+        p.add_run(f"Figure {self.figures}" + (f" : {ill.legende}" if ill.legende else "")).italic = True
+        num = self.nums.get(ill.doc_id)
+        p.add_run(f" ({num}, p. {ill.page})" if num else f" (p. {ill.page})").italic = True
+        return True
+
+    def illustrations(self) -> None:
+        """Les illustrations qui ne sont rattachées à aucune séquence (synthèse, photos cochées)."""
+        rest = [x for x in self.cp.illustrations if not x.sequence or x.sequence > len(self.cp.sequences)]
+        if not rest:
+            return
+        heading = self.doc.add_heading("Illustrations", 1)
+        if not sum(self.add_figure(ill) for ill in rest):    # aucune insérée : pas de titre vide
+            heading._element.getparent().remove(heading._element)
 
     def bibliography(self) -> None:
         if not self.cp.bibliographie:
