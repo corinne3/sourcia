@@ -3,7 +3,8 @@
 Ordre normal :  add-site / add-folder / import-catalog  →  download  →  extract  →  qualify  →  index
                 →  search / select  →  (eval)
 Puis (M7) :     ``sourcia formation``  (support de formation à partir de la dernière sélection exportée)
-       ou :     ``sourcia corpus``  (étape 3 seule : corpus pédagogique corpus.json, sans QCM)
+       ou :     ``sourcia corpus``  (étape 3 seule : corpus pédagogique corpus.json + document Word, sans QCM)
+                ``sourcia corpus-word <dossier>``  (refaire le Word après une correction de corpus.json)
 Raccourci :     ``sourcia demo``  (exemples fictifs, tout le pipeline en une commande, sans Internet)
 """
 from __future__ import annotations
@@ -526,6 +527,12 @@ def cmd_corpus(args) -> None:
     print(f"Modèle : {ctx.settings.llm.provider} / {ctx.settings.llm.model} (compter 1 à 3 min par appel en local)")
     cp = build_corpus(ctx, d, doc_ids, n_seq=args.sequences, log=print)
     paths = write_corpus(cp, ctx.settings.path("corpus", ".keep").parent)
+    try:
+        from sourcia.formation.export_word import corpus_to_docx
+
+        paths.append(corpus_to_docx(cp, paths[0].parent / "corpus_pedagogique.docx"))
+    except ImportError as exc:                       # python-docx absent : le corpus.json suffit pour la suite
+        print(f"  ⚠️ {exc}")
     n_p = sum(len(s.points) for s in cp.sequences)
     n_r = sum(len(s.retires) for s in cp.sequences) + len(cp.retires)
     n_s = len(cp.synthese.paragraphes) if cp.synthese else 0
@@ -540,6 +547,22 @@ def cmd_corpus(args) -> None:
     print("Fichiers :")
     for p in paths:
         print(f"  {p}")
+
+
+def cmd_corpus_word(args) -> None:
+    """Refait le document Word à partir d'un corpus.json existant (corrigé à la main, ou reçu de l'équipe)."""
+    from sourcia.formation.corpus_pedagogique import load_corpus
+    from sourcia.formation.export_word import corpus_to_docx
+
+    src = Path(args.chemin)
+    if not (src / "corpus.json" if src.is_dir() else src).exists():
+        sys.exit(f"corpus.json introuvable : {src}")
+    folder = src if src.is_dir() else src.parent
+    out = Path(args.sortie) if args.sortie else folder / "corpus_pedagogique.docx"
+    try:
+        print(f"Document Word écrit : {corpus_to_docx(load_corpus(src), out, base_dir=folder)}")
+    except ImportError as exc:
+        sys.exit(str(exc))
 
 
 def cmd_valider_formation(args) -> None:
@@ -742,6 +765,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--sujet", help="sujet (sinon : celui de la demande ou de la sélection)")
     sp.add_argument("--sequences", type=int, default=4, help="nombre de séquences au plus (hors capacités à couvrir)")
     demande_opts(sp)
+
+    sp = add("corpus-word", cmd_corpus_word, "refaire le document Word d'un corpus (corpus.json → corpus_pedagogique.docx)")
+    sp.add_argument("chemin", help="dossier corpus-<date> ou fichier corpus.json")
+    sp.add_argument("--sortie", help="chemin du .docx (défaut : corpus_pedagogique.docx dans le dossier du corpus)")
 
     sp = add("valider-formation", cmd_valider_formation, "M8 : importer les rattachements validés (rattachements.csv)")
     sp.add_argument("dossier")
