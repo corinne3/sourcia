@@ -123,8 +123,35 @@ def page_link(doc, page: int | None) -> str | None:
     return url
 
 
+MAX_EXTRACT = 300           # caractères : un tableau extrait d'un PDF peut former une « phrase » de 1 000 caractères
+
+
+def shorten(sentence: str, words: set[str], limit: int = MAX_EXTRACT) -> str:
+    """Phrase trop longue : le morceau d'au plus ``limit`` caractères qui contient le plus de mots du point,
+    coupé entre deux mots et marqué « … ». Le morceau reste recopié mot pour mot."""
+    if len(sentence) <= limit:
+        return sentence
+    toks = sentence.split()
+    best, best_score = (0, 0), -1
+    for i in range(len(toks)):
+        j, size = i, 0
+        while j < len(toks) and size + len(toks[j]) + (j > i) <= limit:
+            size += len(toks[j]) + (j > i)
+            j += 1
+        if j == i:
+            continue
+        score = len(words & set(tokenize(" ".join(toks[i:j]))))
+        if score > best_score:
+            best, best_score = (i, j), score
+        if j == len(toks):
+            break
+    i, j = best
+    return ("… " if i > 0 else "") + " ".join(toks[i:j]) + (" …" if j < len(toks) else "")
+
+
 def best_extract(texte: str, doc_id: str, page: int, corpus, ignore: frozenset = frozenset()) -> str:
-    """La phrase du document (même page) qui soutient le mieux ``texte`` : recopiée telle quelle."""
+    """La phrase du document (même page) qui soutient le mieux ``texte`` : recopiée telle quelle
+    (raccourcie avec « … » si elle dépasse MAX_EXTRACT caractères)."""
     sents = [s for p in corpus.passages if p.doc_id == doc_id and p.page == page for s in split_sentences(p.text)]
     if not sents:
         return ""
@@ -132,7 +159,7 @@ def best_extract(texte: str, doc_id: str, page: int, corpus, ignore: frozenset =
 
     def score(s: str) -> tuple[float, float]:
         return checks.support(texte, s, ignore), len(words & set(tokenize(s))) / max(1, len(words))
-    return max(dict.fromkeys(sents), key=score)
+    return shorten(max(dict.fromkeys(sents), key=score), words)
 
 
 def make_reference(texte: str, doc_id: str, page: int, corpus, ignore: frozenset = frozenset()) -> Reference:

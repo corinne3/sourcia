@@ -9,7 +9,8 @@ from sourcia.cli import build_parser, main
 from sourcia.core.demande import Demande
 from sourcia.core.models import Document
 from sourcia.extract.pdf import load_text
-from sourcia.formation.corpus_pedagogique import build_corpus, load_corpus, page_link, source_url, write_corpus
+from sourcia.formation.corpus_pedagogique import (MAX_EXTRACT, build_corpus, load_corpus, page_link, shorten,
+                                                  source_url, write_corpus)
 from sourcia.llm.fake import FakeLLM
 
 from conftest import ROOT, doc_by_file
@@ -61,7 +62,20 @@ def test_extracts_are_exact_sentences_of_the_cited_page(demo_ctx):
     assert references(cp)
     for r in references(cp):
         page = " ".join(load_text(r.doc_id, demo_ctx.text_dir)["pages"][r.page - 1].split())
-        assert r.extrait and r.extrait in page
+        assert r.extrait and r.extrait.removeprefix("… ").removesuffix(" …") in page
+
+
+def test_long_sentence_shortened_around_the_point():
+    """Un tableau extrait d'un PDF peut former une « phrase » de 1 000 caractères (vu le 20/11 sur Arvalis)."""
+    from sourcia.core.text import tokenize
+
+    filler = " ".join(f"colonne{i} RGI Alternatif T. incarnat" for i in range(40))
+    sentence = f"{filler} le sorgho multicoupe résiste à la sécheresse estivale {filler}"
+    out = shorten(sentence, set(tokenize("Le sorgho multicoupe résiste à la sécheresse.")))
+    assert len(out) <= MAX_EXTRACT + 4 and out.startswith("… ") and out.endswith(" …")
+    assert "sorgho multicoupe résiste à la sécheresse" in out
+    assert out.removeprefix("… ").removesuffix(" …") in sentence             # toujours recopié mot pour mot
+    assert shorten("Phrase courte.", set()) == "Phrase courte."
 
 
 def test_diplomante_sequences_attached_to_capacities(demo_ctx):
