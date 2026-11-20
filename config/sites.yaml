@@ -11,6 +11,7 @@
 #   exclure  expression régulière : pages et PDF dont l'adresse la contient, jamais visités ni listés
 #   articles expression régulière sur le chemin des pages d'articles : chaque article qui passe le filtre
 #            (adresse ou titre) est gardé comme document « page » (texte de l'article seul, date)
+#   actif    false : site mis de côté (ex. bloqué), collecté seulement si on le demande (--site <nom>)
 sites:
   - nom: arvalis
     url: https://www.arvalis.fr
@@ -19,6 +20,7 @@ sites:
     exclure: "edition_summary|/editions/"   # brochures payantes : pages de vente et sommaires (1 à 4 pages)
   - nom: idele
     url: https://idele.fr
+    actif: false                        # bloqué par une protection anti-robots (voir notes) : pas collecté chaque jour
     filtre: "fourrag|prairie|sorgho|autonomie|paturage|pâturage"
   - nom: terres-inovia
     url: https://www.terresinovia.fr

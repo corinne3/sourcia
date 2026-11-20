@@ -38,6 +38,7 @@ class SiteConfig(BaseModel):
     filtre: str | None = None     # expression régulière : pages visitées d'abord, PDF gardés (adresse, lien, page)
     exclure: str | None = None    # expression régulière : pages et PDF jamais visités ni listés (adresse)
     articles: str | None = None   # expression régulière sur le chemin des pages d'articles (ex. "^/infos-techniques/")
+    actif: bool = True            # False : site mis de côté (ex. bloqué) ; collecté seulement si demandé par --site
 
 
 def load_sites(path: Path) -> list[SiteConfig]:
@@ -70,9 +71,11 @@ def load_sites(path: Path) -> list[SiteConfig]:
 
 
 def select_sites(sites: list[SiteConfig], names: list[str] | None) -> list[SiteConfig]:
-    """Ne garde que les sites demandés (``--site``). Un nom inconnu lève ``ValueError``."""
+    """Ne garde que les sites demandés (``--site``), sinon les sites actifs. Un nom inconnu lève ``ValueError``.
+
+    Un site ``actif: false`` n'est collecté que si on le demande par son nom."""
     if not names:
-        return sites
+        return [s for s in sites if s.actif]
     known = {s.nom for s in sites}
     unknown = [n for n in names if n not in known]
     if unknown:

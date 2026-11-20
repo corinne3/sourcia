@@ -216,6 +216,9 @@ def test_select_sites(tmp_path):
     assert select_sites(sites, None) == sites
     with pytest.raises(ValueError, match="disponibles : ex, panne"):
         select_sites(sites, ["arvalis"])
+    sites = load_sites(_sites(tmp_path, SITES_YAML.replace("url: https://panne.org/", "url: https://panne.org/\n    actif: false")))
+    assert [s.nom for s in select_sites(sites, None)] == ["ex"]                # site mis de côté : pas collecté par défaut
+    assert [s.nom for s in select_sites(sites, ["panne"])] == ["panne"]        # sauf si on le demande par son nom
 
 
 def test_collect_sites_report_new_then_nothing_new(settings, tmp_path):
