@@ -465,7 +465,7 @@ class FormationBuilder:
             if normalize(t.terme) in {normalize(x["terme"]) for x in out}:
                 continue
             definition = checks.clean(t.definition)
-            with_term = {n: self._ctext(p) for n, p in pool.items() if normalize(t.terme) in normalize(p.text)}
+            with_term = {n: self._ctext(p) for n, p in pool.items() if checks.has_term(t.terme, p.text)}
             if not with_term or not definition:
                 removed.append(f"terme retiré (absent des sources) : « {t.terme} »")
                 continue
@@ -479,7 +479,7 @@ class FormationBuilder:
                 removed.append(f"terme retiré (définition avec un chiffre, une culture ou un aveu non sourcés) : « {t.terme} »")
                 continue
             k = next(iter(with_term))
-            ctx_sent = next((x for x in split_sentences(pool[k].text) if normalize(t.terme) in normalize(x)), "")
+            ctx_sent = next((x for x in split_sentences(pool[k].text) if checks.has_term(t.terme, x)), "")
             out.append({"terme": t.terme, "definition": definition, "doc_id": pool[k].doc_id, "page": pool[k].page,
                         "sourcee": False, "extrait": ctx_sent[:220]})
         return sorted(out, key=lambda x: normalize(x["terme"]))

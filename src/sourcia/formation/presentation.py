@@ -185,7 +185,8 @@ def presentation_pptx(sup, cp, corpus_dir: Path, path: Path) -> Path:
         if kind == "titre":
             d = cp.demande
             text(s, 0.9, 1.2, 11.5, 1.9, cp.titre, size=40, font=TITRES, bold=True, anchor=MSO_ANCHOR.BOTTOM)
-            text(s, 0.9, 3.15, 11.5, 0.9, d.public_description(), size=18, color="terre_douce")
+            public = d.public_description()
+            text(s, 0.9, 3.15, 11.5, 0.9, public[:1].upper() + public[1:], size=18, color="terre_douce")
             if cp.referentiel:
                 caps = ", ".join(c["code"] for c in cp.capacites_visees)
                 chip = box(s, 0.9, 4.1, 11.5, 0.55, MSO_SHAPE.ROUNDED_RECTANGLE, fill="colza_pale")

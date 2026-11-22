@@ -466,3 +466,23 @@ def test_more_units_and_the_sign_is_kept():
     assert found("les 3 points clés") == []                             # « points » sans signe : pas une mesure
     q = make_question("La catégorie E dépasse la moyenne des témoins de +7 points.", [])
     assert q["choix"][q["bonne_reponse"]] == "+7 points" and all(c.startswith("+") for c in q["choix"])
+
+
+def test_fiche_title_glossary_plural_and_audience(corpus_dir):
+    """Vu en vrai : « Fiche technique : Guide technique : … », « Sorgho multicoupe » retiré du glossaire alors que
+    la source dit « sorghos multicoupes », et la ligne du public commençait par une minuscule."""
+    from sourcia.formation.checks import has_term
+    from sourcia.formation.supports import fiche_markdown, fiche_title, upper_first
+
+    assert fiche_title("Guide technique : Choix et valorisation du sorgho") == "Choix et valorisation du sorgho"
+    assert fiche_title("Fiche technique - Sorgho") == "Sorgho" and fiche_title("Le sorgho") == "Le sorgho"
+    md = fiche_markdown({"titre": "Guide technique : Choix du sorgho", "recommandations": []})
+    assert md.startswith("# Fiche technique : Choix du sorgho\n")
+    assert has_term("Sorgho multicoupe", "Les sorghos multicoupes (type sudan-grass) permettent")
+    assert has_term("ray-grass", "du ray-grass anglais") and has_term("NIRS", "des mesures NIRS")
+    assert not has_term("épi", "le stade épiaison")                    # un mot entier, pas un morceau de mot
+    assert upper_first("des étudiants, niveau BTS") == "Des étudiants, niveau BTS"
+    cp = load_corpus(corpus_dir)
+    sup = build_supports(cp, None, ["infographie"])
+    raw = (write_supports(sup, cp, corpus_dir)[0].parent / "infographie.html").read_text(encoding="utf-8")
+    assert f"<p>{upper_first(cp.demande.public_description())}</p>" in raw

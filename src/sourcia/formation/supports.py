@@ -22,6 +22,7 @@ from __future__ import annotations
 import csv
 import html
 import io
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -633,7 +634,7 @@ def infographie_html(sup: Supports, cp) -> str:
                      '<p class="sans">Pas de chiffre dans ces séquences : l’infographie présente l’essentiel du cours.</p>')
     diplome = f'<p class="dip">{e(cp.referentiel["nom"])}</p>' if cp.referentiel else ""
     body = (f'<header><div class="plante">{PLANTES["epi"]}</div><div><h1>{e(cp.titre)}</h1>'
-            f"<p>{e(d.public_description())}</p>{diplome}</div></header>"
+            f"<p>{e(upper_first(d.public_description()))}</p>{diplome}</div></header>"
             f"<main>{bloc_chiffres}<h2>L’essentiel, séquence par séquence</h2>"
             f'<ol class="parcours">{"".join(etapes)}</ol></main>'
             '<footer class="pied"><strong>Sources</strong> : chaque information renvoie à son document et à sa page.'
@@ -661,8 +662,19 @@ border:2px solid var(--colza);font:600 12pt "Fredoka",sans-serif;z-index:1}
 
 
 # --- fiche, glossaire, podcast
+def upper_first(s: str) -> str:
+    """Majuscule à la première lettre seulement (« des étudiants, niveau BTS » : BTS reste en capitales)."""
+    return s[:1].upper() + s[1:]
+
+
+def fiche_title(titre: str) -> str:
+    """Titre sans « Fiche technique : » ni « Guide technique : » au début (le modèle l'ajoute souvent, et le
+    fichier commence déjà par « Fiche technique : »)."""
+    return re.sub(r"^\s*(?:fiche|guide)(?:\s+(?:technique|pratique))?\s*[:–—-]\s*", "", titre, flags=re.I).strip() or titre
+
+
 def fiche_markdown(f: dict) -> str:
-    out = [f"# Fiche technique : {f['titre']}", "", "_Chaque recommandation renvoie à sa source. À relire._", "",
+    out = [f"# Fiche technique : {fiche_title(f['titre'])}", "", "_Chaque recommandation renvoie à sa source. À relire._", "",
            "## Recommandations", ""] + [f"- {x['texte']} {x['ref']}" for x in f["recommandations"]]
     if f.get("vigilance"):
         out += ["", "## Points de vigilance", ""] + [f"- {x['texte']} {x['ref']}" for x in f["vigilance"]]
