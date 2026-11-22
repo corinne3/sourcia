@@ -10,16 +10,21 @@
 - ``POST /api/formation``                 : créer le support de formation (M7)
 - ``GET  /api/formation/{dossier}/{f}``   : télécharger un fichier de la formation
 - ``POST /api/formation/{dossier}/rattachements`` : l'enseignant valide les rattachements (M8)
+- ``POST /api/supports``                  : supports (étape 4) d'un corpus du catalogue, en tâche de fond
+- ``GET  /api/supports/{corpus}[/{sid}[/{f}]]`` : liste, statut, fichiers des supports
 """
 from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 from sourcia import BUILD
+# au niveau du module : FastAPI lit les annotations (texte, à cause de « annotations ») dans ce module
+from sourcia.api.dossier_corpus import CID_RE
+from sourcia.api.supports_api import CatalogueSupportsRequest, SupportsJobs
 from sourcia.core.demande import Demande
 from sourcia.core.models import Fiche
 
@@ -167,6 +172,32 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
                                          refs.get(form.referentiel["id"]), req.valideur)
         write(form, ctx, form_dir, reprendre=folder)
         return stats
+
+    # --- supports (étape 4) d'un corpus du catalogue (data/corpus/corpus-<date>), sans jeton comme /api/formation
+    jobs = SupportsJobs(ctx)
+    corpus_dir = ctx.settings.path("corpus", ".keep").parent
+
+    def catalog_corpus(corpus_id: str) -> Path:
+        folder = corpus_dir / corpus_id
+        if not CID_RE.match(corpus_id) or not (folder / "corpus.json").is_file():
+            raise HTTPException(404, "Corpus introuvable")
+        return folder
+
+    @app.post("/api/supports", status_code=202)
+    def supports_start(req: CatalogueSupportsRequest, tasks: BackgroundTasks):
+        return jobs.start(catalog_corpus(req.corpus_id), req, tasks, "page web")
+
+    @app.get("/api/supports/{corpus_id}")
+    def supports_list(corpus_id: str):
+        return jobs.list(catalog_corpus(corpus_id))
+
+    @app.get("/api/supports/{corpus_id}/{sid}")
+    def supports_status(corpus_id: str, sid: str):
+        return jobs.status(catalog_corpus(corpus_id), sid)
+
+    @app.get("/api/supports/{corpus_id}/{sid}/{name}")
+    def supports_file(corpus_id: str, sid: str, name: str):
+        return jobs.file(catalog_corpus(corpus_id), sid, name)
 
     from sourcia.api.dossiers import create_dossiers_router
 

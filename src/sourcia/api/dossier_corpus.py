@@ -6,6 +6,8 @@ Mêmes jetons et mêmes droits que les dossiers ; le droit de LECTURE suffit.
 - ``GET  /api/dossiers/{id}/corpus-pedagogique/{cid}``     : le statut d'un corpus (pour suivre la construction)
 - ``GET  /api/dossiers/{id}/corpus-pedagogique/{cid}/corpus.json`` (ou ``corpus_pedagogique.docx``, ``demande.yaml``)
 - ``GET  /api/dossiers/{id}/corpus-pedagogique/{cid}/illustrations/{fichier}``
+- ``POST /api/dossiers/{id}/corpus-pedagogique/{cid}/supports``   : supports (étape 4, voir supports_api.py)
+- ``GET  …/{cid}/supports``, ``…/supports/{sid}``, ``…/supports/{sid}/{fichier}`` : liste, statut, fichiers
 
 Rangement : ``data/dossiers/corpus/<folder_id>/corpus-<date>/`` (corpus.json, Word, illustrations, statut.json).
 Une seule construction à la fois par dossier. Le serveur tourne en UN processus (SQLite, tâches de fond) : une
@@ -23,6 +25,7 @@ from fastapi import BackgroundTasks, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from sourcia.api.supports_api import SupportsJobs, SupportsRequest
 from sourcia.core.demande import Demande
 from sourcia.formation.corpus_pedagogique import new_corpus_folder
 from sourcia.formation.dossier_context import (build_dossier_corpus, corpus_root, mark_ready, now, read_status,
@@ -121,6 +124,31 @@ def add_corpus_routes(router, ctx, store, identity) -> None:
     def corpus_status(folder_id: str, cid: str, email: str = Depends(identity)):
         readable(folder_id, email)
         return status(folder_id, corpus_folder(folder_id, cid))
+
+    # --- supports (étape 4) d'un corpus de dossier : déclarés AVANT la route des fichiers du corpus, sinon
+    # « …/{cid}/supports » serait pris pour le fichier « supports »
+    jobs = SupportsJobs(ctx)
+
+    def ready_corpus(folder_id: str, cid: str, email: str) -> Path:
+        readable(folder_id, email)
+        return corpus_folder(folder_id, cid)
+
+    @router.post("/{folder_id}/corpus-pedagogique/{cid}/supports", status_code=202)
+    def start_supports(folder_id: str, cid: str, req: SupportsRequest, tasks: BackgroundTasks,
+                       email: str = Depends(identity)):
+        return jobs.start(ready_corpus(folder_id, cid, email), req, tasks, email)
+
+    @router.get("/{folder_id}/corpus-pedagogique/{cid}/supports")
+    def list_supports(folder_id: str, cid: str, email: str = Depends(identity)):
+        return jobs.list(ready_corpus(folder_id, cid, email))
+
+    @router.get("/{folder_id}/corpus-pedagogique/{cid}/supports/{sid}")
+    def supports_status(folder_id: str, cid: str, sid: str, email: str = Depends(identity)):
+        return jobs.status(ready_corpus(folder_id, cid, email), sid)
+
+    @router.get("/{folder_id}/corpus-pedagogique/{cid}/supports/{sid}/{name}")
+    def supports_file(folder_id: str, cid: str, sid: str, name: str, email: str = Depends(identity)):
+        return jobs.file(ready_corpus(folder_id, cid, email), sid, name)
 
     @router.get("/{folder_id}/corpus-pedagogique/{cid}/illustrations/{name}")
     def corpus_image(folder_id: str, cid: str, name: str, email: str = Depends(identity)):
