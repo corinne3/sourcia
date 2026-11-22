@@ -19,7 +19,9 @@ Hackathon SAED, défi 1 : passer de **milliers de documents** à **environ 50 so
 | **M5 Sélection** | entonnoir → ≈ 50 documents classés, filtrés, **justifiés**, diversifiés | `select` |
 | **M6 Sorties** | page web du formateur, exports (md, csv, txt, json, zip), API, serveur MCP | `serve`, `mcp`, `select --export` |
 | **M7 Formation** | créer **soi-même** le support : plan, points clés sourcés, QCM (et Moodle), fiche technique, synthèse, cas concret, glossaire, script de podcast, déroulé de séance, contenu personnel protégé | `formation` |
-| **Corpus pédagogique** (étape 3) | à partir des **seuls documents cochés** et des acquis visés : séquences rattachées aux capacités, points clés et synthèse avec **références vérifiables** (document, page, extrait exact, lien `#page=N` pour un PDF), bibliographie, dans `corpus.json` (sans QCM) ; document Word avec liens cliquables vers la page citée (`corpus_pedagogique.docx`, python-docx : `pip install -e ".[word]"`) ; **illustrations d'origine** des pages citées (PyMuPDF : logos, bandeaux et décors écartés, légende prise dans le document) | `corpus`, `corpus-word` |
+| **Corpus pédagogique** (étape 3) | à partir des **seuls documents cochés** et des acquis visés : séquences rattachées aux capacités, points clés et synthèse avec **références vérifiables** (document, page, extrait exact, lien `#page=N` pour un PDF), bibliographie, dans `corpus.json` (sans QCM) ; document Word avec liens cliquables vers la page citée (`corpus_pedagogique.docx`, python-docx : `pip install -e ".[word]"`) ; **illustrations d'origine** des pages citées (PyMuPDF : logos, bandeaux et décors écartés, légende prise dans le document) ; **depuis un dossier enseignant** : documents cochés et prêts du dossier, PDF téléversés cités « Document fourni par le formateur » (API `POST /api/dossiers/{id}/corpus-pedagogique`, tâche de fond, même jeton) | `corpus`, `corpus --dossier`, `corpus-word` |
+| **Parcours web** | dans le navigateur, sans ligne de commande : **Catalogue → Mon dossier → Mon corpus → Mes supports** (barre commune ; les étapes 2 à 4 dans `/dossiers`, jeton enseignant gardé en mémoire) : demande, construction suivie, aperçu du corpus (références cliquables, extraits, illustrations, sources), choix des séquences et des supports, téléchargements | `serve` |
+| **Supports** (étape 4) | à partir du **seul `corpus.json`** (tout ou partie des séquences), chaque information avec sa référence [S1, p. N] : **QCM** sans modèle, justes par construction (Markdown élève et corrigé, Moodle GIFT ; le modèle peut compléter, questions contrôlées), **cartes** (CSV Anki, HTML à découper), **présentation** `.pptx` (python-pptx : `pip install -e ".[pptx]"`, références dans les notes), **infographie** A4 (HTML) ; avec modèle : fiche technique, glossaire, podcast (contrôlés contre les extraits) ; API `POST /api/supports` ou `…/corpus-pedagogique/{cid}/supports` | `supports` |
 | **M8 Référentiels** | capacités des diplômes (chlorofil.fr), versions, rattachement des séquences, validation par l'enseignant, contrôle du niveau | `referentiel`, `valider-formation` |
 | **Évaluation** | comparer à une référence fournie par le métier | `eval trouver`, `eval qualifier`, `eval gabarit` |
 
@@ -136,13 +138,31 @@ MIT pour le code. Les documents collectés gardent leur propre licence (ex. RD A
 
 ## Dossiers pédagogiques
 
-Installez l'option API avec `python -m pip install -e ".[api]"`. Avant de lancer
-`sourcia serve`, définissez la variable d'environnement `SOURCIA_DOSSIER_ACCOUNTS`
-avec un objet JSON associant les adresses des enseignants à leurs jetons.
-L'administrateur fournit à chaque enseignant son propre jeton par un canal privé.
-Générez chaque jeton avec `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
-Configurez la variable dans l'environnement du processus ou dans les secrets
-de l'hébergeur.
+Installez l'option API avec `python -m pip install -e ".[api]"`. Chaque enseignant a un compte : son adresse
+e-mail et un **jeton** secret, qui lui sert de mot de passe personnel.
+
+**Gérer les comptes** (l'administrateur, sur le serveur) :
+
+```powershell
+sourcia comptes ajouter prenom.nom@lycee.fr --url https://adresse-du-serveur
+sourcia comptes lister
+sourcia comptes retirer prenom.nom@lycee.fr
+```
+
+`ajouter` affiche le jeton **une seule fois**, avec un **lien de connexion directe**
+(`…/dossiers#jeton=…`) : transmettez l'un ou l'autre à l'enseignant par un canal privé. Seule l'empreinte du
+jeton est rangée dans `<data_dir>/comptes.json` ; le fichier est relu dès qu'il change, sans relancer le serveur.
+`--remplacer` donne un nouveau jeton à un compte existant (les sessions ouvertes avec l'ancien s'arrêtent).
+La variable d'environnement `SOURCIA_DOSSIER_ACCOUNTS` (objet JSON adresse → jeton) reste acceptée.
+
+**Session** : l'enseignant saisit son jeton une fois (ou ouvre son lien) ; un cookie protégé (HttpOnly,
+SameSite=Strict, Secure en HTTPS) le garde connecté 12 heures, même en passant par le catalogue. « Se déconnecter »
+ferme la session. Définissez `SOURCIA_SESSION_SECRET` (au moins 32 caractères aléatoires) pour que les sessions
+survivent à un redémarrage du serveur ; sans elle, il suffit de se reconnecter.
+
+**Démonstration** : `sourcia comptes demo` crée le compte `demo@sourcia.local` avec un dossier déjà rempli de
+documents publics du catalogue (`--sujet`, `--documents`) et affiche son lien. Rien n'existe sans cette commande ;
+`sourcia comptes retirer demo@sourcia.local` le supprime.
 
 Ouvrez `/dossiers` dans l'interface web. Le partage donne accès au compte
 correspondant à l'adresse e-mail. La fin du traitement s'affiche dans le dossier.

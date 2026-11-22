@@ -67,6 +67,12 @@ class Context:
     def text_dir(self):
         return self.settings.path("text", ".keep").parent
 
+    def text_of(self, doc_id: str) -> dict | None:
+        """Texte extrait d'un document (pages). Un autre contexte (dossier enseignant) lit ailleurs."""
+        from sourcia.extract.pdf import load_text
+
+        return load_text(doc_id, self.text_dir)
+
     @property
     def pdf_dir(self):
         return self.settings.path("pdfs", ".keep").parent

@@ -83,6 +83,13 @@ class SourceBiblio(BaseModel):
     nature: str = "pdf"                      # Document.kind
     pages_citees: list[int] = Field(default_factory=list)
     citee: bool = True                       # False : document coché mais jamais cité
+    prive: bool = False                      # document privé : ses extraits ne vont pas à un modèle en ligne sans accord
+    fourni_par_formateur: bool = False       # PDF téléversé dans un dossier enseignant (cité sans lien)
+    catalog_id: str | None = None            # dossier enseignant : identifiant du document dans le catalogue
+
+
+# Document.meta : marque posée par le contexte d'un dossier sur un PDF téléversé par le formateur
+FOURNI = "fourni_par_formateur"
 
 
 class CorpusPedagogique(BaseModel):
@@ -90,6 +97,7 @@ class CorpusPedagogique(BaseModel):
     cree_le: str = ""
     demande: Demande
     titre: str
+    dossier_id: str | None = None            # corpus construit depuis un dossier enseignant
     doc_ids: list[str]                       # les documents cochés (hors privés exclus)
     referentiel: dict | None = None          # id, nom, version, statut
     capacites_visees: list[dict] = Field(default_factory=list)   # code, libelle
@@ -189,7 +197,9 @@ def bibliography(cp: CorpusPedagogique, ctx) -> list[SourceBiblio]:
         cited = did in pages
         out.append(SourceBiblio(numero=f"S{len(out) + 1}" if cited else "", doc_id=did, titre=doc.title or did,
                                 organisme=str(organisme) if organisme else None, annee=annee, url=source_url(doc),
-                                nature=doc.kind, pages_citees=sorted(pages.get(did, [])), citee=cited))
+                                nature=doc.kind, pages_citees=sorted(pages.get(did, [])), citee=cited,
+                                prive=doc.private, fourni_par_formateur=bool(doc.meta.get(FOURNI)),
+                                catalog_id=doc.meta.get("catalog_id")))
     return out
 
 
@@ -203,7 +213,10 @@ def build_corpus(ctx, demande, doc_ids: list[str], *, llm=None, n_seq: int = 4,
     # les points clés et la synthèse sont TOUJOURS produits ici (ils font le corpus), quelles que soient les sorties
     work = d.model_copy(update={"sorties": list(dict.fromkeys([*d.sorties, "plan", "points_cles", "synthese"]))})
     ref = b.load_ref(d)
-    corpus = b.prepare(work, doc_ids)
+    # accord explicite (autoriser_cloud_personnel) : les documents PRIVÉS cochés peuvent aller au modèle en ligne ;
+    # sans accord, prepare() les exclut avec un modèle en ligne et ils sont listés dans exclus_prives
+    private = [i for i in doc_ids if (x := ctx.store.get(i)) is not None and x.private]
+    corpus = b.prepare(work, doc_ids, allow_private=private)
     with span("corpus", demande=d.sujet, docs=len(corpus.docs)):
         log(f"  {len(corpus.docs)} documents cochés, {len(corpus.passages)} passages"
             + (f" ({len(corpus.excluded_private)} privés exclus : modèle en ligne)" if corpus.excluded_private else ""))
@@ -248,15 +261,24 @@ def build_corpus(ctx, demande, doc_ids: list[str], *, llm=None, n_seq: int = 4,
 
 
 # ---------------------------------------------------------------------- fichiers
-def write_corpus(cp: CorpusPedagogique, out_root: Path, ctx=None, max_illustrations: int = 12) -> list[Path]:
-    """Écrit ``corpus-<date>/corpus.json`` et ``demande.yaml`` ; renvoie les chemins.
-    Avec ``ctx`` : copie d'abord les illustrations des pages citées dans ``corpus-<date>/illustrations/``."""
+def new_corpus_folder(out_root: Path) -> Path:
+    """Crée ``corpus-<date>`` (``-2``, ``-3``… si deux corpus naissent dans la même seconde) et le renvoie."""
     base = Path(out_root) / f"corpus-{datetime.now():%Y%m%d-%H%M%S}"
     out, k = base, 1
-    while out.exists():                      # deux corpus dans la même seconde : on n'écrase pas le premier
+    while out.exists():                      # on n'écrase jamais un corpus existant
         k += 1
         out = base.with_name(f"{base.name}-{k}")
     out.mkdir(parents=True)
+    return out
+
+
+def write_corpus(cp: CorpusPedagogique, out_root: Path, ctx=None, max_illustrations: int = 12,
+                 folder: Path | None = None) -> list[Path]:
+    """Écrit ``corpus-<date>/corpus.json`` et ``demande.yaml`` ; renvoie les chemins.
+    Avec ``ctx`` : copie d'abord les illustrations des pages citées dans ``corpus-<date>/illustrations/``.
+    ``folder`` : dossier déjà créé (par ``new_corpus_folder``), quand l'identifiant est donné avant la construction."""
+    out = Path(folder) if folder is not None else new_corpus_folder(out_root)
+    out.mkdir(parents=True, exist_ok=True)
     if ctx is not None and max_illustrations > 0:
         from sourcia.formation.illustrations import extract_illustrations
 
