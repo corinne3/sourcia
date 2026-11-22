@@ -6,6 +6,7 @@ Ordre normal :  add-site / add-folder / import-catalog  →  download  →  extr
                 →  search / select  →  (eval)
 Puis (M7) :     ``sourcia formation``  (support de formation à partir de la dernière sélection exportée)
        ou :     ``sourcia corpus``  (étape 3 seule : corpus pédagogique corpus.json + document Word, sans QCM)
+                ``sourcia corpus --dossier <id>``  (corpus des documents cochés d'un dossier enseignant)
                 ``sourcia corpus-word <dossier>``  (refaire le Word après une correction de corpus.json)
 Raccourci :     ``sourcia demo``  (exemples fictifs, tout le pipeline en une commande, sans Internet)
 """
@@ -563,6 +564,8 @@ def cmd_corpus(args) -> None:
     from sourcia.select.funnel import select_demande
 
     ctx = _ctx(args)
+    if args.dossier:                                 # documents cochés et prêts d'un dossier enseignant
+        return _corpus_dossier(args, ctx)
     # documents cochés : --documents (prioritaire), sinon ceux de la sélection exportée
     base, doc_ids = _read_selection(args, ctx) if (args.selection or not args.documents) else (None, [])
     if args.documents:
@@ -593,6 +596,10 @@ def cmd_corpus(args) -> None:
     except Exception as exc:                         # le corpus.json est déjà écrit : on le dit, sans tout arrêter
         print(f"  ⚠️ document Word non produit ({type(exc).__name__} : {str(exc)[:150]}) ; "
               f"corpus.json est utilisable, réessayer avec : sourcia corpus-word {paths[0].parent}")
+    _corpus_summary(cp, paths)
+
+
+def _corpus_summary(cp, paths) -> None:
     n_p = sum(len(s.points) for s in cp.sequences)
     n_r = sum(len(s.retires) for s in cp.sequences) + len(cp.retires)
     n_s = len(cp.synthese.paragraphes) if cp.synthese else 0
@@ -603,11 +610,42 @@ def cmd_corpus(args) -> None:
     if cp.couverture:
         ok = sum(bool(c["sequences"]) for c in cp.couverture)
         print(f"Référentiel : {ok}/{len(cp.couverture)} capacités visées couvertes")
+    if cp.exclus_prives:
+        print(f"  🔒 documents privés exclus (modèle en ligne, sans accord) : {', '.join(cp.exclus_prives)}")
     for r in cp.remarques[:8]:
         print(f"  📝 {r}")
     print("Fichiers :")
     for p in paths:
         print(f"  {p}")
+
+
+def _corpus_dossier(args, ctx) -> None:
+    """``sourcia corpus --dossier <id>`` : en local, sans jeton, comme la route POST …/corpus-pedagogique."""
+    try:
+        from sourcia.api.dossiers import Dossiers
+    except ImportError:
+        sys.exit('Les dossiers enseignants demandent l\'extra api : pip install -e ".[api]"')
+    from sourcia.formation.dossier_context import build_dossier_corpus, mark_ready
+
+    if args.selection or args.documents:
+        sys.exit("Avec --dossier, les documents sont ceux cochés dans le dossier : pas de sélection ni de --documents.")
+    dossiers = Dossiers(ctx)
+    with dossiers.db() as db:
+        row = db.execute("SELECT title FROM folders WHERE id = ?", (args.dossier,)).fetchone()
+    if row is None:
+        sys.exit(f"Dossier introuvable : {args.dossier}")
+    d = _demande_from_args(args, None)
+    print(f"Dossier : {row['title']} · demande : {d.sujet}")
+    print(f"Modèle : {ctx.settings.llm.provider} / {ctx.settings.llm.model} (compter 1 à 3 min par appel en local)")
+    try:
+        cp, paths = build_dossier_corpus(ctx, dossiers, args.dossier, d, sequences=args.sequences,
+                                         autoriser_documents_prives=args.autoriser_documents_prives,
+                                         max_illustrations=0 if args.sans_illustrations else args.max_illustrations,
+                                         log=print)
+    except ValueError as exc:                        # aucun document coché et prêt
+        sys.exit(str(exc))
+    mark_ready(paths[0].parent, cp, cree_le=cp.cree_le, demande_par="ligne de commande")
+    _corpus_summary(cp, paths)
 
 
 def cmd_corpus_word(args) -> None:
@@ -836,6 +874,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("corpus", cmd_corpus, "étape 3 : corpus pédagogique (corpus.json) à partir des documents cochés, sans QCM")
     sp.add_argument("selection", nargs="?", help="fichier selection-*.json (défaut : la dernière sélection exportée)")
     sp.add_argument("--documents", help="identifiants des documents cochés, séparés par des virgules")
+    sp.add_argument("--dossier", help="identifiant d'un dossier enseignant : ses documents cochés et prêts")
+    sp.add_argument("--autoriser-documents-prives", action="store_true",
+                    help="accord pour envoyer les documents privés (PDF téléversés) à un modèle en ligne")
     sp.add_argument("--sans-illustrations", action="store_true", help="ne pas reprendre les images des documents")
     sp.add_argument("--max-illustrations", type=int, default=12, help="nombre d'illustrations au plus (défaut 12)")
     sp.add_argument("--sujet", help="sujet (sinon : celui de la demande ou de la sélection)")
