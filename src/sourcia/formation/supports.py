@@ -150,7 +150,12 @@ def private_docs(cp) -> set[str]:
 
 class CorpusPassages:
     """Mini-corpus fait de corpus.json, pour les fonctions du FormationBuilder (même interface que
-    SelectionCorpus : ``passages``, ``search()``, ``title()``). Un passage = l'EXTRAIT EXACT d'un point."""
+    SelectionCorpus : ``passages``, ``search()``, ``title()``).
+
+    Un passage = l'EXTRAIT EXACT d'un point, suivi du point clé lui-même quand il le reformule. Le point a déjà
+    été vérifié contre sa source à l'étape du corpus : une phrase du modèle qui le reprend reste donc soutenue
+    par le document (même document, même page). Avec l'extrait seul (une phrase, 300 caractères au plus), les
+    répliques d'un podcast qui résument deux informations étaient toutes retirées (vu le 22/11 avec Gemini)."""
 
     def __init__(self, cp, items: list[Item], exclude: set[str] = frozenset()):
         self.titles = {b.doc_id: b.titre for b in cp.bibliographie}
@@ -159,6 +164,8 @@ class CorpusPassages:
         seen = set()
         for it in items:
             text = it.ref.extrait.removeprefix("… ").removesuffix(" …")
+            if it.texte and normalize(it.texte) not in normalize(text):
+                text = f"{text} {it.texte}".strip()
             if it.ref.doc_id in exclude or not text or (it.ref.doc_id, it.ref.page, text) in seen:
                 continue
             seen.add((it.ref.doc_id, it.ref.page, text))
@@ -354,8 +361,24 @@ def _model_supports(sup, cp, items, seqs, ctx, log, avec_modele, per_seq) -> Non
                 if val:
                     for r in val["repliques"]:
                         r["ref"] = _ref_of(r["doc_id"], r["page"], pool, nums).label() if r.get("doc_id") else ""
+                    val["repliques"], orphans = answered(val["repliques"])
+                    sup.retires += [f"question de l'animateur sans réponse (réponse retirée) : « {q[:90]} »"
+                                    for q in orphans]
                 sup.podcast = val
     sup.appels_modele = b.calls
+
+
+def answered(repliques: list[dict]) -> tuple[list[dict], list[str]]:
+    """Retire les questions de l'animateur restées sans réponse (la réponse de l'expert a été retirée par les
+    contrôles) : sinon deux questions se suivent dans le script. Renvoie (répliques gardées, questions retirées)."""
+    kept, orphans = [], []
+    for k, r in enumerate(repliques):
+        nxt = repliques[k + 1] if k + 1 < len(repliques) else None
+        if r["voix"] == "animateur" and (nxt is None or nxt["voix"] != "expert"):
+            orphans.append(r["texte"])
+            continue
+        kept.append(r)
+    return kept, orphans
 
 
 def _with_refs(val: dict, keys, pool, nums) -> dict:
