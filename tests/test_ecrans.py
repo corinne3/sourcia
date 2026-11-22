@@ -41,7 +41,8 @@ def test_steps_bar_on_both_pages(client):
         html = client.get(path).text
         nav = re.search(r'<nav class="steps".*?</nav>', html, re.S).group(0)
         assert re.findall(r'href="([^"]+)"', nav) == STEPS, path
-    assert 'aria-current="page">1. Catalogue' in INDEX
+    assert re.search(r'<a href="/" data-step="catalogue" aria-current="page">', INDEX)   # étape en cours au catalogue
+    assert "aria-current" not in re.search(r'<nav class="steps".*?</nav>', DOSSIERS, re.S).group(0)  # posé par le script
     page = client.get("/dossiers").text
     assert 'id="step-corpus"' in page and 'id="step-supports"' in page
     assert page.index('<script src="/assets/parcours.js">') > page.index("</script>")   # après le script de Kalil
@@ -99,6 +100,29 @@ def test_every_static_file_is_packaged():
     import tomllib
 
     patterns = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["setuptools"]["package-data"]["sourcia"]
-    for f in STATIC.iterdir():
-        rel = f"api/static/{f.name}"
+    for f in STATIC.rglob("*"):
+        if f.is_dir():
+            continue
+        rel = "api/static/" + f.relative_to(STATIC).as_posix()
         assert any(fnmatch.fnmatch(rel, p) for p in patterns), f"{rel} n'est pas livré avec le paquet"
+
+
+def test_fonts_served_from_the_app(client):
+    """Polices hébergées par l'application : chaque @font-face de la feuille de style pointe sur un fichier servi."""
+    css = (STATIC / "sourcia.css").read_text(encoding="utf-8")
+    urls = re.findall(r'url\("(/assets/fonts/[^"]+)"\)', css)
+    assert len(urls) == 4
+    for url in urls:
+        r = client.get(url)
+        assert r.status_code == 200 and r.headers["content-type"] == "font/woff2" and r.content[:4] == b"wOF2", url
+    assert client.get("/assets/fonts/OFL-fredoka.txt").status_code == 404          # seulement les .woff2
+    assert client.get("/assets/fonts/..%2Fsourcia.css").status_code == 404
+    assert "fonts.googleapis.com" not in css and "fonts.gstatic.com" not in css      # rien chez Google
+    for name in ("OFL-fredoka.txt", "OFL-atkinson-hyperlegible.txt"):              # licences livrées avec les polices
+        assert "SIL Open Font License" in (STATIC / "fonts" / name).read_text(encoding="utf-8")
+
+
+def test_plain_french_copy_in_the_screens():
+    """Pas de « A · B · C » ni de « Bouton → » dans les textes des écrans : des phrases simples."""
+    code = re.sub(r"//[^\n]*", "", JS)
+    assert " · " not in code and "→'" not in code and "→ '" not in code
