@@ -1,19 +1,40 @@
 # Sites candidats (à VALIDER par le métier : pertinence, conditions d'utilisation, licences).
-# Usage : sourcia add-site <url> --source <nom> --include "<filtre>"
+# Usage : sourcia collect-sites [--site <nom>] [--no-download] [--max-pages N]
+#    (ou un site à la main : sourcia add-site <url> --source <nom> --include "<filtre>")
 # Les adresses de départ sont des pages d'accueil ou de publications ; vérifier qu'elles répondent.
+#
+# Champs d'un site (nom et url obligatoires, les autres facultatifs) :
+#   nom      nom court, sert aussi de « source » des documents
+#   url      adresse de départ de l'exploration
+#   filtre   expression régulière : pages visitées d'abord ; PDF gardés si elle se retrouve dans
+#            leur adresse, le texte du lien, ou l'adresse ou le titre de la page d'origine
+#   exclure  expression régulière : pages et PDF dont l'adresse la contient, jamais visités ni listés
+#   articles expression régulière sur le chemin des pages d'articles : chaque article qui passe le filtre
+#            (adresse ou titre) est gardé comme document « page » (texte de l'article seul, date)
+#   actif    false : site mis de côté (ex. bloqué), collecté seulement si on le demande (--site <nom>)
 sites:
   - nom: arvalis
     url: https://www.arvalis.fr
     filtre: "fourrag|sorgho|prairie|maïs|mais|secheresse|sécheresse"
+    articles: "^/infos-techniques/"     # le contenu utile d'arvalis : articles et résultats d'essais
+    exclure: "edition_summary|/editions/"   # brochures payantes : pages de vente et sommaires (1 à 4 pages)
   - nom: idele
     url: https://idele.fr
+    actif: false                        # bloqué par une protection anti-robots (voir notes) : pas collecté chaque jour
     filtre: "fourrag|prairie|sorgho|autonomie|paturage|pâturage"
   - nom: terres-inovia
     url: https://www.terresinovia.fr
     filtre: "luzerne|proteagineux|protéagineux|legumineuse|légumineuse"
+    articles: "^/fr/(informations-techniques|actualites)/"   # fiches techniques et actualités (date « Publié le … »)
+    exclure: "/en/"                     # copie anglaise du site : mêmes contenus en double
   - nom: chambres-agriculture
     url: https://chambres-agriculture.fr
-    filtre: "fourrag|prairie|sorgho|climat"
+    # « climat » retiré (à valider par le métier) : il ramenait viticulture, affiches et communiqués de presse
+    filtre: "fourrag|prairie|sorgho|secheresse|sécheresse|paturage|pâturage"
+    articles: "^/(actualites/actualite|les-dossiers/detail-du-dossier)/"
+    exclure: "offres-demploi|/agenda/"  # offres d'emploi et agenda : pas de contenu technique
+    # /sinformer/nos-ressources/ : fiches courtes avec un PDF (guides techniques) ; le PDF est collecté, pas la fiche
 notes:
   - "RD Agri (ACTA, CC BY-NC-SA) : passer par le catalogue du Lexicon (sourcia import-catalog) ou le MCP quand il sera documenté."
   - "Respect : robots.txt, 1 requête par seconde au plus, pas de téléchargement massif sans accord."
+  - "idele.fr (novembre 2026) : page « Vérification de la connexion » contre les robots ; collecte automatique impossible, ne pas contourner. Demander un accès ou un export, ou passer par RD Agri."

@@ -562,32 +562,48 @@ class FormationBuilder:
                         + [x["texte"] for x in (form.synthese or {}).get("paragraphes", [])])
         return {"objectifs": obj, "lisibilite": check_readability(text, d.niveau)}
 
-    # ------------------------------------------------------------------ tout
-    def build(self, demande, doc_ids: list[str], n_seq: int = 4, n_quiz: int = 4, log=lambda *a: None) -> Formation:
+    # ------------------------------------------------------------------ préparation (commune à build et au corpus)
+    def load_ref(self, d: Demande):
+        """Référentiel du diplôme (formation diplômante), sinon None."""
         from sourcia.referentiel.models import ReferentielStore
 
-        d = as_demande(demande)
-        t0 = time.perf_counter()
-        ref = None
         if d.diplomante and d.diplome:
-            ref = ReferentielStore(self.ctx.settings.referentiels_dir).get(d.diplome)
-        perso = self.personal_docs(d)
-        cloud = self.ctx.settings.llm.provider == "litellm"
-        corpus = SelectionCorpus(self.ctx, perso + list(doc_ids), cloud=cloud,
-                                 allow_private=tuple(perso) if d.autoriser_cloud_personnel else ())
+            return ReferentielStore(self.ctx.settings.referentiels_dir).get(d.diplome)
+        return None
+
+    def prepare(self, d: Demande, doc_ids: list[str], perso: list[str] | tuple = ()) -> SelectionCorpus:
+        """Mini-corpus des documents donnés et repères des contrôles (mots du sujet, tous les passages).
+        À appeler avant plan(), sequence(), synthese()…"""
         from sourcia.core.text import tokenize
 
+        cloud = self.ctx.settings.llm.provider == "litellm"
+        corpus = SelectionCorpus(self.ctx, list(perso) + list(doc_ids), cloud=cloud,
+                                 allow_private=tuple(perso) if d.autoriser_cloud_personnel else ())
         self.corpus = corpus
         self.topic = frozenset(tokenize(d.sujet))
         self.pool = {1000 + i: p for i, p in enumerate(corpus.passages)}
         self.pool_texts = {k: self._ctext(p) for k, p in self.pool.items()}
+        return corpus
+
+    @staticmethod
+    def title_for(plan: PlanFormation, d: Demande) -> str:
+        """Titre du plan, sauf s'il ne dit que « Séquence… » : on reprend alors le sujet."""
+        return d.sujet[:1].upper() + d.sujet[1:] if re.match(r"(?i)^s[ée]quence\b", plan.titre.strip()) else plan.titre
+
+    # ------------------------------------------------------------------ tout
+    def build(self, demande, doc_ids: list[str], n_seq: int = 4, n_quiz: int = 4, log=lambda *a: None) -> Formation:
+        d = as_demande(demande)
+        t0 = time.perf_counter()
+        ref = self.load_ref(d)
+        perso = self.personal_docs(d)
+        corpus = self.prepare(d, doc_ids, perso)
         with span("formation", demande=d.sujet, docs=len(corpus.docs)):
             log(f"  {len(corpus.docs)} documents ({len(perso)} personnels), {len(corpus.passages)} passages"
                 + (f" ({len(corpus.excluded_private)} privés exclus : modèle en ligne)" if corpus.excluded_private else ""))
             plan, how = self.plan(corpus, d, ref, n_seq)
             seqs, couverture, notes = self.attach(plan, d, ref, how)
             log(f"  plan ({'modèle' if how == 'modele' else 'repli sans modèle'}) : {len(seqs)} séquences")
-            titre = d.sujet[:1].upper() + d.sujet[1:] if re.match(r"(?i)^s[ée]quence\b", plan.titre.strip()) else plan.titre
+            titre = self.title_for(plan, d)
             form = Formation(demande=d, titre=titre, doc_ids=[x.id for x in corpus.docs], couverture=couverture,
                              remarques=notes, exclus_prives=[x.title for x in corpus.excluded_private], personnel_ids=perso,
                              referentiel={"id": ref.id, "nom": ref.nom, "version": ref.version, "statut": ref.statut} if ref else None)
