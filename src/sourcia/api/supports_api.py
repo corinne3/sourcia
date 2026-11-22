@@ -22,8 +22,8 @@ from pydantic import BaseModel, Field
 
 from sourcia.formation.corpus_pedagogique import load_corpus
 from sourcia.formation.dossier_context import now, read_status, write_status
-from sourcia.formation.supports import (SANS_MODELE, build_supports, chosen_sequences, new_supports_folder,
-                                        write_supports)
+from sourcia.formation.supports import (EMPTY_MESSAGE, SANS_MODELE, build_supports, chosen_sequences, count_points,
+                                        new_supports_folder, write_supports)
 
 logger = logging.getLogger(__name__)
 SID_RE = re.compile(r"^supports-\d{8}-\d{6}(-\d+)?$")
@@ -68,6 +68,8 @@ class SupportsJobs:
             seqs = chosen_sequences(cp, req.sequences)
         except ValueError as exc:
             raise HTTPException(422, str(exc))
+        if not count_points(cp, seqs):
+            raise HTTPException(409, EMPTY_MESSAGE)
         key = str(corpus_dir.resolve())
         with self.lock:
             if key in self.running:

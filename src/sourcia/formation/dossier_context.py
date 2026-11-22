@@ -108,6 +108,8 @@ def mark_ready(folder: Path, cp: CorpusPedagogique, **fields) -> dict:
     """Statut « pret » d'un corpus construit (API ou ligne de commande)."""
     return write_status(folder, id=Path(folder).name, statut="pret", termine_le=now(), sujet=cp.demande.sujet,
                         documents=len(cp.doc_ids), exclus_prives=cp.exclus_prives,
+                        points=sum(len(s.points) for s in cp.sequences),     # 0 : corpus vide (modèle muet)
+                        echecs_modele=len(cp.echecs_modele),
                         illustrations=len(cp.illustrations), appels_modele=cp.appels_modele, **fields)
 
 
