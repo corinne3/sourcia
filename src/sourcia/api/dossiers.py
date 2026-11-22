@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-import secrets
 import shutil
 import sqlite3
 import uuid
@@ -13,7 +11,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
@@ -21,6 +19,7 @@ from starlette.background import BackgroundTask
 
 from sourcia.collect.store import file_sha1
 from sourcia.collect.web import WebCollector
+from sourcia.comptes import COOKIE, Comptes, Sessions
 from sourcia.core.models import Candidate, Document, Fiche
 from sourcia.core.text import normalize
 from sourcia.export.exporters import export
@@ -43,6 +42,10 @@ class CatalogResource(BaseModel):
 
 class Selection(BaseModel):
     selected: bool
+
+
+class Login(BaseModel):
+    jeton: str = Field(min_length=1, max_length=200)
 
 
 class Sharing(BaseModel):
@@ -201,25 +204,45 @@ def serialize(row):
 
 def create_dossiers_router(ctx):
     router = APIRouter(prefix="/api/dossiers", tags=["Dossiers"])
-    accounts = json.loads(os.environ.get("SOURCIA_DOSSIER_ACCOUNTS", "{}"))
-    if (not isinstance(accounts, dict)
-            or any(not isinstance(token, str) or not token.isascii() or len(token) < 32 for token in accounts.values())
-            or len(set(accounts.values())) != len(accounts)):
-        raise ValueError("SOURCIA_DOSSIER_ACCOUNTS doit associer chaque adresse à un jeton ASCII unique d'au moins 32 caractères.")
-    normalized_accounts = {email.strip().casefold(): token for email, token in accounts.items()}
-    if len(normalized_accounts) != len(accounts) or any("@" not in email or any(c.isspace() for c in email)
-                                                       for email in normalized_accounts):
-        raise ValueError("Adresses de comptes SourcIA invalides ou en double.")
+    # comptes : data/comptes.json (commande « sourcia comptes ») et la variable SOURCIA_DOSSIER_ACCOUNTS
+    comptes = Comptes(ctx.settings.path("comptes.json"))
+    sessions = Sessions(comptes)
     store = Dossiers(ctx)
 
-    def identity(response: Response, credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    def identity(request: Request, response: Response,
+                 credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        """L'enseignant connecté : par son jeton (en-tête Authorization) ou par le cookie de session."""
         response.headers["Cache-Control"] = "private, no-store"
-        if credentials:
-            supplied = credentials.credentials.encode()
-            for email, token in normalized_accounts.items():
-                if secrets.compare_digest(supplied, token.encode()):
-                    return email
+        email = comptes.identify(credentials.credentials) if credentials else sessions.verify(request.cookies.get(COOKIE))
+        if email:
+            return email
         raise HTTPException(401, "Jeton enseignant requis", headers={"WWW-Authenticate": "Bearer"})
+
+    # --- session : on saisit son jeton une fois, un cookie protégé prend le relais (déclaré avant /{folder_id})
+    def https(request: Request) -> bool:
+        return request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https"
+
+    @router.post("/session")
+    def login(req: Login, request: Request, response: Response):
+        token = req.jeton.strip()
+        email = comptes.identify(token)
+        if not email:
+            raise HTTPException(401, "Ce jeton n'est pas reconnu. Vérifiez-le, ou demandez-en un nouveau à la "
+                                     "personne qui gère SourcIA.")
+        response.headers["Cache-Control"] = "private, no-store"
+        response.set_cookie(COOKIE, sessions.create(email, token), max_age=sessions.hours * 3600, httponly=True,
+                            samesite="strict", secure=https(request), path="/api/dossiers")
+        return {"email": email, "duree_heures": sessions.hours}
+
+    @router.get("/session")
+    def current_session(email: str = Depends(identity)):
+        return {"email": email}
+
+    @router.delete("/session", status_code=204)
+    def logout():
+        response = Response(status_code=204)
+        response.delete_cookie(COOKIE, path="/api/dossiers", samesite="strict", httponly=True)
+        return response
 
     @router.get("")
     def folders(email: str = Depends(identity)):
