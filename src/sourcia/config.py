@@ -142,5 +142,7 @@ def load_settings(path: str | Path | None = None) -> Settings:
     path = Path(path)
     if not path.is_absolute():
         path = REPO_ROOT / path
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}
-    return Settings(**(data or {}))
+    data = (yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}) or {}
+    if os.environ.get("SOURCIA_DATA_DIR"):           # serveur : le volume persistant choisi par l'hébergeur
+        data["data_dir"] = os.environ["SOURCIA_DATA_DIR"]
+    return Settings(**data)
