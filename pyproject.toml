@@ -41,7 +41,7 @@ sourcia = "sourcia.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-sourcia = ["api/static/*.html", "api/static/*.css"]
+sourcia = ["api/static/*.html", "api/static/*.css", "api/static/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
