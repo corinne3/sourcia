@@ -198,7 +198,7 @@ def presentation_pptx(sup, cp, corpus_dir: Path, path: Path) -> Path:
             text(s, 1.85, 0.45, 10.9, 1.0, seq.titre + (" (suite)" if k else ""), size=28, font=TITRES, bold=True,
                  anchor=MSO_ANCHOR.MIDDLE)
             obj = box(s, 0.6, 1.7, 12.15, 0.7, MSO_SHAPE.ROUNDED_RECTANGLE, fill="prairie_pale")
-            write(obj, [("Objectif : ", {"bold": True}), (seq.objectif, {}),
+            write(obj, [("Objectif : ", {"bold": True}), (seq.objectif.rstrip(". "), {}),
                         (f", capacité {seq.capacite}" if seq.capacite else "", {})],
                   size=16, color="prairie_texte", anchor=MSO_ANCHOR.MIDDLE, margins=(0.2, 0.04))
             y = ZONE_POINTS[0]
