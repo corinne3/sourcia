@@ -157,3 +157,36 @@ pre {
   .home .row > label:has(input[type=number]) { flex-basis: 125px; }
   #login button { width: 100%; }
 }
+
+/* ---- Parcours en 4 étapes (barre commune) et écrans Corpus / Supports (parcours.js) ---- */
+.steps { display: flex; flex-wrap: wrap; gap: 8px 10px; margin-top: 20px; }
+.header-content .steps a {
+  margin: 0; padding: 6px 14px; border-radius: 999px; text-decoration: none; font-size: .9rem;
+  color: #e0eadd; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .28);
+}
+.header-content .steps a:hover { background: rgba(255, 255, 255, .16); }
+.header-content .steps a[aria-current=page] { background: #cfaa65; border-color: #cfaa65; color: #153c31; font-weight: 700; }
+body.folders[data-step=corpus] #detail, body.folders[data-step=supports] #detail { display: none !important; }
+.step-panel section { margin-bottom: 16px; }
+.folders form .wide, .folders .wide { flex: 1 1 100%; }
+.folders label.check { display: flex; align-items: center; gap: 8px; color: var(--ink); }
+.folders fieldset .chk label { font-weight: 500; }
+#corpus-ready[data-error=true] { color: var(--warn); }
+#corpus-ready:empty { display: none; }
+.document-status[data-status=en_cours] { background: var(--warn-soft); color: var(--warn); }
+.folders li.current { background: var(--accent-soft); border-radius: 8px; padding-inline: 8px; }
+.folders li .alert { display: block; margin-top: 6px; }
+.folders li.empty { color: var(--muted); }
+.file-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.folders .file-actions button { margin-left: 0; min-height: 34px; padding: 4px 12px; }
+.corpus-view article.sequence { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
+.corpus-view ul.points { list-style: disc; padding-left: 22px; }
+.corpus-view ul.points li { border: 0; padding: 4px 0; }
+.corpus-view .ref { font-size: .85rem; white-space: nowrap; }
+.corpus-view details q { display: block; margin: 6px 0 0 4px; color: var(--muted); font-style: italic; }
+.corpus-view figure { margin: 14px 0; }
+.corpus-view figure img { max-width: min(100%, 560px); height: auto; border: 1px solid var(--line); border-radius: 8px; }
+.corpus-view figcaption { color: var(--muted); font-size: .85rem; font-style: italic; margin-top: 4px; }
+.corpus-view ol.sources { padding-left: 0; list-style: none; }
+.corpus-view ol.sources li { border: 0; padding: 4px 0; }
+.corpus-view .alert { display: block; }

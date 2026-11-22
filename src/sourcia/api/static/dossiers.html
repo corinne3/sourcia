@@ -10,6 +10,12 @@
 <header class="page-header"><div class="header-content">
   <a href="/">SourcIA</a>
   <h1>Dossiers pédagogiques</h1>
+  <nav class="steps" aria-label="Parcours SourcIA">
+    <a href="/">1. Catalogue</a>
+    <a href="/dossiers#dossier" data-step="dossier">2. Mon dossier</a>
+    <a href="/dossiers#corpus" data-step="corpus">3. Mon corpus</a>
+    <a href="/dossiers#supports" data-step="supports">4. Mes supports</a>
+  </nav>
 </div></header>
 <main>
 <form id="login">
@@ -59,6 +65,80 @@
         <button>Enregistrer</button>
       </form>
       <ul id="shares"></ul>
+    </section>
+  </div>
+  <!-- Étapes 3 et 4 du parcours (static/parcours.js) : même page, pour garder le jeton en mémoire -->
+  <p id="step-hint" class="sub" hidden>Choisissez ou créez un dossier ci-dessus pour continuer.</p>
+  <div id="step-corpus" class="step-panel" hidden>
+    <section>
+      <h2>Mon corpus pédagogique</h2>
+      <p class="sub">Le corpus est construit à partir des <strong>seuls documents cochés et prêts</strong> de ce dossier
+        et des acquis visés. Chaque information renvoie à son document, à sa page et à l’extrait exact.</p>
+      <p id="corpus-ready" role="status" aria-live="polite"></p>
+      <form id="corpus-form">
+        <label class="wide">Sujet de la formation <textarea name="sujet" required maxlength="500"
+          placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
+        <label>Apprenants <select name="apprenants">
+          <option value="etudiants">étudiants</option><option value="eleves">élèves</option><option value="apprentis">apprentis</option>
+          <option value="salaries">salariés</option><option value="chefs_entreprise">chefs d’entreprise</option>
+          <option value="conseillers">conseillers</option><option value="autre">autre</option></select></label>
+        <label>Niveau <select name="niveau">
+          <option value="cap">CAP</option><option value="bac_pro">bac pro</option><option value="bac">bac</option>
+          <option value="bts" selected>BTS</option><option value="licence">licence</option>
+          <option value="master_ingenieur">master / ingénieur</option><option value="sans_diplome">sans diplôme</option></select></label>
+        <label>Expérience <select name="experience">
+          <option value="debutant">débutant</option><option value="intermediaire">intermédiaire</option>
+          <option value="confirme">confirmé</option></select></label>
+        <label>Durée (min) <input type="number" name="duree_min" value="120" min="10" max="2400"></label>
+        <label>Séquences <input type="number" name="sequences" value="4" min="1" max="12"></label>
+        <label class="check wide"><input type="checkbox" name="diplomante" id="corpus-diplomante"> Formation diplômante
+          (séquences rattachées aux capacités du référentiel)</label>
+        <div id="corpus-diplome" class="wide" hidden>
+          <label>Diplôme <select name="diplome" id="corpus-referentiel"></select></label>
+          <p class="sub">Capacités visées :</p>
+          <div class="caps" id="corpus-caps"></div>
+        </div>
+        <label class="check wide"><input type="checkbox" name="autoriser_documents_prives"> Autoriser l’envoi de mes
+          documents privés (PDF téléversés) au modèle en ligne</label>
+        <p class="sub wide">Sans cette case, vos PDF téléversés ne sont jamais envoyés à un modèle en ligne : ils sont
+          laissés de côté et le corpus le signale. Avec un modèle local, ils sont toujours utilisés.</p>
+        <button id="corpus-go">Construire le corpus</button>
+      </form>
+      <p id="corpus-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+    <section>
+      <h2>Corpus du dossier</h2>
+      <ul id="corpus-list"></ul>
+    </section>
+    <section id="corpus-view" class="corpus-view" hidden></section>
+  </div>
+  <div id="step-supports" class="step-panel" hidden>
+    <section>
+      <h2>Mes supports</h2>
+      <p class="sub">Les supports sont faits à partir du corpus seulement : chaque question, carte ou diapo garde la
+        référence [S1, p. N] de son information.</p>
+      <p id="supports-empty" class="sub" hidden></p>
+      <form id="supports-form" hidden>
+        <label class="wide">Corpus <select name="corpus" id="supports-corpus"></select></label>
+        <fieldset class="wide"><legend>Séquences</legend><div class="chk" id="supports-seqs"></div></fieldset>
+        <fieldset class="wide"><legend>Supports</legend><div class="chk" id="supports-kinds">
+          <label><input type="checkbox" value="qcm" checked> QCM (élèves, corrigé, Moodle)</label>
+          <label><input type="checkbox" value="cartes" checked> Cartes (Anki, à découper)</label>
+          <label><input type="checkbox" value="presentation" checked> Présentation (.pptx)</label>
+          <label><input type="checkbox" value="infographie" checked> Infographie (A4)</label>
+          <label><input type="checkbox" value="fiche"> Fiche technique <span class="tag">avec modèle, plus long</span></label>
+          <label><input type="checkbox" value="glossaire"> Glossaire <span class="tag">avec modèle</span></label>
+          <label><input type="checkbox" value="podcast"> Script de podcast <span class="tag">avec modèle</span></label>
+        </div></fieldset>
+        <label class="check wide"><input type="checkbox" name="avec_modele"> Le modèle complète le QCM (chaque question
+          est contrôlée contre l’extrait cité)</label>
+        <button id="supports-go">Produire les supports</button>
+      </form>
+      <p id="supports-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+    <section>
+      <h2>Supports produits</h2>
+      <ul id="supports-list"></ul>
     </section>
   </div>
 </div>
@@ -294,5 +374,6 @@ byId('zip').onclick = async () => {
   }
 };
 </script>
+<script src="/assets/parcours.js"></script>
 </body>
 </html>
