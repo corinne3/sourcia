@@ -1,0 +1,364 @@
+{
+ "version": "1",
+ "cree_le": "2026-11-22T16:00:55",
+ "demande": {
+  "sujet": "sorgho fourrager en conditions sèches",
+  "profil": "formateur",
+  "diplomante": true,
+  "diplome": "btsa-acsagri",
+  "capacites": [
+   "C4.2",
+   "C4.4"
+  ],
+  "modalite": "presentiel",
+  "supports": [
+   "ecrit"
+  ],
+  "duree_min": 120,
+  "apprenants": "etudiants",
+  "niveau": "bts",
+  "experience": "debutant",
+  "effectif": null,
+  "ressources": [],
+  "sorties": [
+   "plan",
+   "points_cles",
+   "quiz",
+   "glossaire",
+   "cas_concret"
+  ],
+  "annee_min": null,
+  "annee_max": null,
+  "sources_publiques_seulement": false,
+  "region": null,
+  "organismes": [],
+  "nombre_sources": 30,
+  "notes_personnelles": "",
+  "fichiers_personnels": [],
+  "autoriser_cloud_personnel": false
+ },
+ "titre": "Sorgho et conduite des cultures",
+ "dossier_id": null,
+ "doc_ids": [
+  "34e09e14139c13d6",
+  "f6eec77951198b8c",
+  "c531c8769272874a",
+  "b6b0eb93433ade95",
+  "0aead3d1efdca613",
+  "c0f9417fa6ba515e",
+  "e9839211632e6a1c",
+  "c59936d1c27eac59"
+ ],
+ "referentiel": {
+  "id": "btsa-acsagri",
+  "nom": "BTSA ACS'Agri : Analyse, conduite et stratégie de l'entreprise agricole",
+  "version": "2025",
+  "statut": "extrait_automatiquement"
+ },
+ "capacites_visees": [
+  {
+   "code": "C4.2",
+   "libelle": "Ajuster, dans un contexte de transitions, la conduite d’un système de culture"
+  },
+  {
+   "code": "C4.4",
+   "libelle": "Concevoir un système biotechnique durable et résilient"
+  }
+ ],
+ "couverture": [
+  {
+   "code": "C4.2",
+   "libelle": "Ajuster, dans un contexte de transitions, la conduite d’un système de culture",
+   "sequences": [
+    1
+   ]
+  },
+  {
+   "code": "C4.4",
+   "libelle": "Concevoir un système biotechnique durable et résilient",
+   "sequences": [
+    3
+   ]
+  }
+ ],
+ "sequences": [
+  {
+   "titre": "Adapter la culture du sorgho",
+   "objectif": "Ajuster l'itinéraire du sorgho en année sèche",
+   "duree_min": 60,
+   "capacite": "C4.2",
+   "capacite_libelle": "Ajuster, dans un contexte de transitions, la conduite d’un système de culture",
+   "capacite_statut": "propose_ia",
+   "mots_cles": [
+    "sorgho",
+    "sécheresse"
+   ],
+   "points": [
+    {
+     "texte": "Support de cours (document privé du formateur, non publié) Les cultures fourragères d'été : sorgho, moha, millet Séquence de 2 heures pour BTS : intérêt du sorgho fourrager en année sèche, comparaison avec le maïs.",
+     "reference": {
+      "doc_id": "34e09e14139c13d6",
+      "page": 1,
+      "extrait": "Support de cours (document privé du formateur, non publié) Les cultures fourragères d'été : sorgho, moha, millet Séquence de 2 heures pour BTS : intérêt du sorgho fourrager en année sèche, comparaison avec le maïs.",
+      "lien": null
+     }
+    },
+    {
+     "texte": "Le sorgho fourrager a produit 9,5 t MS/ha en année sèche dans l'essai des Grands Prés.",
+     "reference": {
+      "doc_id": "c59936d1c27eac59",
+      "page": 1,
+      "extrait": "Le sorgho fourrager a produit 9,5 t MS/ha en année sèche dans l'essai des Grands Prés.",
+      "lien": "https://exemple.org/essai_sorgho_illustre.pdf#page=1"
+     }
+    },
+    {
+     "texte": "Conclusion En sol superficiel et en année sèche, le sorgho fourrager sécurise le stock fourrager.",
+     "reference": {
+      "doc_id": "c531c8769272874a",
+      "page": 3,
+      "extrait": "Conclusion En sol superficiel et en année sèche, le sorgho fourrager sécurise le stock fourrager.",
+      "lien": "https://exemple.org/essai_sorgho_2023.txt"
+     }
+    }
+   ],
+   "a_retenir": "Le sorgho sécurise le stock fourrager.",
+   "remarques": [],
+   "retires": [
+    "point clé non soutenu par les sources : « Le sorgho produit 25 t MS/ha sans aucun arrosage en Alaska. »"
+   ]
+  },
+  {
+   "titre": "Une séquence mal rattachée",
+   "objectif": "Citer les variétés",
+   "duree_min": 30,
+   "capacite": null,
+   "capacite_libelle": null,
+   "capacite_statut": "aucune",
+   "mots_cles": [
+    "variété"
+   ],
+   "points": [
+    {
+     "texte": "Chambre d'agriculture des Pays de la Loire Sorgho fourrager en conditions sèches : résultats de l'essai 2023 Essai conduit à la ferme expérimentale des Grands Prés (Maine-et-Loire) en 2023.",
+     "reference": {
+      "doc_id": "c531c8769272874a",
+      "page": 1,
+      "extrait": "Chambre d'agriculture des Pays de la Loire Sorgho fourrager en conditions sèches : résultats de l'essai 2023 Essai conduit à la ferme expérimentale des Grands Prés (Maine-et-Loire) en 2023.",
+      "lien": "https://exemple.org/essai_sorgho_2023.txt"
+     }
+    }
+   ],
+   "a_retenir": "Le sorgho sécurise le stock fourrager.",
+   "remarques": [],
+   "retires": [
+    "point clé en double : « Support de cours (document privé du formateur, non publié) Les cultures fourragè »",
+    "point clé en double : « Conclusion En sol superficiel et en année sèche, le sorgho fourrager sécurise le »",
+    "point clé non soutenu par les sources : « Le sorgho produit 25 t MS/ha sans aucun arrosage en Alaska. »"
+   ]
+  },
+  {
+   "titre": "C4.4 : Concevoir un système biotechnique durable et résilient",
+   "objectif": "Concevoir un système biotechnique durable et résilient",
+   "duree_min": 30,
+   "capacite": "C4.4",
+   "capacite_libelle": "Concevoir un système biotechnique durable et résilient",
+   "capacite_statut": "ajoute_couverture",
+   "mots_cles": [
+    "sorgho fourrager en conditions sèches",
+    "Concevoir",
+    "système",
+    "biotechnique",
+    "durable"
+   ],
+   "points": [],
+   "a_retenir": "Le sorgho sécurise le stock fourrager.",
+   "remarques": [
+    "aucun point clé retenu par les contrôles pour cette séquence : à compléter (bloc personnel)"
+   ],
+   "retires": [
+    "point clé en double : « Support de cours (document privé du formateur, non publié) Les cultures fourragè »",
+    "point clé en double : « Le sorgho fourrager a produit 9,5 t MS/ha en année sèche dans l'essai des Grands »",
+    "point clé en double : « Conclusion En sol superficiel et en année sèche, le sorgho fourrager sécurise le »",
+    "point clé non soutenu par les sources : « Le sorgho produit 25 t MS/ha sans aucun arrosage en Alaska. »"
+   ]
+  }
+ ],
+ "synthese": {
+  "paragraphes": [
+   {
+    "texte": "Conclusion En sol superficiel et en année sèche, le sorgho fourrager sécurise le stock fourrager.",
+    "reference": {
+     "doc_id": "c531c8769272874a",
+     "page": 3,
+     "extrait": "Conclusion En sol superficiel et en année sèche, le sorgho fourrager sécurise le stock fourrager.",
+     "lien": "https://exemple.org/essai_sorgho_2023.txt"
+    }
+   },
+   {
+    "texte": "Le sorgho fourrager a produit 9,5 t MS/ha en année sèche dans l'essai des Grands Prés.",
+    "reference": {
+     "doc_id": "c59936d1c27eac59",
+     "page": 1,
+     "extrait": "Le sorgho fourrager a produit 9,5 t MS/ha en année sèche dans l'essai des Grands Prés.",
+     "lien": "https://exemple.org/essai_sorgho_illustre.pdf#page=1"
+    }
+   },
+   {
+    "texte": "Réseau Civam - Fiche témoignage 2024 « Le sorgho m'a sauvé l'été » : retour d'expérience d'un éleveur laitier en Vendée Sur mon exploitation de 60 vaches laitières, j'ai implanté 8 ha de sorgho multicoupe après un méteil récolté en ensilage.",
+    "reference": {
+     "doc_id": "e9839211632e6a1c",
+     "page": 1,
+     "extrait": "Réseau Civam - Fiche témoignage 2024 « Le sorgho m'a sauvé l'été » : retour d'expérience d'un éleveur laitier en Vendée Sur mon exploitation de 60 vaches laitières, j'ai implanté 8 ha de sorgho multicoupe après un méteil récolté en ensilage.",
+     "lien": "https://exemple.org/temoignage_eleveur_sorgho_2024.txt"
+    }
+   }
+  ],
+  "conclusion": "Bilan."
+ },
+ "illustrations": [
+  {
+   "chemin": "illustrations/c59936d1c27eac59-p1-1.jpg",
+   "legende": "Figure 1 : Rendement du sorgho en année sèche",
+   "doc_id": "c59936d1c27eac59",
+   "page": 1,
+   "sequence": 1
+  }
+ ],
+ "bibliographie": [
+  {
+   "numero": "S1",
+   "doc_id": "34e09e14139c13d6",
+   "titre": "Ancien support de formation : cultures fourragères d'été",
+   "organisme": null,
+   "annee": null,
+   "url": null,
+   "nature": "texte",
+   "pages_citees": [
+    1
+   ],
+   "citee": true,
+   "prive": true,
+   "fourni_par_formateur": false,
+   "catalog_id": null
+  },
+  {
+   "numero": "S2",
+   "doc_id": "c59936d1c27eac59",
+   "titre": "Essai sorgho illustré",
+   "organisme": "exemple.org",
+   "annee": null,
+   "url": "https://exemple.org/essai_sorgho_illustre.pdf",
+   "nature": "pdf",
+   "pages_citees": [
+    1
+   ],
+   "citee": true,
+   "prive": false,
+   "fourni_par_formateur": false,
+   "catalog_id": null
+  },
+  {
+   "numero": "S3",
+   "doc_id": "c531c8769272874a",
+   "titre": "Sorgho fourrager en conditions sèches : résultats de l'essai 2023",
+   "organisme": "Chambre d'agriculture de Pays de la Loire",
+   "annee": 2023,
+   "url": "https://exemple.org/essai_sorgho_2023.txt",
+   "nature": "texte",
+   "pages_citees": [
+    1,
+    3
+   ],
+   "citee": true,
+   "prive": false,
+   "fourni_par_formateur": false,
+   "catalog_id": null
+  },
+  {
+   "numero": "S4",
+   "doc_id": "e9839211632e6a1c",
+   "titre": "Le sorgho m'a sauvé l'été : retour d'expérience",
+   "organisme": "Civam",
+   "annee": 2024,
+   "url": "https://exemple.org/temoignage_eleveur_sorgho_2024.txt",
+   "nature": "texte",
+   "pages_citees": [
+    1
+   ],
+   "citee": true,
+   "prive": false,
+   "fourni_par_formateur": false,
+   "catalog_id": null
+  },
+  {
+   "numero": "",
+   "doc_id": "f6eec77951198b8c",
+   "titre": "Méteils fourragers récoltés en ensilage : essai 2016",
+   "organisme": "Lycée agricole / EPLEFPA",
+   "annee": 2016,
+   "url": "https://exemple.org/essai_meteil_2016.txt",
+   "nature": "texte",
+   "pages_citees": [],
+   "citee": false,
+   "prive": false,
+   "fourni_par_formateur": false,
+   "catalog_id": null
+  },
+  {
+   "numero": "",
+   "doc_id": "b6b0eb93433ade95",
+   "titre": "Réussir l'implantation du sorgho fourrager",
+   "organisme": "Coopérative",
+   "annee": 2022,
+   "url": "https://exemple.org/guide_sorgho_implantation.txt",
+   "nature": "texte",
+   "pages_citees": [],
+   "citee": false,
+   "prive": false,
+   "fourni_par_formateur": false,
+   "catalog_id": null
+  },
+  {
+   "numero": "",
+   "doc_id": "0aead3d1efdca613",
+   "titre": "Luzerne et trèfle violet face au stress hydrique",
+   "organisme": "Chambre d'agriculture de Normandie",
+   "annee": 2021,
+   "url": "https://exemple.org/luzerne_secheresse_2021.txt",
+   "nature": "texte",
+   "pages_citees": [],
+   "citee": false,
+   "prive": false,
+   "fourni_par_formateur": false,
+   "catalog_id": null
+  },
+  {
+   "numero": "",
+   "doc_id": "c0f9417fa6ba515e",
+   "titre": "Prairies multi-espèces et changement climatique : synthèse",
+   "organisme": "Institut technique",
+   "annee": 2019,
+   "url": "https://exemple.org/synthese_prairies_2019.txt",
+   "nature": "texte",
+   "pages_citees": [],
+   "citee": false,
+   "prive": false,
+   "fourni_par_formateur": false,
+   "catalog_id": null
+  }
+ ],
+ "retires": [
+  "paragraphe de synthèse — non retrouvé dans les sources : « Le sorgho double le revenu de toutes les fermes du monde. »"
+ ],
+ "remarques": [
+  "« Une séquence mal rattachée » : code C9.9 inexistant dans le référentiel → rattachement retiré",
+  "capacité C4.4 non couverte par le plan → séquence ajoutée",
+  "illustrations : 1 retenue(s)",
+  "images des documents privés non reprises : Ancien support de formation : cultures fourragères d'été"
+ ],
+ "exclus_prives": [],
+ "echecs_modele": [],
+ "appels_modele": 5,
+ "duree_s": 0.1
+}
