@@ -11,7 +11,7 @@ import hashlib
 import re
 
 from sourcia.core.text import normalize
-from sourcia.formation.checks import ENTITIES, entities
+from sourcia.formation.checks import ANIMAL_GROUPS, ANIMALS, ENTITIES, entities
 
 UNIT = r"(?:t\s?MS/ha|t\s?MS|kg/ha|q/ha|€/t\s?MS|€/ha|€|%|mm|°C|ha|unités|vaches|cm|jours|UFL/kg\s?MS)"
 VALUE_RE = re.compile(rf"(\d+(?:[,.]\d+)?)\s?({UNIT})")
@@ -33,6 +33,12 @@ def _values(texts: list[str]) -> dict[str, set[str]]:
         for v, u in VALUE_RE.findall(t):
             out.setdefault(" ".join(u.split()), set()).add(v)
     return out
+
+
+def synonyms(entity: str) -> set[str]:
+    """L'entité et les mots qui désignent la même chose (« bovin » : « vache »)."""
+    group = next((g for g in ANIMAL_GROUPS if entity in g), set())
+    return {entity, entity.replace(" ", "-"), entity.replace("-", " ")} | group
 
 
 def _order(key: str, n: int) -> int:
@@ -63,17 +69,35 @@ def make_question(text: str, corpus_texts: list[str], topic: frozenset = frozens
         askable = sorted(e for e in ents if not set(tokenize(e)) & topic)
         if not askable:
             return None
-        target = askable[0]
         t_norm = normalize(text)
-        mm = re.search(rf"\b{re.escape(target)}s?\b", t_norm)
-        if not mm or len(t_norm) != len(text):
+        if len(t_norm) != len(text):
+            return None
+        target = mm = None
+        for e in askable:                            # le premier mot qui est vraiment cette culture ou cet animal
+            found = re.search(rf"\b{re.escape(e)}s?\b", t_norm)
+            # « mais » sans tréma est la conjonction, pas la culture (vu le 22/11 : « biomasse mais une faible
+            # valeur » devenait « biomasse …… une faible valeur », réponse attendue « maïs »)
+            if found and (e not in DISPLAY or DISPLAY[e] in text[found.start(): found.end()].lower()) \
+                    and len(re.findall(rf"\b{re.escape(e)}s?\b", t_norm)) == 1:   # sinon la réponse reste visible
+                target, mm = e, found
+                break
+        if mm is None:
             return None
         right = text[mm.start(): mm.end()]
-        others = sorted({e for t in corpus_texts for e in entities(t)} - ents) or [e for e in ENTITIES if e not in ents]
-        if len(others) < 3:
-            others += [e for e in ENTITIES if e not in ents and e not in others]
-        others = [o for o in others if o not in entities(text)]
-        choices = [DISPLAY.get(o, o) for o in others[:3]]
+        # mauvaises réponses du MÊME type (un animal pour un animal, une culture pour une culture), jamais un
+        # synonyme de la bonne (vu le 22/11 : « maïs » et « sorgho » proposés pour « une ration pour les bovins »)
+        same = synonyms(target) | ents
+        kind = (lambda e: e in ANIMALS) if target in ANIMALS else (lambda e: e not in ANIMALS)
+        others = sorted(e for t in corpus_texts for e in entities(t) if kind(e) and e not in same)
+        others = list(dict.fromkeys(others + [e.replace(" ", "-") for e in ENTITIES
+                                              if kind(e) and e.replace(" ", "-") not in same]))
+        plural = right.endswith("s") and not target.endswith("s")       # « bovins » : « ovins », pas « ovin »
+        one_per_group, groups = [], set()            # « ovins » ou « brebis », pas les deux
+        for o in others:
+            if frozenset(synonyms(o)) not in groups:
+                groups.add(frozenset(synonyms(o)))
+                one_per_group.append(o)
+        choices = [DISPLAY.get(o, o) + ("s" if plural and not o.endswith("s") else "") for o in one_per_group[:3]]
         stem = text[: mm.start()] + "……" + text[mm.end():]
     pos = _order(text, 4)
     choices.insert(pos, right)

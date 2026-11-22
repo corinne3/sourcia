@@ -410,3 +410,21 @@ def test_card_without_detail_asks_to_finish_the_sentence(corpus_dir):
     ouvertes = [c for c in cards if not c.reponse]
     assert ouvertes and all(c.recto.startswith("Complétez la phrase : « ") and c.verso == c.phrase for c in ouvertes)
     assert all(c.verso.startswith(c.recto.split("« ")[1].removesuffix("… »")) for c in ouvertes)
+
+
+def test_wrong_answers_have_the_same_type_as_the_right_one():
+    """Vu en vrai : « maïs » et « sorgho » proposés pour « une ration pour les bovins », et la conjonction
+    « mais » prise pour la culture « maïs »."""
+    from sourcia.formation.quizgen import make_question
+
+    texts = ["Le sorgho remplace le maïs.", "Le méteil et la luzerne nourrissent les brebis et les vaches."]
+    q = make_question("Les variétés de type ensilage permettent une ration quasi exclusive pour les bovins.", texts)
+    assert q["choix"][q["bonne_reponse"]] == "bovins"
+    wrong = [c for k, c in enumerate(q["choix"]) if k != q["bonne_reponse"]]
+    assert all(c.endswith("s") for c in wrong) and not {"maïs", "sorgho", "méteil", "vaches"} & set(wrong)
+    assert len({c.rstrip("s") for c in wrong} & {"ovin", "brebi"}) <= 1                # un seul mot par animal
+    q = make_question("Le méteil est récolté avant le maïs.", texts)
+    assert not {"bovin", "vache", "brebis"} & set(q["choix"])
+    assert make_question("Forte production de biomasse mais une faible valeur énergétique.", texts) is None
+    # la réponse ne doit pas rester écrite plus loin dans la phrase (vu le 22/11 : « …… » puis « à des bovins »)
+    assert make_question("Une valorisation par les bovins, distribuée à des bovins en ration.", texts) is None

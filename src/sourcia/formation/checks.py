@@ -106,6 +106,11 @@ ENTITIES = ["sorgho", "mais", "meteil", "luzerne", "trefle", "dactyle", "fetuque
             "triticale", "pois", "vesce", "feverole", "colza", "ble", "orge", "avoine", "seigle", "tournesol", "soja",
             "betterave", "moha", "millet", "chanvre", "lin", "sainfoin", "lotier", "chicoree", "plantain",
             "vache", "bovin", "ovin", "brebis", "caprin", "chevre", "porc", "porcin", "volaille", "equin", "cheval"]
+# Les animaux de la liste, et les mots qui désignent le même animal (pour les QCM : une mauvaise réponse du même
+# type que la bonne, jamais un synonyme de la bonne).
+ANIMAL_GROUPS = [{"vache", "bovin"}, {"ovin", "brebis"}, {"caprin", "chevre"}, {"porc", "porcin"}, {"volaille"},
+                 {"equin", "cheval"}]
+ANIMALS = set().union(*ANIMAL_GROUPS)
 _ENT_RE = re.compile(r"\b(" + "|".join(sorted(map(re.escape, ENTITIES), key=len, reverse=True)) + r")s?\b")
 
 
