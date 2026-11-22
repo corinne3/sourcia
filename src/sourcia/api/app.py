@@ -79,6 +79,16 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
     def stylesheet():
         return FileResponse(STATIC / "sourcia.css", media_type="text/css")
 
+    fonts = {p.name for p in (STATIC / "fonts").glob("*.woff2")}   # liste fermée : rien d'autre n'est servi
+
+    @app.get("/assets/fonts/{name}", include_in_schema=False)
+    def font(name: str):
+        """Polices hébergées ici (licence OFL) : rien n'est demandé à Google, et la page marche hors ligne."""
+        if name not in fonts:
+            raise HTTPException(404, "police introuvable")
+        return FileResponse(STATIC / "fonts" / name, media_type="font/woff2",
+                            headers={"Cache-Control": "public, max-age=604800"})
+
     @app.get("/assets/parcours.js", include_in_schema=False)
     def parcours_script():
         """Écrans « Mon corpus » et « Mes supports » de la page des dossiers."""
