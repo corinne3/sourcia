@@ -354,3 +354,36 @@ def test_cards_show_the_answer_apart(corpus_dir):
     assert cloze and all(c.verso == f"{c.reponse}. {c.phrase}" for c in cloze)     # le CSV garde réponse + phrase
     html_text = (write_supports(sup, cp, corpus_dir)[0].parent / "cartes.html").read_text(encoding="utf-8")
     assert f"Réponse : <strong>{cloze[0].reponse}</strong>" in html_text
+
+
+def test_podcast_lines_reusing_verified_points_are_kept(corpus_dir, ctx):
+    """Vu avec Gemini le 22/11 : l'expert reprend un point clé (déjà vérifié contre la source) avec des mots qui
+    ne sont pas dans l'extrait court ; ces répliques étaient toutes retirées et le podcast n'était pas produit."""
+    from sourcia.formation.supports import CorpusPassages, items_of
+
+    cp = load_corpus(corpus_dir)
+    p1, p3 = cp.sequences[0].points[1], cp.sequences[0].points[2]
+    p1.texte = "Le sorgho fourrager a produit 9,5 t MS/ha en année sèche, davantage que le maïs témoin."
+    p3.texte = "En sol superficiel et en année sèche, le sorgho fourrager sécurise mieux le stock fourrager que le maïs."
+    passages = CorpusPassages(cp, items_of(cp, [1])).passages
+    assert any(p1.texte in p.text and p1.reference.extrait in p.text for p in passages)   # extrait + point
+
+    def podcast(messages, tools, schema):
+        return {"titre": "Le sorgho", "repliques": [
+            {"voix": "animateur", "texte": "Que disent les essais ?", "source": None},
+            {"voix": "expert", "texte": p1.texte, "source": 1},
+            {"voix": "animateur", "texte": "Et en sol superficiel ?", "source": None},
+            {"voix": "expert", "texte": p3.texte, "source": 2},
+            {"voix": "animateur", "texte": "Et pour les vaches malades ?", "source": None},
+            {"voix": "expert", "texte": "Le sorgho guérit les vaches malades en 3 jours.", "source": 1}]}
+
+    ctx.__dict__["llm"] = FakeLLM(responder=podcast)
+    sup = build_supports(cp, [1], ["podcast"], ctx=ctx)
+    assert sup.podcast, sup.retires
+    experts = [r["texte"] for r in sup.podcast["repliques"] if r["voix"] == "expert"]
+    assert p1.texte in experts and p3.texte in experts
+    assert not any("guérit" in t for t in experts) and any("guérit" in r for r in sup.retires)   # invention retirée
+    assert all(REF_RE.fullmatch(r["ref"]) for r in sup.podcast["repliques"] if r["voix"] == "expert")
+    voices = [r["voix"] for r in sup.podcast["repliques"]]
+    assert "Et pour les vaches malades ?" not in [r["texte"] for r in sup.podcast["repliques"]]  # question orpheline
+    assert all(not (a == b == "animateur") for a, b in zip(voices, voices[1:]))   # jamais deux questions à la suite
