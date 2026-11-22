@@ -26,11 +26,12 @@ cloud = ["litellm>=1.40"]
 obs = ["psutil>=5.9"]
 media = ["openpyxl>=3.1", "faster-whisper>=1.0"]
 word = ["python-docx>=1.1"]
-dev = ["pytest>=8", "httpx>=0.27", "python-docx>=1.1", "pymupdf>=1.24"]
+pptx = ["python-pptx>=1.0"]
+dev = ["pytest>=8", "httpx>=0.27", "python-docx>=1.1", "pymupdf>=1.24", "python-pptx>=1.0"]
 recommended = [
 
     "sentence-transformers>=3", "pymupdf>=1.24", "fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.18",
-    "mcp>=1.2", "psutil>=5.9", "pytest>=8", "httpx>=0.27", "openpyxl>=3.1", "python-docx>=1.1",
+    "mcp>=1.2", "psutil>=5.9", "pytest>=8", "httpx>=0.27", "openpyxl>=3.1", "python-docx>=1.1", "python-pptx>=1.0",
 ]
 
 [project.scripts]
