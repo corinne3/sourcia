@@ -138,13 +138,31 @@ MIT pour le code. Les documents collectés gardent leur propre licence (ex. RD A
 
 ## Dossiers pédagogiques
 
-Installez l'option API avec `python -m pip install -e ".[api]"`. Avant de lancer
-`sourcia serve`, définissez la variable d'environnement `SOURCIA_DOSSIER_ACCOUNTS`
-avec un objet JSON associant les adresses des enseignants à leurs jetons.
-L'administrateur fournit à chaque enseignant son propre jeton par un canal privé.
-Générez chaque jeton avec `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
-Configurez la variable dans l'environnement du processus ou dans les secrets
-de l'hébergeur.
+Installez l'option API avec `python -m pip install -e ".[api]"`. Chaque enseignant a un compte : son adresse
+e-mail et un **jeton** secret, qui lui sert de mot de passe personnel.
+
+**Gérer les comptes** (l'administrateur, sur le serveur) :
+
+```powershell
+sourcia comptes ajouter prenom.nom@lycee.fr --url https://adresse-du-serveur
+sourcia comptes lister
+sourcia comptes retirer prenom.nom@lycee.fr
+```
+
+`ajouter` affiche le jeton **une seule fois**, avec un **lien de connexion directe**
+(`…/dossiers#jeton=…`) : transmettez l'un ou l'autre à l'enseignant par un canal privé. Seule l'empreinte du
+jeton est rangée dans `<data_dir>/comptes.json` ; le fichier est relu dès qu'il change, sans relancer le serveur.
+`--remplacer` donne un nouveau jeton à un compte existant (les sessions ouvertes avec l'ancien s'arrêtent).
+La variable d'environnement `SOURCIA_DOSSIER_ACCOUNTS` (objet JSON adresse → jeton) reste acceptée.
+
+**Session** : l'enseignant saisit son jeton une fois (ou ouvre son lien) ; un cookie protégé (HttpOnly,
+SameSite=Strict, Secure en HTTPS) le garde connecté 12 heures, même en passant par le catalogue. « Se déconnecter »
+ferme la session. Définissez `SOURCIA_SESSION_SECRET` (au moins 32 caractères aléatoires) pour que les sessions
+survivent à un redémarrage du serveur ; sans elle, il suffit de se reconnecter.
+
+**Démonstration** : `sourcia comptes demo` crée le compte `demo@sourcia.local` avec un dossier déjà rempli de
+documents publics du catalogue (`--sujet`, `--documents`) et affiche son lien. Rien n'existe sans cette commande ;
+`sourcia comptes retirer demo@sourcia.local` le supprime.
 
 Ouvrez `/dossiers` dans l'interface web. Le partage donne accès au compte
 correspondant à l'adresse e-mail. La fin du traitement s'affiche dans le dossier.

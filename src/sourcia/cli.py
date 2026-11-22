@@ -765,6 +765,51 @@ def cmd_referentiel(args) -> None:
         print(f"validées : {stats['valides']} · corrigées : {stats['corriges']} · rejetées : {stats['rejetes']} · statut : {r.statut}")
 
 
+def cmd_comptes(args) -> None:
+    """Comptes enseignants des dossiers : ajouter, retirer, lister, demo (jeton affiché une seule fois)."""
+    from sourcia.comptes import DEMO_EMAIL, Comptes
+
+    ctx = _ctx(args)
+    comptes = Comptes(ctx.settings.path("comptes.json"))
+    url = (args.url or "http://127.0.0.1:8000").rstrip("/")
+
+    def show(email: str, token: str) -> None:
+        print(f"Jeton de {email} (affiché une seule fois : à transmettre par un moyen privé) :\n  {token}")
+        print(f"Lien de connexion directe (même secret que le jeton) :\n  {url}/dossiers#jeton={token}")
+
+    if args.action == "lister":
+        rows = comptes.lister()
+        if not rows:
+            print("Aucun compte. Créez-en un : sourcia comptes ajouter prenom.nom@lycee.fr")
+        for r in rows:
+            where = "data/comptes.json" if r["source"] == "fichier" else "variable SOURCIA_DOSSIER_ACCOUNTS"
+            print(f"  {r['email']}  ({where}" + (f", créé le {r['cree_le']}" if r["cree_le"] else "")
+                  + (", démonstration" if r["demo"] else "") + ")")
+        return
+    if args.action == "demo":
+        from sourcia.api.demo import create_demo
+
+        try:
+            token, folder_id, docs = create_demo(ctx, args.sujet, args.documents, log=print)
+        except ValueError as exc:
+            sys.exit(str(exc))
+        print(f"Dossier « Démo : {args.sujet} » prêt ({sum(d['statut'] == 'pret' for d in docs)}/{len(docs)} documents traités).")
+        show(DEMO_EMAIL, token)
+        return
+    if not args.email:
+        sys.exit(f"Indiquez l'adresse : sourcia comptes {args.action} prenom.nom@lycee.fr")
+    try:
+        if args.action == "ajouter":
+            show(args.email.strip().casefold(), comptes.ajouter(args.email, remplacer=args.remplacer))
+        elif comptes.retirer(args.email):
+            print(f"Compte {args.email} retiré : son jeton et ses sessions ne marchent plus. Ses dossiers restent.")
+        else:
+            sys.exit(f"{args.email} n'est pas dans data/comptes.json (un compte de la variable "
+                     "SOURCIA_DOSSIER_ACCOUNTS se retire dans la variable).")
+    except ValueError as exc:
+        sys.exit(str(exc))
+
+
 def cmd_serve(args) -> None:
     import uvicorn
 
@@ -939,6 +984,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--fichiers", nargs="*", help="construire : PDF déjà téléchargés (sinon téléchargement depuis chlorofil.fr)")
     sp.add_argument("--csv", help="importer : tableau rempli par l'enseignant")
     sp.add_argument("--par", help="importer : nom de l'enseignant")
+
+    sp = add("comptes", cmd_comptes, "comptes enseignants des dossiers (ajouter, retirer, lister, demo)")
+    sp.add_argument("action", choices=["ajouter", "retirer", "lister", "demo"])
+    sp.add_argument("email", nargs="?", help="adresse de l'enseignant (ajouter, retirer)")
+    sp.add_argument("--remplacer", action="store_true", help="ajouter : donner un nouveau jeton à un compte existant")
+    sp.add_argument("--url", help="adresse du serveur pour le lien de connexion (défaut http://127.0.0.1:8000)")
+    sp.add_argument("--sujet", default="sorgho fourrager", help="demo : sujet des documents du dossier de démonstration")
+    sp.add_argument("--documents", type=int, default=4, help="demo : nombre de documents (défaut 4)")
 
     sp = add("serve", cmd_serve, "M6 : interface web du formateur et API")
     sp.add_argument("--host", default="127.0.0.1")
