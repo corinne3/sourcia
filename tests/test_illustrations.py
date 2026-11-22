@@ -197,3 +197,14 @@ def test_write_without_ctx_keeps_no_images(ctx, pdf_doc, tmp_path):
 def test_cli_options():
     a = build_parser().parse_args(["corpus", "--sans-illustrations", "--max-illustrations", "5"])
     assert a.sans_illustrations and a.max_illustrations == 5
+
+
+def test_caption_label_not_doubled():
+    """La légende trouvée dans le PDF commence souvent par « Figure 1 : » : on ne rajoute pas « Figure n : »."""
+    from sourcia.formation.illustrations import caption_label
+
+    assert caption_label(2, "Figure 1 : Rendement du sorgho") == "Figure 1 : Rendement du sorgho"
+    assert caption_label(2, "Tableau 3 - Doses") == "Tableau 3 - Doses"
+    assert caption_label(2, "Illustration tirée de « Essai »").startswith("Illustration tirée")
+    assert caption_label(2, "Parcelle en août") == "Figure 2 : Parcelle en août"
+    assert caption_label(4, "") == "Figure 4"

@@ -40,6 +40,14 @@ WORD_IMAGE_EXT = {".png", ".jpg", ".jpeg", ".gif", ".bmp"}
 CAPTION_RE = re.compile(r"^\s*(fig(ure)?\b|fig\.|tableau|photo|graphique|carte|sch[ée]ma|illustration)", re.I)
 
 
+def caption_label(n: int, legende: str) -> str:
+    """« Figure n : légende », sauf si la légende vient du document et commence déjà par « Figure 1 : … »,
+    « Tableau 2 … » (sinon : « Figure 1 : Figure 1 : … »)."""
+    if legende and CAPTION_RE.match(legende):
+        return legende
+    return f"Figure {n}" + (f" : {legende}" if legende else "")
+
+
 def _pymupdf():
     try:
         import pymupdf

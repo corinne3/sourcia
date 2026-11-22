@@ -222,7 +222,9 @@ class _Writer:
             return False
         self.figures += 1
         p = self.doc.add_paragraph()
-        p.add_run(f"Figure {self.figures}" + (f" : {ill.legende}" if ill.legende else "")).italic = True
+        from sourcia.formation.illustrations import caption_label
+
+        p.add_run(caption_label(self.figures, ill.legende)).italic = True
         num = self.nums.get(ill.doc_id)
         p.add_run(f" ({num}, p. {ill.page})" if num else f" (p. {ill.page})").italic = True
         return True
