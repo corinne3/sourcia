@@ -20,8 +20,9 @@
 <main>
 <form id="login">
   <label>Jeton enseignant <input id="token" type="password" required autocomplete="off"></label>
-  <p class="aide-jeton">Le jeton vous est donné par la personne qui gère SourcIA dans votre établissement. Il n’est
-    jamais enregistré : si vous rechargez la page ou revenez au catalogue, il faudra le saisir à nouveau.</p>
+  <p class="aide-jeton">Le jeton vous est donné par la personne qui gère SourcIA dans votre établissement, parfois sous
+    la forme d’un lien qui vous connecte d’un clic. Une fois saisi, vous restez connecté 12 heures sur cet ordinateur,
+    même en revenant au catalogue. « Se déconnecter » ferme la session.</p>
   <button>Accéder à mes dossiers</button>
 </form>
 <p id="message" role="status" aria-live="polite"></p>
@@ -34,6 +35,7 @@
     </form>
     <div class="folder-actions">
       <label>Dossier ouvert <select id="folders"></select></label>
+      <p id="account" class="compte"></p>
       <button id="logout" class="secondary" type="button">Se déconnecter</button>
     </div>
   </section>
@@ -149,7 +151,8 @@
 'use strict';
 const byId = id => document.getElementById(id);
 const base = '/api/dossiers';
-let token = '';
+let token = '';      // jeton saisi : seulement le temps d'ouvrir la session (le cookie protégé prend le relais)
+let account = '';    // adresse de l'enseignant connecté
 let folder = '';
 let timer;
 let revision = 0;
@@ -162,9 +165,13 @@ function message(text, error = false) {
 }
 
 async function request(path, options = {}) {
-  const headers = {Authorization: 'Bearer ' + token};
+  const headers = token ? {Authorization: 'Bearer ' + token} : {};   // sinon : le cookie de session
   if (typeof options.body === 'string') headers['Content-Type'] = 'application/json';
   const response = await fetch(path, {...options, headers, cache: 'no-store'});
+  if (response.status === 401 && account && !path.endsWith('/session')) {
+    byId('logout').click();                                          // session expirée : retour à la connexion
+    throw new Error('Votre session a expiré : saisissez à nouveau votre jeton.');
+  }
   if (!response.ok) {
     const details = await response.json().catch(() => ({}));
     throw new Error(typeof details.detail === 'string' ? details.detail : 'Échec de la requête (' + response.status + ')');
@@ -285,15 +292,45 @@ async function loadDetail() {
   if (data.en_cours) timer = setTimeout(() => loadDetail().catch(error => message(error.message, true)), 2000);
 }
 
-submit('login', async () => {
-  token = byId('token').value.trim();
+// le jeton ouvre une session (cookie protégé, 12 h) : on ne le garde pas dans la page
+async function connect(jeton) {
+  const session = await json(base + '/session', {method: 'POST', body: JSON.stringify({jeton})});
+  await openWorkspace(session.email);
+}
+
+async function openWorkspace(email) {
+  account = email;
+  token = '';
+  byId('account').textContent = 'Connecté : ' + email;
   await loadFolders();
   byId('token').value = '';
   byId('workspace').hidden = false;
   byId('login').hidden = true;
-});
+}
+
+submit('login', async () => connect(byId('token').value.trim()));
+
+// lien de connexion (#jeton=…) : à l'ouverture de la page, ou collé dans l'onglet déjà ouvert (seul le # change)
+async function useLink() {
+  const link = location.hash.match(/^#jeton=([^&]+)/);
+  if (!link) return false;
+  history.replaceState(null, '', location.pathname + '#dossier');     // le jeton disparaît de la barre d'adresse
+  try { await connect(decodeURIComponent(link[1])); } catch (error) { message(error.message, true); }
+  return true;
+}
+window.addEventListener('hashchange', () => { useLink(); });
+
+// à l'ouverture : le lien, sinon une session déjà ouverte sur cet ordinateur
+(async () => {
+  if (await useLink()) return;
+  const response = await fetch(base + '/session', {cache: 'no-store'}).catch(() => null);
+  if (response && response.ok) await openWorkspace((await response.json()).email).catch(error => message(error.message, true));
+})();
 
 byId('logout').onclick = () => {
+  if (account) fetch(base + '/session', {method: 'DELETE'}).catch(() => {});
+  account = '';
+  byId('account').textContent = '';
   token = '';
   folder = '';
   ++revision;

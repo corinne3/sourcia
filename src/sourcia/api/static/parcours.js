@@ -1,6 +1,6 @@
 // Parcours enseignant, étapes 3 (Mon corpus) et 4 (Mes supports), dans la page des dossiers.
-// Même page que « Mon dossier » : le jeton reste en mémoire, comme le veut dossiers.html (jamais enregistré).
-// Ce script réutilise ce que dossiers.html déclare : token, folder, base, byId, json, request, message.
+// Même page que « Mon dossier » : on reste connecté par le cookie de session (le jeton n'est jamais gardé par la page).
+// Ce script réutilise ce que dossiers.html déclare : token, account, folder, base, byId, json, request, message.
 // Tout le texte venu de l'API est inséré avec textContent (jamais innerHTML) : pas d'injection de HTML.
 'use strict';
 (() => {
@@ -94,7 +94,7 @@
       if (a.dataset.step === step) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     });
-    const logged = Boolean(token);
+    const logged = Boolean(account || token);       // session (cookie) ou jeton saisi
     byId('step-hint').hidden = !logged || step === 'dossier' || Boolean(folder);
     byId('step-corpus').hidden = !logged || step !== 'corpus' || !folder;
     byId('step-supports').hidden = !logged || step !== 'supports' || !folder;

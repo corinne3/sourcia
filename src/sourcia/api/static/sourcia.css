@@ -252,3 +252,5 @@ body.folders[data-step=corpus] #detail, body.folders[data-step=supports] #detail
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
   .steps a[aria-current] .pot { transform: none; }
 }
+.folder-actions .compte { margin: 0 0 12px; align-self: center; font-size: .9rem; color: var(--terre-douce); }
+.folder-actions .compte:empty { display: none; }
