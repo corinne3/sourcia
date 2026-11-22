@@ -79,6 +79,11 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
     def stylesheet():
         return FileResponse(STATIC / "sourcia.css", media_type="text/css")
 
+    @app.get("/assets/parcours.js", include_in_schema=False)
+    def parcours_script():
+        """Écrans « Mon corpus » et « Mes supports » de la page des dossiers."""
+        return FileResponse(STATIC / "parcours.js", media_type="text/javascript")
+
     @app.get("/", response_class=HTMLResponse)
     def home():
         return (STATIC / "index.html").read_text(encoding="utf-8")
