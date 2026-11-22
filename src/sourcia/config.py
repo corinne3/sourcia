@@ -95,6 +95,7 @@ class ObservabilitySettings(BaseModel):
 
 class Settings(BaseModel):
     name: str = "local"
+    serveur: bool = False                          # en ligne : connexion obligatoire pour appeler le modèle ou écrire
     data_dir: str = "data"
     models_dir: str = "models"
     referentiels: str = "config/referentiels"      # référentiels des diplômes (M8)

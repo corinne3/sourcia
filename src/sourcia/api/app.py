@@ -12,18 +12,26 @@
 - ``POST /api/formation/{dossier}/rattachements`` : l'enseignant valide les rattachements (M8)
 - ``POST /api/supports``                  : supports (étape 4) d'un corpus du catalogue, en tâche de fond
 - ``GET  /api/supports/{corpus}[/{sid}[/{f}]]`` : liste, statut, fichiers des supports
+
+Mode serveur (``serveur: true``, config/serveur.yaml) : ce qui appelle le modèle ou écrit sur le disque demande un
+enseignant connecté (cookie de session ou jeton) ; chercher dans le catalogue reste ouvert à tous, sans export ni
+passe du modèle. Le serveur ne démarre pas sans SOURCIA_SESSION_SECRET.
 """
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 from sourcia import BUILD
 # au niveau du module : FastAPI lit les annotations (texte, à cause de « annotations ») dans ce module
 from sourcia.api.dossier_corpus import CID_RE
+from sourcia.api.dossiers import bearer, create_dossiers_router
 from sourcia.api.supports_api import CatalogueSupportsRequest, SupportsJobs
 from sourcia.core.demande import Demande
 from sourcia.core.models import Fiche
@@ -56,6 +64,24 @@ class ValidationRequest(BaseModel):
     decisions: list[Decision]
 
 
+SECRET_MIN = 32
+LOGIN_MESSAGE = ("Connectez-vous d'abord (page « Mes dossiers », avec le lien reçu) : en ligne, lancer une "
+                 "formation ou des supports est réservé aux enseignants qui ont un compte.")
+
+
+def check_server(settings) -> None:
+    """Mode serveur : refuse de démarrer sans secret de session (sinon chaque redémarrage déconnecte tout le monde)."""
+    if not settings.serveur:
+        return
+    if len(os.environ.get("SOURCIA_SESSION_SECRET", "")) < SECRET_MIN:
+        raise RuntimeError(
+            f"Mode serveur : la variable SOURCIA_SESSION_SECRET doit contenir au moins {SECRET_MIN} caractères "
+            "aléatoires. Pour en créer une : python -c \"import secrets; print(secrets.token_urlsafe(48))\" "
+            "(voir docs/DEPLOIEMENT.md).")
+    if settings.llm.provider == "litellm" and not os.environ.get("GEMINI_API_KEY"):
+        print("⚠️  GEMINI_API_KEY absente : les corpus et les supports « avec modèle » échoueront.", file=sys.stderr)
+
+
 def create_app(config: str | None = None, ctx=None) -> FastAPI:
     from sourcia.config import load_settings
     from sourcia.container import Context
@@ -64,7 +90,22 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
     from sourcia.select.funnel import select_demande
 
     ctx = ctx or Context(load_settings(config))
+    check_server(ctx.settings)
     app = FastAPI(title="SourcIA", version=BUILD)
+    dossiers = create_dossiers_router(ctx)
+
+    def teacher(request: Request, response: Response,
+                credentials: HTTPAuthorizationCredentials | None = Depends(bearer)) -> str | None:
+        """Enseignant connecté, ou None. Hors mode serveur (sur son PC), personne n'a à se connecter."""
+        try:
+            return dossiers.identity(request, response, credentials)
+        except HTTPException:
+            return None
+
+    def required(email: str | None = Depends(teacher)) -> str | None:
+        if ctx.settings.serveur and not email:
+            raise HTTPException(401, LOGIN_MESSAGE, headers={"WWW-Authenticate": "Bearer"})
+        return email
     export_dir = ctx.settings.path("exports", ".keep").parent
     form_dir = ctx.settings.path("formations", ".keep").parent
     refs = ReferentielStore(ctx.settings.referentiels_dir)
@@ -121,9 +162,13 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
         return out
 
     @app.post("/api/selection")
-    def selection(req: SelectionRequest):
+    def selection(req: SelectionRequest, email: str | None = Depends(teacher)):
         if not req.demande.sujet.strip():
             raise HTTPException(400, "sujet vide")
+        if ctx.settings.serveur and not email:           # visiteur : chercher oui, modèle et fichiers d'export non
+            if req.llm_top:
+                raise HTTPException(401, LOGIN_MESSAGE, headers={"WWW-Authenticate": "Bearer"})
+            req.formats = []
         sel = select_demande(ctx.selector, req.demande, llm_top=req.llm_top)
         ctx.qualifier.save()
         ctx.store.save()
@@ -148,7 +193,7 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
         return FileResponse(safe(export_dir, name), filename=name)
 
     @app.post("/api/formation")
-    def formation(req: FormationRequest):
+    def formation(req: FormationRequest, _: str | None = Depends(required)):
         from sourcia.formation.builder import FormationBuilder
         from sourcia.formation.render import write
 
@@ -167,7 +212,7 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
         return FileResponse(safe(form_dir, dossier, name), filename=name)
 
     @app.post("/api/formation/{dossier}/rattachements")
-    def valider(dossier: str, req: ValidationRequest):
+    def valider(dossier: str, req: ValidationRequest, _: str | None = Depends(required)):
         import csv
 
         from sourcia.formation.render import load, write
@@ -199,8 +244,8 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
         return folder
 
     @app.post("/api/supports", status_code=202)
-    def supports_start(req: CatalogueSupportsRequest, tasks: BackgroundTasks):
-        return jobs.start(catalog_corpus(req.corpus_id), req, tasks, "page web")
+    def supports_start(req: CatalogueSupportsRequest, tasks: BackgroundTasks, email: str | None = Depends(required)):
+        return jobs.start(catalog_corpus(req.corpus_id), req, tasks, email or "page web")
 
     @app.get("/api/supports/{corpus_id}")
     def supports_list(corpus_id: str):
@@ -214,9 +259,7 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
     def supports_file(corpus_id: str, sid: str, name: str):
         return jobs.file(catalog_corpus(corpus_id), sid, name)
 
-    from sourcia.api.dossiers import create_dossiers_router
-
-    app.include_router(create_dossiers_router(ctx))
+    app.include_router(dossiers)
 
     @app.get("/dossiers", response_class=HTMLResponse)
     def teacher_folders():

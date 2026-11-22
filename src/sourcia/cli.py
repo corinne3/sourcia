@@ -815,8 +815,12 @@ def cmd_serve(args) -> None:
 
     from sourcia.api.app import create_app
 
+    try:
+        app = create_app(args.config)
+    except RuntimeError as exc:                      # mode serveur sans secret de session : message clair, pas de pile
+        raise SystemExit(f"❌ {exc}") from None
     print(f"Interface : http://{args.host}:{args.port}  (Ctrl+C pour arrêter)")
-    uvicorn.run(create_app(args.config), host=args.host, port=args.port, log_level="warning")
+    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
 
 
 def cmd_mcp(args) -> None:

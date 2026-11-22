@@ -230,8 +230,9 @@ def create_dossiers_router(ctx):
             raise HTTPException(401, "Ce jeton n'est pas reconnu. Vérifiez-le, ou demandez-en un nouveau à la "
                                      "personne qui gère SourcIA.")
         response.headers["Cache-Control"] = "private, no-store"
+        # chemin /api : le cookie sert aussi aux routes du catalogue qui demandent une connexion en mode serveur
         response.set_cookie(COOKIE, sessions.create(email, token), max_age=sessions.hours * 3600, httponly=True,
-                            samesite="strict", secure=https(request), path="/api/dossiers")
+                            samesite="strict", secure=https(request), path="/api")
         return {"email": email, "duree_heures": sessions.hours}
 
     @router.get("/session")
@@ -241,7 +242,8 @@ def create_dossiers_router(ctx):
     @router.delete("/session", status_code=204)
     def logout():
         response = Response(status_code=204)
-        response.delete_cookie(COOKIE, path="/api/dossiers", samesite="strict", httponly=True)
+        for path in ("/api", "/api/dossiers"):        # /api/dossiers : cookie d'avant le mode serveur
+            response.delete_cookie(COOKIE, path=path, samesite="strict", httponly=True)
         return response
 
     @router.get("")
@@ -442,4 +444,5 @@ def create_dossiers_router(ctx):
     from sourcia.api.dossier_corpus import add_corpus_routes   # corpus pédagogique du dossier (étape 3)
 
     add_corpus_routes(router, ctx, store, identity)
+    router.identity = identity                     # réutilisée par les routes du catalogue (mode serveur)
     return router
