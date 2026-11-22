@@ -133,3 +133,25 @@ Register-ScheduledTask -TaskName "SourcIA collecte quotidienne" -Action $action 
 ## Licence
 
 MIT pour le code. Les documents collectés gardent leur propre licence (ex. RD Agri : CC BY-NC-SA) : la colonne `licence` est conservée.
+
+## Dossiers pédagogiques
+
+Installez l'option API avec `python -m pip install -e ".[api]"`. Avant de lancer
+`sourcia serve`, définissez la variable d'environnement `SOURCIA_DOSSIER_ACCOUNTS`
+avec un objet JSON associant les adresses des enseignants à leurs jetons.
+L'administrateur fournit à chaque enseignant son propre jeton par un canal privé.
+Générez chaque jeton avec `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
+Configurez la variable dans l'environnement du processus ou dans les secrets
+de l'hébergeur.
+
+Ouvrez `/dossiers` dans l'interface web. Le partage donne accès au compte
+correspondant à l'adresse e-mail. La fin du traitement s'affiche dans le dossier.
+En cas d'interruption du serveur, le bouton « Relancer » permet de reprendre
+le traitement. Conservez le répertoire `<data_dir>/dossiers` sur un volume
+persistant et servez l'interface en HTTPS sur un hébergement distant.
+
+Pour intégrer la consolidation, appelez
+`GET /api/dossiers/{id}/corpus` avec le jeton de l'enseignant. La réponse fournit
+les sources cochées et prêtes, leurs fiches de qualification et leur texte par
+page. Le ZIP inclut la fiche JSON de chaque source et la transcription d'une
+vidéo lorsque l'extraction a pu la produire à partir d'un fichier local.
