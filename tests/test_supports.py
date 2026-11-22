@@ -22,6 +22,7 @@ from test_formation import responder
 
 FIXTURE = ROOT / "tests" / "fixtures" / "corpus-exemple"
 REF_RE = re.compile(r"\[S\d+, p\. \d+\]")
+CHIP_RE = re.compile(r"S\d+, page \d+")          # référence en étiquette (infographie, cartes, diapos)
 NUM_RE = re.compile(r"\d+(?:[,.]\d+)?")
 PRIVATE_TEXT = "Support de cours (document privé du formateur"
 
@@ -81,8 +82,8 @@ def test_subset_of_sequences_only(corpus_dir, model_ctx):
     from pptx import Presentation
 
     prs = Presentation(str(folder / "presentation.pptx"))
-    titles = [s.shapes.title.text for s in prs.slides if s.shapes.title is not None]
-    assert any(t.startswith("Séquence 1") for t in titles) and not any(t.startswith("Séquence 2") for t in titles)
+    texts = " ".join(sh.text_frame.text for s in prs.slides for sh in s.shapes if sh.has_text_frame)
+    assert cp.sequences[0].titre in texts and cp.sequences[1].titre not in texts
 
 
 # ---------------------------------------------------------------------- traçabilité
@@ -130,12 +131,15 @@ def test_infographic_has_no_number_absent_from_corpus(corpus_dir):
     corpus_numbers = set(NUM_RE.findall((corpus_dir / "corpus.json").read_text(encoding="utf-8")))
     shown = set(NUM_RE.findall(text))
     assert shown and shown <= corpus_numbers, shown - corpus_numbers
-    assert "9,5 t MS/ha" in text and REF_RE.search(text) and "@page" in (folder / "infographie.html").read_text("utf-8")
+    raw = (folder / "infographie.html").read_text("utf-8")
+    assert "9,5 t MS/ha" in text and CHIP_RE.search(text) and "@page" in raw
+    assert "data:font/woff2;base64," in raw and "fonts.googleapis" not in raw      # polices dans le fichier
 
 
 def test_presentation_slides_notes_and_pictures(corpus_dir):
     pytest.importorskip("pptx")
     from pptx import Presentation
+    from pptx.dml.color import RGBColor
     from pptx.enum.shapes import MSO_SHAPE_TYPE
 
     cp = load_corpus(corpus_dir)
@@ -143,17 +147,25 @@ def test_presentation_slides_notes_and_pictures(corpus_dir):
     folder = write_supports(sup, cp, corpus_dir)[0].parent
     prs = Presentation(str(folder / "presentation.pptx"))
     slides = list(prs.slides)
-    assert len(slides) == expected_slides(sup, cp, corpus_dir) == 1 + 3 + 1 + 1   # titre, 3 séquences, 1 image, sources
+    # titre, 3 séquences, 1 illustration, les chiffres clés, les sources
+    assert len(slides) == expected_slides(sup, cp, corpus_dir) == 1 + 3 + 1 + 1 + 1
     first = " ".join(sh.text_frame.text for sh in slides[0].shapes if sh.has_text_frame)
     assert cp.titre in first and cp.referentiel["nom"] in first and "C4.2" in first
+    assert all(s.background.fill.fore_color.rgb == RGBColor.from_string("F7F8F3") for s in slides)   # fond craie
+    titre = next(sh for sh in slides[0].shapes if sh.has_text_frame and sh.text_frame.text == cp.titre)
+    assert titre.text_frame.paragraphs[0].runs[0].font.name == "Century Gothic"
+    seq1 = " ".join(sh.text_frame.text for sh in slides[1].shapes if sh.has_text_frame)
+    assert "Objectif" in seq1 and CHIP_RE.search(seq1)                            # étiquette de référence
     seq1_notes = slides[1].notes_slide.notes_text_frame.text
     assert REF_RE.search(seq1_notes) and "Extrait" in seq1_notes             # références dans les notes
     pictures = [sh for s in slides for sh in s.shapes if sh.shape_type == MSO_SHAPE_TYPE.PICTURE]
     assert len(pictures) == len(cp.illustrations) == 1
     texts = " ".join(sh.text_frame.text for s in slides for sh in s.shapes if sh.has_text_frame)
-    assert "Figure 1 : Rendement du sorgho en année sèche (S2, p. 1)" in texts
+    assert "Figure 1 : Rendement du sorgho en année sèche (S2, page 1)" in texts
     assert "Figure 1 : Figure 1" not in texts                                # légende du document pas doublée
-    assert slides[-1].shapes.title.text == "Sources"
+    chiffres = " ".join(sh.text_frame.text for sh in slides[-2].shapes if sh.has_text_frame)
+    assert "Les chiffres clés" in chiffres and "9,5 t MS/ha" in chiffres
+    assert "Sources" in [sh.text_frame.text for sh in slides[-1].shapes if sh.has_text_frame]
 
 
 # ---------------------------------------------------------------------- supports avec modèle
@@ -295,3 +307,50 @@ def test_api_folder_supports_same_rights(monkeypatch, demo_ctx, tmp_path):
     assert client.get(f"{base}/supports", headers=tdc.H2).status_code == 404       # dossier non partagé
     assert client.get(f"{base}/supports").status_code == 401                        # sans jeton
     assert client.post(f"{base}/supports", json={}, headers=tdc.H2).status_code == 404
+
+
+# ---------------------------------------------------------------------- corpus vide, longues séquences, cartes
+def test_empty_corpus_refused_everywhere(corpus_dir, capsys):
+    """Le cas vu chez l'utilisateur : un corpus sans aucun point clé (modèle muet) ne donne pas de supports vides."""
+    cp = load_corpus(corpus_dir)
+    with pytest.raises(ValueError, match="aucun point clé"):
+        build_supports(cp, [3], ["qcm", "presentation"])                       # la séquence 3 n'a aucun point
+    with pytest.raises(SystemExit):
+        main(["-c", str(ROOT / "config/test.yaml"), "supports", str(corpus_dir), "--sequences", "3"])
+    js = (ROOT / "src/sourcia/api/static/parcours.js").read_text(encoding="utf-8")
+    assert "c.points === 0" in js and "c.points !== 0" in js                   # signalé, pas proposé aux supports
+
+
+def test_api_refuses_empty_corpus(catalog_client):
+    r = catalog_client.post("/api/supports", json={"corpus_id": "corpus-20261120-100000", "sequences": [3]})
+    assert r.status_code == 409 and "aucun point clé" in r.json()["detail"]
+
+
+def test_long_sequence_split_over_several_slides(corpus_dir):
+    """Beaucoup de points : la séquence continue sur une diapo « (suite) », sans rien couper ni déborder."""
+    pytest.importorskip("pptx")
+    from pptx import Presentation
+
+    from sourcia.formation.presentation import ZONE_POINTS, card_height, paginate
+
+    cp = load_corpus(corpus_dir)
+    seq = cp.sequences[0]
+    seq.points = [seq.points[1].model_copy(update={"texte": seq.points[1].texte + " " + "Détail de l'essai. " * k})
+                  for k in range(9)]
+    pages = paginate(seq.points)
+    assert len(pages) > 1 and sum(len(p) for p in pages) == 9
+    assert all(sum(card_height(x.texte) + 0.14 for x in p) <= ZONE_POINTS[1] - ZONE_POINTS[0] for p in pages if len(p) > 1)
+    sup = build_supports(cp, [1], ["presentation"])
+    prs = Presentation(str(write_supports(sup, cp, corpus_dir)[0].parent / "presentation.pptx"))
+    texts = [" ".join(sh.text_frame.text for sh in s.shapes if sh.has_text_frame) for s in prs.slides]
+    assert len(prs.slides) == expected_slides(sup, cp, corpus_dir)
+    assert any("(suite)" in x for x in texts)
+
+
+def test_cards_show_the_answer_apart(corpus_dir):
+    cp = load_corpus(corpus_dir)
+    sup = build_supports(cp, None, ["cartes"])
+    cloze = [c for c in sup.cartes if c.reponse]
+    assert cloze and all(c.verso == f"{c.reponse}. {c.phrase}" for c in cloze)     # le CSV garde réponse + phrase
+    html_text = (write_supports(sup, cp, corpus_dir)[0].parent / "cartes.html").read_text(encoding="utf-8")
+    assert f"Réponse : <strong>{cloze[0].reponse}</strong>" in html_text
