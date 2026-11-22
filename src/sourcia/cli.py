@@ -8,6 +8,7 @@ Puis (M7) :     ``sourcia formation``  (support de formation à partir de la der
        ou :     ``sourcia corpus``  (étape 3 seule : corpus pédagogique corpus.json + document Word, sans QCM)
                 ``sourcia corpus --dossier <id>``  (corpus des documents cochés d'un dossier enseignant)
                 ``sourcia corpus-word <dossier>``  (refaire le Word après une correction de corpus.json)
+Puis (étape 4) : ``sourcia supports <dossier du corpus>``  (QCM, cartes, présentation, infographie…)
 Raccourci :     ``sourcia demo``  (exemples fictifs, tout le pipeline en une commande, sans Internet)
 """
 from __future__ import annotations
@@ -648,6 +649,40 @@ def _corpus_dossier(args, ctx) -> None:
     _corpus_summary(cp, paths)
 
 
+def cmd_supports(args) -> None:
+    """Étape 4 : supports (QCM, cartes, présentation, infographie…) à partir d'un corpus.json SEULEMENT."""
+    from sourcia.formation.corpus_pedagogique import load_corpus
+    from sourcia.formation.supports import SANS_MODELE, build_supports, write_supports
+
+    src = Path(args.chemin)
+    folder = src if src.is_dir() else src.parent if src.is_file() else None   # un chemin absent n'est rien
+    if folder is None or not (folder / "corpus.json").is_file():
+        sys.exit(f"corpus.json introuvable : {src}")
+    try:
+        seqs = [int(x) for x in args.sequences.split(",") if x.strip()] if args.sequences else None
+    except ValueError:
+        sys.exit("--sequences : des numéros séparés par des virgules, ex. 1,3")
+    supports = [x.strip() for x in args.supports.split(",") if x.strip()] if args.supports else list(SANS_MODELE)
+    cp = load_corpus(folder)
+    ctx = _ctx(args)                                 # sert seulement aux supports qui demandent le modèle
+    print(f"Corpus : {cp.titre} ({len(cp.sequences)} séquences) · supports : {', '.join(supports)}")
+    try:
+        sup = build_supports(cp, seqs, supports, ctx=ctx, log=print, avec_modele=args.avec_modele,
+                             qcm_par_sequence=args.qcm_par_sequence)
+    except ValueError as exc:                        # séquence ou support inconnu
+        sys.exit(str(exc))
+    paths = write_supports(sup, cp, folder)
+    n_mod = sum(q.origine == "modele" for q in sup.qcm)
+    print(f"\nSéquences {', '.join(map(str, sup.sequences))} · {len(sup.qcm)} questions ({n_mod} du modèle) · "
+          f"{len(sup.cartes)} cartes · {len(sup.chiffres)} chiffres clés · {len(sup.retires)} éléments retirés"
+          f" · {sup.appels_modele} appels au modèle · {sup.duree_s} s")
+    for r in sup.remarques[:8]:
+        print(f"  📝 {r}")
+    print("Fichiers :")
+    for p in paths:
+        print(f"  {p}")
+
+
 def cmd_corpus_word(args) -> None:
     """Refait le document Word à partir d'un corpus.json existant (corrigé à la main, ou reçu de l'équipe)."""
     from sourcia.formation.corpus_pedagogique import load_corpus
@@ -886,6 +921,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("corpus-word", cmd_corpus_word, "refaire le document Word d'un corpus (corpus.json → corpus_pedagogique.docx)")
     sp.add_argument("chemin", help="dossier corpus-<date> ou fichier corpus.json")
     sp.add_argument("--sortie", help="chemin du .docx (défaut : corpus_pedagogique.docx dans le dossier du corpus)")
+
+    sp = add("supports", cmd_supports, "étape 4 : supports à partir d'un corpus (QCM, cartes, présentation, infographie…)")
+    sp.add_argument("chemin", help="dossier corpus-<date> ou fichier corpus.json")
+    sp.add_argument("--sequences", help="numéros des séquences, ex. 1,3 (défaut : toutes)")
+    sp.add_argument("--supports", help="qcm,cartes,presentation,infographie (défaut) ; avec modèle : fiche,glossaire,podcast")
+    sp.add_argument("--avec-modele", action="store_true", help="le modèle complète le QCM (questions contrôlées)")
+    sp.add_argument("--qcm-par-sequence", type=int, default=4, help="questions par séquence au plus (défaut 4)")
 
     sp = add("valider-formation", cmd_valider_formation, "M8 : importer les rattachements validés (rattachements.csv)")
     sp.add_argument("dossier")
