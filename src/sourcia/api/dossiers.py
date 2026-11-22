@@ -416,4 +416,7 @@ def create_dossiers_router(ctx):
                             headers={"Cache-Control": "private, no-store"},
                             background=BackgroundTask(temp.cleanup))
 
+    from sourcia.api.dossier_corpus import add_corpus_routes   # corpus pédagogique du dossier (étape 3)
+
+    add_corpus_routes(router, ctx, store, identity)
     return router
