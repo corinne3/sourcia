@@ -83,6 +83,7 @@ class SourceBiblio(BaseModel):
     nature: str = "pdf"                      # Document.kind
     pages_citees: list[int] = Field(default_factory=list)
     citee: bool = True                       # False : document coché mais jamais cité
+    prive: bool = False                      # document privé : ses extraits ne vont pas à un modèle en ligne sans accord
     fourni_par_formateur: bool = False       # PDF téléversé dans un dossier enseignant (cité sans lien)
     catalog_id: str | None = None            # dossier enseignant : identifiant du document dans le catalogue
 
@@ -197,7 +198,7 @@ def bibliography(cp: CorpusPedagogique, ctx) -> list[SourceBiblio]:
         out.append(SourceBiblio(numero=f"S{len(out) + 1}" if cited else "", doc_id=did, titre=doc.title or did,
                                 organisme=str(organisme) if organisme else None, annee=annee, url=source_url(doc),
                                 nature=doc.kind, pages_citees=sorted(pages.get(did, [])), citee=cited,
-                                fourni_par_formateur=bool(doc.meta.get(FOURNI)),
+                                prive=doc.private, fourni_par_formateur=bool(doc.meta.get(FOURNI)),
                                 catalog_id=doc.meta.get("catalog_id")))
     return out
 

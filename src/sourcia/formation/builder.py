@@ -576,11 +576,16 @@ class FormationBuilder:
         """Mini-corpus des documents donnés et repères des contrôles (mots du sujet, tous les passages).
         ``allow_private`` : autres documents privés que le contenu personnel, envoyés quand même au modèle en ligne
         SI la demande l'autorise (``autoriser_cloud_personnel``). À appeler avant plan(), sequence(), synthese()…"""
-        from sourcia.core.text import tokenize
-
         cloud = self.ctx.settings.llm.provider == "litellm"
         allowed = tuple(perso) + tuple(allow_private) if d.autoriser_cloud_personnel else ()
         corpus = SelectionCorpus(self.ctx, list(perso) + list(doc_ids), cloud=cloud, allow_private=allowed)
+        return self.use_corpus(corpus, d)
+
+    def use_corpus(self, corpus, d: Demande):
+        """Travailler sur un mini-corpus déjà prêt : SelectionCorpus, ou tout objet qui a ``passages``,
+        ``search()`` et ``title()`` (les supports de l'étape 4 en font un à partir de corpus.json)."""
+        from sourcia.core.text import tokenize
+
         self.corpus = corpus
         self.topic = frozenset(tokenize(d.sujet))
         self.pool = {1000 + i: p for i, p in enumerate(corpus.passages)}
