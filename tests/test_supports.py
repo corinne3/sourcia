@@ -428,3 +428,24 @@ def test_wrong_answers_have_the_same_type_as_the_right_one():
     assert make_question("Forte production de biomasse mais une faible valeur énergétique.", texts) is None
     # la réponse ne doit pas rester écrite plus loin dans la phrase (vu le 22/11 : « …… » puis « à des bovins »)
     assert make_question("Une valorisation par les bovins, distribuée à des bovins en ration.", texts) is None
+
+
+def test_slides_are_balanced():
+    """Vu en vrai : 7 points donnaient 3 + 3 + 1 (une diapo « (suite) » avec une seule carte)."""
+    from types import SimpleNamespace
+
+    from sourcia.formation.presentation import ZONE_POINTS, card_height, paginate
+
+    pt = SimpleNamespace(texte="Le sorgho est une alternative compétitive au maïs dans les contextes restrictifs en "
+                               "eau, avec une typologie variétale basée sur les usages : monocoupe ou multicoupes.")
+    assert [len(p) for p in paginate([pt] * 7)] == [3, 2, 2]
+    assert [len(p) for p in paginate([pt] * 3)] == [3]
+    long = SimpleNamespace(texte="La catégorie 'Ensilage' (E) nécessite une teneur en UFL strictement supérieure à la "
+                                 "moyenne des témoins +7 points, permettant une distribution en ration de base quasi "
+                                 "exclusive pour les bovins.")
+    assert card_height(long.texte) < 1.1                  # deux lignes, comme dans PowerPoint (pas trois)
+    assert [len(p) for p in paginate([long] * 5)] == [3, 2]
+    for n in range(1, 15):                                # jamais de débordement, rien de perdu
+        pages = paginate([pt] * n)
+        assert sum(map(len, pages)) == n and max(map(len, pages)) - min(map(len, pages)) <= 1
+        assert all(sum(card_height(x.texte) + 0.14 for x in p) <= ZONE_POINTS[1] - ZONE_POINTS[0] for p in pages)

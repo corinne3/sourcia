@@ -18,7 +18,10 @@ COULEURS = {"craie": "F7F8F3", "blanc": "FFFFFF", "terre": "2A231C", "terre_douc
             "ble_texte": "6B5418"}
 LARGEUR, HAUTEUR = 13.333, 7.5                      # pouces, format 16:9
 ZONE_POINTS = (2.6, 6.75)                           # haut et bas de la zone des cartes sur une diapo de séquence
-CARACTERES_PAR_LIGNE = 92                           # Calibri 16 pt sur 11,5 pouces, environ
+# Calibri 16 pt sur 11,5 pouces : environ 130 caractères par ligne mesurés sur un rendu PowerPoint (22/11) ;
+# 105 garde une marge (mots longs, capitales). Avec 92, des diapos « (suite) » restaient à moitié vides.
+CARACTERES_PAR_LIGNE = 105
+ETIQUETTE = 14                                      # « S1, page 1 » au bout du texte, sur la même ligne
 SOURCES_PAR_COLONNE = 6
 CHIFFRES_PAR_DIAPO = 6
 
@@ -26,21 +29,35 @@ CHIFFRES_PAR_DIAPO = 6
 # ---------------------------------------------------------------------- plan des diapos
 def card_height(text: str) -> float:
     """Hauteur d'une carte (pouces) d'après la longueur du texte : 16 pt, environ 0,32 pouce par ligne."""
-    return 0.32 * max(1, math.ceil(len(text) / CARACTERES_PAR_LIGNE)) + 0.38
+    return 0.32 * max(1, math.ceil((len(text) + ETIQUETTE) / CARACTERES_PAR_LIGNE)) + 0.38
 
 
-def paginate(points) -> list[list]:
-    """Répartit les points en diapos qui ne débordent pas (au moins un point par diapo)."""
+def _fill(points, cap=None) -> list[list]:
+    """Remplit les diapos l'une après l'autre sans déborder ; ``cap(i, reste)`` limite le nombre de points."""
     pages, page, used = [], [], 0.0
     space = ZONE_POINTS[1] - ZONE_POINTS[0]
-    for p in points:
+    for k, p in enumerate(points):
         h = card_height(p.texte) + 0.14
-        if page and used + h > space:
+        full = cap is not None and len(page) >= cap(len(pages), len(points) - k + len(page))
+        if page and (used + h > space or full):
             pages.append(page)
             page, used = [], 0.0
         page.append(p)
         used += h
     return pages + ([page] if page else [])
+
+
+def paginate(points) -> list[list]:
+    """Répartit les points en diapos qui ne débordent pas (au moins un point par diapo).
+
+    Même nombre de diapos que le remplissage simple, mais des diapos équilibrées : 7 points sur 3 diapos font
+    3 + 2 + 2, pas 3 + 3 + 1 (vu le 22/11 : des diapos « (suite) » avec une seule carte)."""
+    greedy = _fill(points)
+    n = len(greedy)
+    if n < 2:
+        return greedy
+    balanced = _fill(points, cap=lambda i, rest: math.ceil(rest / max(1, n - i)))
+    return balanced if len(balanced) == n else greedy
 
 
 def plan(sup, cp, corpus_dir: Path) -> list[tuple]:
