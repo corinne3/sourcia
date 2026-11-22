@@ -99,3 +99,28 @@ def test_on_a_pc_nothing_changes(demo_ctx, monkeypatch):
     client = TestClient(create_app(ctx=demo_ctx))
     assert client.post("/api/formation", json={"demande": demande(), "doc_ids": []}).status_code == 400
     assert client.post("/api/selection", json={"demande": demande(), "formats": ["md"]}).json()["exports"]
+
+
+# ---------------------------------------------------------------------- image Docker
+def test_docker_image_has_no_secret_and_no_data():
+    ignore = (ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines()
+    assert {".env", "data/", ".venv/", ".git/"} <= set(ignore) and "!.env.example" in ignore
+    docker = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert "USER sourcia" in docker and "SOURCIA_CONFIG=config/serveur.yaml" in docker   # pas administrateur
+    assert "HEALTHCHECK" in docker and "/api/etat" in docker and "${PORT:-8000}" in docker
+    assert "GEMINI_API_KEY=" not in docker and "COPY .env" not in docker and "COPY data" not in docker
+    assert "sentence-transformers" not in docker and "[api,cloud,pptx,word]" in docker  # image légère
+    compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "sourcia-data:/data" in compose and "required: false" in compose
+    assert "SOURCIA_SESSION_SECRET=" in (ROOT / ".env.example").read_text(encoding="utf-8")
+
+
+def test_session_secret_can_come_from_dot_env(tmp_path, monkeypatch):
+    from sourcia.cli import _load_cloud_keys
+
+    monkeypatch.setenv("SOURCIA_SESSION_SECRET", "x")              # pour que monkeypatch remette tout à la fin
+    monkeypatch.delenv("SOURCIA_SESSION_SECRET")
+    (tmp_path / ".env").write_text("SOURCIA_SESSION_SECRET=abc\nAUTRE=non\n", encoding="utf-8")
+    _load_cloud_keys(tmp_path / ".env")
+    import os
+    assert os.environ["SOURCIA_SESSION_SECRET"] == "abc" and "AUTRE" not in os.environ

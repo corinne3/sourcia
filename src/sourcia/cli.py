@@ -43,14 +43,16 @@ def _bar(i: int, n: int, label: str = "") -> None:
 
 
 def _load_cloud_keys(path: Path | None = None) -> None:
-    """Lit les clés cloud du fichier .env (GEMINI_API_KEY…). Une variable déjà définie n'est jamais écrasée."""
+    """Lit les clés cloud du fichier .env (GEMINI_API_KEY…) et le secret de session du mode serveur.
+    Une variable déjà définie n'est jamais écrasée."""
     path = path or REPO_ROOT / ".env"
     if not path.exists():
         return
     for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
         key, sep, value = line.strip().partition("=")
         key, value = key.strip(), value.strip().strip('"').strip("'")
-        if sep and value and not key.startswith("#") and key.startswith(("GEMINI_", "GOOGLE_", "AZURE_", "OPENAI_", "MISTRAL_")):
+        wanted = ("GEMINI_", "GOOGLE_", "AZURE_", "OPENAI_", "MISTRAL_", "SOURCIA_SESSION_SECRET")
+        if sep and value and not key.startswith("#") and key.startswith(wanted):
             os.environ.setdefault(key, value)
 
 
