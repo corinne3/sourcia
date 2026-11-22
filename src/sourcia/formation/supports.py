@@ -69,8 +69,10 @@ class Question(BaseModel):
 class Carte(BaseModel):
     sequence: int
     recto: str
-    verso: str
+    verso: str                               # réponse et phrase, en un texte (CSV Anki)
     reference: Ref
+    reponse: str = ""                        # l'information masquée au recto (vide : question ouverte)
+    phrase: str = ""                         # la phrase vérifiée du corpus
 
 
 class Chiffre(BaseModel):
@@ -110,6 +112,14 @@ class Item:
 
 
 # ---------------------------------------------------------------------- lecture du corpus
+EMPTY_MESSAGE = ("Ce corpus n'a aucun point clé dans les séquences choisies : le modèle n'a pas pu en écrire. "
+                 "Construisez à nouveau le corpus avec un modèle qui répond (Gemini ou Ollama), puis revenez ici.")
+
+
+def count_points(cp, seqs: list[int]) -> int:
+    return sum(len(cp.sequences[i - 1].points) for i in seqs)
+
+
 def chosen_sequences(cp, sequences: list[int] | None) -> list[int]:
     n = len(cp.sequences)
     seqs = sorted(set(sequences)) if sequences else list(range(1, n + 1))
@@ -200,11 +210,12 @@ def build_cartes(cp, items: list[Item], all_texts: list[str], topic: frozenset) 
         q = make_question(it.texte, all_texts, topic)
         if q:
             answer = q["choix"][q["bonne_reponse"]]
-            recto, verso = q["enonce"], f"{answer}. {it.texte}"
+            recto, verso, reponse = q["enonce"], f"{answer}. {it.texte}", answer
         else:                                        # rien de précis à masquer : question ouverte
             titre = cp.sequences[it.sequence - 1].titre
-            recto, verso = f"« {titre} » : que faut-il retenir ? (point {rank[it.sequence]})", it.texte
-        out.append(Carte(sequence=it.sequence, recto=recto, verso=verso, reference=it.ref))
+            recto, verso, reponse = f"« {titre} » : que faut-il retenir ? (point {rank[it.sequence]})", it.texte, ""
+        out.append(Carte(sequence=it.sequence, recto=recto, verso=verso, reference=it.ref, reponse=reponse,
+                         phrase=it.texte))
     return out
 
 
@@ -275,8 +286,8 @@ def build_supports(cp, sequences: list[int] | None = None, supports: list[str] |
     all_texts = [p.texte for s in cp.sequences for p in s.points] + \
         [p.reference.extrait for s in cp.sequences for p in s.points if p.reference.extrait]
     topic = frozenset(tokenize(cp.demande.sujet))
-    if not items:
-        sup.remarques.append("aucun point clé dans les séquences choisies : rien à mettre dans les supports")
+    if not items:                                    # des supports vides ne servent à personne : on le dit
+        raise ValueError(EMPTY_MESSAGE)
 
     if "qcm" in supports:
         log("  QCM")
@@ -469,65 +480,131 @@ def cartes_csv(sup: Supports) -> str:
     return buf.getvalue()
 
 
-PAGE_CSS = """body{font-family:Calibri,Arial,sans-serif;color:#1d2a20;margin:0}
-h1{font-size:20pt;margin:0 0 4mm}.meta{color:#555;font-size:10pt;margin-bottom:6mm}
-footer{font-size:8pt;color:#555;border-top:1px solid #ccc;margin-top:6mm;padding-top:2mm}"""
+FONTS_DIR = Path(__file__).resolve().parents[1] / "api" / "static" / "fonts"
+PLANTES = {   # les pousses de la charte (mêmes dessins que l'interface), en SVG
+    "pousse": '<svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="43" rx="16" ry="5" fill="#b9a98a"/><path d="M26 42V25" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 31c-8 0-11-6-11-10 7 0 11 4 11 10z" fill="#4e9b63"/><path d="M26 28c7 0 11-6 11-10-7 0-11 4-11 10z" fill="#2e7d4b"/></svg>',
+    "epi": '<svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="46" rx="16" ry="5" fill="#b9a98a"/><path d="M26 45V17" stroke="#b88a1c" stroke-width="3" stroke-linecap="round"/><g fill="#e0a82e"><ellipse cx="21.5" cy="14" rx="3.3" ry="5.4" transform="rotate(-22 21.5 14)"/><ellipse cx="30.5" cy="14" rx="3.3" ry="5.4" transform="rotate(22 30.5 14)"/><ellipse cx="21" cy="23" rx="3.3" ry="5.4" transform="rotate(-22 21 23)"/><ellipse cx="31" cy="23" rx="3.3" ry="5.4" transform="rotate(22 31 23)"/><ellipse cx="26" cy="7" rx="3.1" ry="5.4"/></g></svg>',
+}
+
+
+def embedded_fonts() -> str:
+    """Les polices de la charte DANS le fichier (base64) : la page reste belle hors ligne et imprimée."""
+    import base64
+
+    faces = [("Fredoka", "fredoka.woff2", "500 600"),
+             ("Atkinson Hyperlegible", "atkinson-hyperlegible-normal.woff2", "400"),
+             ("Atkinson Hyperlegible", "atkinson-hyperlegible-gras.woff2", "700")]
+    css = []
+    for family, name, weight in faces:
+        f = FONTS_DIR / name
+        if f.is_file():
+            data = base64.b64encode(f.read_bytes()).decode()
+            css.append(f'@font-face{{font-family:"{family}";font-weight:{weight};'
+                       f'src:url(data:font/woff2;base64,{data}) format("woff2")}}')
+    return "".join(css)
+
+
+CHARTE_CSS = """:root{--craie:#f7f8f3;--blanc:#fff;--terre:#2a231c;--terre-douce:#5e5145;--trait:#dcd8c9;--sillon:#b9a98a;
+--bleuet:#2f4fb8;--colza:#f5c518;--colza-pale:#fdf3c4;--prairie:#2e7d4b;--prairie-pale:#e3f1e6;--prairie-texte:#1f5a35;
+--ble:#efe3be;--ble-texte:#6b5418}
+*{box-sizing:border-box}body{margin:0;background:var(--craie);color:var(--terre);
+font:11pt/1.5 "Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h1,h2,h3{font-family:"Fredoka","Trebuchet MS",system-ui,sans-serif;font-weight:600;line-height:1.15;margin:0}
+.ref{display:inline-block;font-size:8.5pt;font-weight:700;color:var(--ble-texte);background:var(--ble);
+padding:0 7px 0 11px;white-space:nowrap;clip-path:polygon(7px 0,100% 0,100% 100%,7px 100%,0 50%)}
+.pied{font-size:8pt;color:var(--terre-douce);border-top:2px dotted var(--trait);margin-top:6mm;padding-top:3mm}
+.pied ul{margin:2mm 0;padding-left:4mm}.pied li{margin-bottom:1mm}"""
+
+
+def _page(title: str, body: str, extra_css: str) -> str:
+    e = html.escape
+    return (f'<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>{e(title)}</title>'
+            f"<style>{embedded_fonts()}\n{CHARTE_CSS}\n{extra_css}</style></head><body>{body}</body></html>\n")
+
+
+def _sources_html(cp, refs) -> str:
+    e = html.escape
+    items = "".join(f"<li>{e(source_line(b))}</li>" for b in cited_sources(cp, refs))
+    return f"<ul>{items}</ul>" if items else ""
+
+
+def _chip(ref) -> str:
+    return f'<span class="ref">{html.escape((ref.numero or "Source") + ", page " + str(ref.page))}</span>'
 
 
 def cartes_html(sup: Supports, cp) -> str:
+    """Cartes à découper comme des sachets de graines : question à gauche, réponse et source à droite, on plie."""
     e = html.escape
-    cards = "\n".join(
-        f'<div class="carte"><div class="recto"><span class="seq">Séquence {c.sequence}</span>{e(c.recto)}</div>'
-        f'<div class="verso">{e(c.verso)}<span class="src">{e(c.reference.label())}</span></div></div>'
-        for c in sup.cartes)
-    sources = "".join(f"<li>{e(source_line(b))}</li>" for b in cited_sources(cp, [c.reference for c in sup.cartes]))
-    return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Cartes : {e(cp.titre)}</title>
-<style>{PAGE_CSS}
-@page{{size:A4;margin:12mm}}.cartes{{display:grid;grid-template-columns:1fr;gap:5mm}}
-.carte{{display:grid;grid-template-columns:1fr 1fr;border:1px dashed #888;break-inside:avoid;min-height:38mm}}
-.recto,.verso{{padding:4mm;font-size:11pt}}.verso{{border-left:1px dotted #888;background:#f6f8f4}}
-.seq{{display:block;font-size:8pt;color:#6a7d5a;margin-bottom:2mm}}.src{{display:block;font-size:8pt;color:#555;margin-top:2mm}}
-</style></head><body><h1>Cartes : {e(cp.titre)}</h1>
-<p class="meta">Découpez sur les pointillés, pliez au milieu : question d'un côté, réponse et source de l'autre.</p>
-<div class="cartes">{cards}</div><footer><strong>Sources</strong><ul>{sources}</ul></footer></body></html>
-"""
+    cards = "".join(
+        f'<article class="carte"><div class="recto"><p class="seq">{PLANTES["pousse"]}Séquence {c.sequence}</p>'
+        f'<p class="q">{e(c.recto)}</p></div><div class="verso">'
+        + (f'<p class="rep">Réponse : <strong>{e(c.reponse)}</strong></p>' if c.reponse else "")
+        + f'<p class="r">{e(c.phrase or c.verso)}</p>{_chip(c.reference)}'
+        "</div></article>" for c in sup.cartes)
+    body = (f"<header><h1>Cartes de révision</h1><p>{e(cp.titre)} : découpez sur les pointillés, pliez au milieu. "
+            "La question est devant, la réponse et sa source derrière.</p></header>"
+            f'<main class="cartes">{cards}</main><footer class="pied"><strong>Sources</strong>'
+            f"{_sources_html(cp, [c.reference for c in sup.cartes])}"
+            "Cartes préparées avec SourcIA à partir de sources vérifiées. À relire avant de les distribuer.</footer>")
+    css = """@page{size:A4;margin:12mm}body{padding:8mm;max-width:210mm;margin:auto}
+header h1{font-size:22pt}header p{color:var(--terre-douce);margin:2mm 0 6mm}
+.cartes{display:grid;gap:5mm}
+.carte{display:grid;grid-template-columns:1fr 1fr;min-height:46mm;break-inside:avoid;border:2px dashed var(--sillon);
+border-radius:4mm;background:var(--blanc);overflow:hidden}
+.recto{padding:4mm 5mm;border-right:2px dashed var(--sillon)}.verso{padding:4mm 5mm;background:var(--prairie-pale)}
+.seq{display:flex;align-items:center;gap:2mm;margin:0 0 2mm;font:600 9pt "Fredoka",sans-serif;color:var(--prairie-texte)}
+.seq svg{width:7mm;height:7mm}.q{margin:0;font-size:12pt}.r{margin:0 0 2mm;font-size:10pt;color:var(--terre-douce)}
+.rep{margin:0 0 2mm;font-size:12pt;color:var(--prairie-texte)}.rep strong{font:600 14pt "Fredoka",sans-serif}
+@media print{body{padding:0;background:#fff}}"""
+    return _page(f"Cartes : {cp.titre}", body, css)
 
 
-# --- infographie
 def infographie_html(sup: Supports, cp) -> str:
-    """Page A4 autonome : chiffres clés, une phrase par séquence (son premier point), sources."""
+    """Page A4 : bandeau titre, chiffres clés en grandes cartes, le parcours des séquences, les sources."""
     e = html.escape
     d = cp.demande
+    nums = numbers(cp)
     refs = [c.reference for c in sup.chiffres]
-    essentiel = []
+    chiffres = "".join(f'<div class="chiffre"><p class="val">{e(c.valeur)}</p><p class="phrase">{e(c.phrase)}</p>'
+                       f"{_chip(c.reference)}</div>" for c in sup.chiffres)
+    etapes = []
     for i in sup.sequences:
-        pts = cp.sequences[i - 1].points
-        if pts:
-            nums = numbers(cp)
-            r = make_ref(pts[0].reference, nums)
-            refs.append(r)
-            essentiel.append(f"<li><strong>{e(cp.sequences[i - 1].titre)}</strong> : {e(pts[0].texte)} "
-                             f"<span class='src'>{e(r.label())}</span></li>")
-    chiffres = "".join(f"<div class='chiffre'><div class='val'>{e(c.valeur)}</div><div class='phrase'>"
-                       f"{e(c.phrase)}</div><div class='src'>{e(c.reference.label())}</div></div>"
-                       for c in sup.chiffres)
-    sources = "".join(f"<li>{e(source_line(b))}</li>" for b in cited_sources(cp, refs))
-    public = e(d.public_description())
-    return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Infographie : {e(cp.titre)}</title>
-<style>{PAGE_CSS}
-@page{{size:A4;margin:12mm}}body{{width:186mm}}header{{background:#2f5d3a;color:#fff;padding:6mm;border-radius:3mm}}
-header h1{{color:#fff}}header .meta{{color:#e3eedd;margin:0}}h2{{color:#2f5d3a;font-size:14pt;margin:6mm 0 3mm}}
-.chiffres{{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}}
-.chiffre{{border:2px solid #b9cfa8;border-radius:3mm;padding:3mm}}.val{{font-size:20pt;font-weight:bold;color:#2f5d3a}}
-.phrase{{font-size:9pt;margin-top:1mm}}.src{{font-size:8pt;color:#555}}ul.essentiel li{{margin-bottom:2mm;font-size:10.5pt}}
-@media print{{body{{width:auto}}}}
-</style></head><body><header><h1>{e(cp.titre)}</h1><p class="meta">{public}</p></header>
-<h2>Chiffres clés</h2><div class="chiffres">{chiffres or "<p>Aucun chiffre dans les points choisis.</p>"}</div>
-<h2>L'essentiel</h2><ul class="essentiel">{"".join(essentiel)}</ul>
-<footer><strong>Sources</strong> (chaque information renvoie à son document et à sa page)<ul>{sources}</ul>
-Infographie générée par SourcIA à partir du corpus pédagogique. À relire avant diffusion. Pour un PDF :
-imprimer la page depuis le navigateur (format A4).</footer></body></html>
-"""
+        seq = cp.sequences[i - 1]
+        if not seq.points:
+            continue
+        r = make_ref(seq.points[0].reference, nums)
+        refs.append(r)
+        etapes.append(f'<li><span class="pot">{i}</span><div><h3>{e(seq.titre)}</h3>'
+                      f"<p>{e(seq.points[0].texte)} {_chip(r)}</p></div></li>")
+    bloc_chiffres = (f'<h2>Les chiffres clés</h2><div class="chiffres">{chiffres}</div>' if chiffres else
+                     '<p class="sans">Pas de chiffre dans ces séquences : l’infographie présente l’essentiel du cours.</p>')
+    diplome = f'<p class="dip">{e(cp.referentiel["nom"])}</p>' if cp.referentiel else ""
+    body = (f'<header><div class="plante">{PLANTES["epi"]}</div><div><h1>{e(cp.titre)}</h1>'
+            f"<p>{e(d.public_description())}</p>{diplome}</div></header>"
+            f"<main>{bloc_chiffres}<h2>L’essentiel, séquence par séquence</h2>"
+            f'<ol class="parcours">{"".join(etapes)}</ol></main>'
+            '<footer class="pied"><strong>Sources</strong> : chaque information renvoie à son document et à sa page.'
+            f"{_sources_html(cp, refs)}Infographie préparée avec SourcIA. À relire avant diffusion. "
+            "Pour un PDF : imprimer cette page depuis le navigateur, au format A4.</footer>")
+    css = """@page{size:A4;margin:10mm}body{width:190mm;margin:8mm auto;padding:0}
+header{display:flex;gap:6mm;align-items:center;background:var(--blanc);border:2px solid var(--trait);border-radius:6mm;
+padding:6mm 7mm}header .plante svg{width:22mm;height:22mm}header h1{font-size:24pt}
+header p{margin:1mm 0 0;color:var(--terre-douce)}header .dip{display:inline-block;margin-top:2mm;padding:1mm 4mm;
+border-radius:3mm;background:var(--colza-pale);color:#6a5300;font-weight:700;font-size:9.5pt}
+h2{font-size:15pt;margin:7mm 0 3mm}
+.chiffres{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}
+.chiffre{background:var(--blanc);border:2px solid var(--trait);border-top:5px solid var(--colza);border-radius:4mm;padding:3mm 4mm}
+.val{margin:0;font:600 21pt/1.1 "Fredoka",sans-serif;color:var(--bleuet)}.phrase{margin:1.5mm 0 2mm;font-size:9.5pt}
+.sans{margin:6mm 0 0;padding:3mm 4mm;border:2px dashed var(--sillon);border-radius:4mm;color:var(--terre-douce)}
+.parcours{list-style:none;margin:0;padding:0;position:relative}
+.parcours::before{content:"";position:absolute;left:5.5mm;top:4mm;bottom:4mm;border-left:3px dashed var(--sillon)}
+.parcours li{position:relative;display:flex;gap:4mm;margin-bottom:4mm;break-inside:avoid}
+.pot{flex:none;width:11mm;height:11mm;border-radius:50%;display:grid;place-items:center;background:var(--colza-pale);
+border:2px solid var(--colza);font:600 12pt "Fredoka",sans-serif;z-index:1}
+.parcours h3{font-size:12pt;margin:1mm 0}.parcours p{margin:0;font-size:10pt}
+@media print{body{margin:0;background:#fff}}
+@media screen and (max-width:800px){body{width:auto;margin:4mm}.chiffres{grid-template-columns:1fr}}"""
+    return _page(f"Infographie : {cp.titre}", body, css)
 
 
 # --- fiche, glossaire, podcast
@@ -554,145 +631,5 @@ def podcast_markdown(p: dict) -> str:
     return "\n".join(out)
 
 
-# --- présentation
-def presentation_pptx(sup: Supports, cp, corpus_dir: Path, path: Path) -> Path:
-    """Diapos : titre ; par séquence, objectif + points, puis ses illustrations ; illustrations sans séquence
-    (si toutes les séquences sont prises) ; sources. Références complètes dans les notes de l'orateur."""
-    from pptx import Presentation
-    from pptx.enum.text import MSO_AUTO_SIZE
-    from pptx.util import Inches, Pt
-
-    from sourcia.formation.illustrations import caption_label
-
-    prs = Presentation()
-    prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
-    title_l, content_l, only_l = prs.slide_layouts[0], prs.slide_layouts[1], prs.slide_layouts[5]
-    d = cp.demande
-
-    def notes(slide, lines):
-        slide.notes_slide.notes_text_frame.text = "\n".join(lines)
-
-    def place(slide, ph, left, top, width, height):
-        # le modèle par défaut de python-pptx est en 4:3 : on replace chaque zone pour le 16:9
-        ph.left, ph.top, ph.width, ph.height = left, top, width, height
-
-    def style(tf, pt, bold=False, italic=False):
-        """Taille fixe : sans ça, la réduction automatique de PowerPoint rendait les points minuscules."""
-        tf.auto_size = MSO_AUTO_SIZE.NONE
-        tf.word_wrap = True
-        for para in tf.paragraphs:
-            for run in para.runs:
-                run.font.size, run.font.bold, run.font.italic = Pt(pt), bold or None, italic or None
-
-    def title(slide, text, pt=32):
-        slide.shapes.title.text = text
-        place(slide, slide.shapes.title, Inches(0.6), Inches(0.3), Inches(12.1), Inches(1.0))
-        style(slide.shapes.title.text_frame, pt)
-
-    s = prs.slides.add_slide(title_l)
-    s.shapes.title.text = cp.titre
-    place(s, s.shapes.title, Inches(0.8), Inches(1.8), Inches(11.7), Inches(1.6))
-    style(s.shapes.title.text_frame, 40)
-    sub = [d.public_description()]
-    if cp.referentiel:
-        caps = ", ".join(f"{c['code']}" for c in cp.capacites_visees)
-        sub.append(f"{cp.referentiel['nom']}" + (f" : {caps}" if caps else ""))
-    s.placeholders[1].text = "\n".join(sub)
-    place(s, s.placeholders[1], Inches(0.8), Inches(3.6), Inches(11.7), Inches(2.6))
-    style(s.placeholders[1].text_frame, 20)
-    notes(s, ["Support généré par SourcIA à partir du corpus pédagogique : chaque information renvoie à sa source.",
-              f"Séquences présentées : {', '.join(map(str, sup.sequences))}."])
-
-    nums = numbers(cp)
-    figure = 0
-    refs_used = []
-
-    def add_image(ill, label):
-        nonlocal figure
-        img = corpus_dir / ill.chemin
-        if not img.is_file():
-            sup.remarques.append(f"présentation : illustration introuvable ({ill.chemin})")
-            return
-        slide = prs.slides.add_slide(only_l)
-        title(slide, label, pt=26)
-        box_w, box_h, top = Inches(11.5), Inches(4.9), Inches(1.45)
-        pic = slide.shapes.add_picture(str(img), Inches(0.9), top, height=box_h)
-        if pic.width > box_w:
-            pic.height = int(pic.height * box_w / pic.width)
-            pic.width = box_w
-        pic.left = int((prs.slide_width - pic.width) / 2)
-        figure += 1
-        num = nums.get(ill.doc_id)
-        ref = f"({num}, p. {ill.page})" if num else f"(p. {ill.page})"
-        caption = f"{caption_label(figure, ill.legende)} {ref}"
-        cap = slide.shapes.add_textbox(Inches(0.9), Inches(6.5), Inches(11.5), Inches(0.6)).text_frame
-        cap.text = caption
-        style(cap, 14, italic=True)
-        notes(slide, [caption, "Illustration d'origine du document cité."])
-
-    for i in sup.sequences:
-        seq = cp.sequences[i - 1]
-        slide = prs.slides.add_slide(content_l)
-        title(slide, _seq_title(cp, i))
-        body = slide.placeholders[1]
-        place(slide, body, Inches(0.6), Inches(1.4), Inches(12.1), Inches(5.2))
-        tf = body.text_frame
-        tf.text = f"Objectif : {seq.objectif}"
-        points = seq.points[:POINTS_PAR_DIAPO]
-        lines, short = [f"Objectif : {seq.objectif}" + (f" (capacité {seq.capacite})" if seq.capacite else "")], []
-        for p in points:
-            r = make_ref(p.reference, nums)
-            refs_used.append(r)
-            para = tf.add_paragraph()
-            para.text = p.texte
-            para.level = 1
-            lines += [f"• {p.texte} {r.label()}", f"  Extrait : « {r.extrait} »"]
-            short.append(f"{r.numero or 'source'} p. {r.page}")
-        if not points:
-            para = tf.add_paragraph()
-            para.text = "Aucun point clé retenu pour cette séquence : à compléter."
-            para.level = 1
-        style(tf, 18)
-        tf.paragraphs[0].runs[0].font.bold = True
-        tf.paragraphs[0].runs[0].font.size = Pt(22)
-        if len(seq.points) > POINTS_PAR_DIAPO:
-            lines.append(f"(+ {len(seq.points) - POINTS_PAR_DIAPO} autre(s) point(s) dans le corpus)")
-        if short:
-            foot = slide.shapes.add_textbox(Inches(0.6), Inches(6.8), Inches(12.1), Inches(0.4)).text_frame
-            foot.text = "Sources : " + " · ".join(dict.fromkeys(short))
-            style(foot, 12)
-        notes(slide, lines)
-        for ill in [x for x in cp.illustrations if x.sequence == i]:
-            add_image(ill, f"{_seq_title(cp, i)} (illustration)")
-    if len(sup.sequences) == len(cp.sequences):
-        for ill in [x for x in cp.illustrations if not x.sequence or x.sequence > len(cp.sequences)]:
-            add_image(ill, "Illustration")
-
-    sources = cited_sources(cp, refs_used) or [b for b in cp.bibliographie if b.numero]
-    for k in range(0, max(1, len(sources)), SOURCES_PAR_DIAPO):
-        slide = prs.slides.add_slide(content_l)
-        title(slide, "Sources" if k == 0 else "Sources (suite)")
-        body = slide.placeholders[1]
-        place(slide, body, Inches(0.6), Inches(1.4), Inches(12.1), Inches(5.6))
-        tf = body.text_frame
-        chunk = sources[k:k + SOURCES_PAR_DIAPO]
-        tf.text = source_line(chunk[0]) if chunk else "Aucune source citée."
-        for b in chunk[1:]:
-            tf.add_paragraph().text = source_line(b)
-        style(tf, 14)
-        notes(slide, [source_line(b) for b in chunk])
-    path.parent.mkdir(parents=True, exist_ok=True)
-    prs.save(str(path))
-    return path
-
-
-def expected_slides(sup: Supports, cp, corpus_dir: Path) -> int:
-    """Nombre de diapos attendu (pour les tests et l'affichage)."""
-    n = 1 + len(sup.sequences)
-    n += sum(1 for i in sup.sequences for x in cp.illustrations if x.sequence == i and (corpus_dir / x.chemin).is_file())
-    if len(sup.sequences) == len(cp.sequences):
-        n += sum(1 for x in cp.illustrations if (not x.sequence or x.sequence > len(cp.sequences))
-                 and (corpus_dir / x.chemin).is_file())
-    refs = [make_ref(p.reference, numbers(cp)) for i in sup.sequences for p in cp.sequences[i - 1].points[:POINTS_PAR_DIAPO]]
-    sources = cited_sources(cp, refs) or [b for b in cp.bibliographie if b.numero]
-    return n + max(1, -(-len(sources) // SOURCES_PAR_DIAPO))
+# --- présentation : formation/presentation.py (modèle de diapositives « Du champ à la classe »)
+from sourcia.formation.presentation import expected_slides, presentation_pptx  # noqa: E402,F401
