@@ -259,7 +259,9 @@ class _Writer:
         p.add_run(b.titre).italic = True
         p.add_run(". ")
         url = web_url(b.url)
-        if url:
+        if b.fourni_par_formateur:                   # PDF téléversé dans le dossier : cité, sans lien
+            p.add_run("Document fourni par le formateur.")
+        elif url:
             add_hyperlink(p, url, url)
         elif b.url is None:
             p.add_run("Document privé, non diffusé.")

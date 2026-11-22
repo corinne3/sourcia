@@ -3,7 +3,8 @@
 Règles :
 - seulement les images des PAGES CITÉES (points clés, synthèse) des documents cochés : chaque image garde le
   lien « S2, p. 4 » ; un document coché qui est lui-même une photo (``kind="image"``) est repris tel quel ;
-- jamais les images d'un document privé (le document Word peut être partagé) ;
+- jamais les images d'un document privé (le document Word peut être partagé), sauf un PDF téléversé par le
+  formateur dans son dossier (marque ``FOURNI``) : ce sont ses propres documents, dans son dossier protégé ;
 - on écarte ce qui n'est pas une illustration : petites images (en pixels ou sur la page), bandeaux, LOGOS
   (même image sur plusieurs pages, ou petite image en haut ou en bas de page), fonds de page, décors (image
   presque unie, pâle ou en aplats), doublons ; 2 images par page au plus, ``max_total`` en tout ;
@@ -170,7 +171,7 @@ def _save_image(pymupdf, pdf, img, dest_stem: Path) -> tuple[Path, bytes] | None
 
 def extract_illustrations(cp, ctx, folder: Path, max_total: int = MAX_TOTAL) -> list:
     """Remplit ``cp.illustrations`` (et copie les images dans ``folder/illustrations``) ; renvoie la liste."""
-    from sourcia.formation.corpus_pedagogique import Illustration
+    from sourcia.formation.corpus_pedagogique import FOURNI, Illustration
 
     folder = Path(folder)
     out_dir = folder / "illustrations"
@@ -195,7 +196,7 @@ def extract_illustrations(cp, ctx, folder: Path, max_total: int = MAX_TOTAL) -> 
         doc = ctx.store.get(did)
         if doc is None:
             continue
-        if doc.private:
+        if doc.private and not doc.meta.get(FOURNI):
             private.add(doc.title or did)
         elif doc.kind == "pdf" and doc.local_path and Path(doc.local_path).exists():
             pdf_pages.append((doc, pg, seq))
@@ -272,7 +273,7 @@ def extract_illustrations(cp, ctx, folder: Path, max_total: int = MAX_TOTAL) -> 
         doc = ctx.store.get(did)
         if doc is None or doc.kind != "image":
             continue
-        if doc.private:
+        if doc.private and not doc.meta.get(FOURNI):
             private.add(doc.title or did)
             continue
         src = Path(doc.local_path) if doc.local_path else None

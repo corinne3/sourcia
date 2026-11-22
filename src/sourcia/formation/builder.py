@@ -571,14 +571,16 @@ class FormationBuilder:
             return ReferentielStore(self.ctx.settings.referentiels_dir).get(d.diplome)
         return None
 
-    def prepare(self, d: Demande, doc_ids: list[str], perso: list[str] | tuple = ()) -> SelectionCorpus:
+    def prepare(self, d: Demande, doc_ids: list[str], perso: list[str] | tuple = (),
+                allow_private: list[str] | tuple = ()) -> SelectionCorpus:
         """Mini-corpus des documents donnés et repères des contrôles (mots du sujet, tous les passages).
-        À appeler avant plan(), sequence(), synthese()…"""
+        ``allow_private`` : autres documents privés que le contenu personnel, envoyés quand même au modèle en ligne
+        SI la demande l'autorise (``autoriser_cloud_personnel``). À appeler avant plan(), sequence(), synthese()…"""
         from sourcia.core.text import tokenize
 
         cloud = self.ctx.settings.llm.provider == "litellm"
-        corpus = SelectionCorpus(self.ctx, list(perso) + list(doc_ids), cloud=cloud,
-                                 allow_private=tuple(perso) if d.autoriser_cloud_personnel else ())
+        allowed = tuple(perso) + tuple(allow_private) if d.autoriser_cloud_personnel else ()
+        corpus = SelectionCorpus(self.ctx, list(perso) + list(doc_ids), cloud=cloud, allow_private=allowed)
         self.corpus = corpus
         self.topic = frozenset(tokenize(d.sujet))
         self.pool = {1000 + i: p for i, p in enumerate(corpus.passages)}
