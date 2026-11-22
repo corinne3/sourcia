@@ -144,6 +144,10 @@ function sourceTitle(source) {
 }
 
 api("/api/etat").then(e => {
+  if (!e.documents.documents) {     // serveur neuf : le catalogue s'importe à part (scripts/catalogue_paquet.py)
+    status("etat", "Le catalogue est vide : la personne qui gère SourcIA doit d’abord l’importer (ou lancer la collecte).", true);
+    return;
+  }
   $("etat").textContent = `${e.documents.documents ?? 0} documents · ${e.fiches} fiches · modèle ${e.modele} · ${e.build}` + (e.index ? "" : " · ⚠️ index absent");
 }).catch(() => status("etat", "Impossible de lire l’état du catalogue."));
 api("/api/referentiels").then(list => {

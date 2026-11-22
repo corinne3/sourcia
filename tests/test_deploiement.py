@@ -124,3 +124,67 @@ def test_session_secret_can_come_from_dot_env(tmp_path, monkeypatch):
     _load_cloud_keys(tmp_path / ".env")
     import os
     assert os.environ["SOURCIA_SESSION_SECRET"] == "abc" and "AUTRE" not in os.environ
+
+
+# ---------------------------------------------------------------------- paquet du catalogue
+def paquet_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("catalogue_paquet", ROOT / "scripts/catalogue_paquet.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_catalogue_package_has_no_pdf_and_no_pc_path(tmp_path):
+    import json
+    import tarfile
+
+    cp = paquet_module()
+    data = tmp_path / "data"
+    (data / "pages").mkdir(parents=True)
+    (data / "pdfs").mkdir()
+    (data / "dossiers").mkdir()
+    (data / "pages" / "p1.txt").write_text("Le sorgho fourrager.", encoding="utf-8")
+    (data / "pdfs" / "d2.pdf").write_bytes(b"%PDF-1.4")
+    (data / "comptes.json").write_text("{}", encoding="utf-8")
+    docs = [{"id": "p1", "kind": "page", "local_path": r"C:\Users\Prof\saed\data\pages\p1.txt"},
+            {"id": "d2", "kind": "pdf", "local_path": r"C:\Users\Prof\saed\data\pdfs\d2.pdf"}]
+    (data / "documents.jsonl").write_text("".join(json.dumps(d) + "\n" for d in docs), encoding="utf-8")
+    (data / "fiches.jsonl").write_text("", encoding="utf-8")
+    out = tmp_path / "catalogue.tar.gz"
+    r = cp.create(data, out)
+    assert r["documents"] == 2 and r["pdf_a_retelecharger"] == 1
+    with tarfile.open(out) as tar:
+        names = tar.getnames()
+        packed = tar.extractfile("documents.jsonl").read().decode()
+    assert "pages/p1.txt" in names and not any(n.endswith(".pdf") or "comptes" in n or "dossiers" in n for n in names)
+    assert "Users" not in packed and "Prof" not in packed                    # rien de son ordinateur
+
+    vol = tmp_path / "volume"
+    assert cp.import_(out, vol)["documents"] == 2
+    got = {d["id"]: d["local_path"] for d in map(json.loads, (vol / "documents.jsonl").read_text("utf-8").splitlines())}
+    assert got["p1"] == str((vol / "pages" / "p1.txt").resolve()) and got["d2"] is None   # PDF retéléchargé
+    with pytest.raises(SystemExit, match="déjà un catalogue"):
+        cp.import_(out, vol)                                                 # pas d'écrasement par erreur
+    cp.import_(out, vol, replace=True)
+
+
+def test_suspicious_package_is_refused(tmp_path):
+    import io
+    import tarfile
+
+    cp = paquet_module()
+    evil = tmp_path / "evil.tar.gz"
+    with tarfile.open(evil, "w:gz") as tar:
+        info = tarfile.TarInfo("../comptes.json")
+        info.size = 2
+        tar.addfile(info, io.BytesIO(b"{}"))
+    with pytest.raises(SystemExit, match="suspecte"):
+        cp.import_(evil, tmp_path / "volume")
+    assert not (tmp_path / "comptes.json").exists()
+
+
+def test_empty_catalogue_is_announced_on_the_page():
+    page = (ROOT / "src/sourcia/api/static/index.html").read_text(encoding="utf-8")
+    assert "Le catalogue est vide" in page
