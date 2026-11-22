@@ -15,6 +15,8 @@
     'cartes_anki.csv': 'Cartes pour Anki (CSV)', 'cartes.html': 'Cartes à découper', 'infographie.html': 'Infographie A4',
     'presentation.pptx': 'Présentation', 'fiche_technique.md': 'Fiche technique', 'glossaire.md': 'Glossaire',
     'podcast_script.md': 'Script de podcast', 'supports.json': 'Données (JSON)'};
+  const NOMS = {qcm: 'QCM', cartes: 'cartes', presentation: 'présentation', infographie: 'infographie',
+    fiche: 'fiche technique', glossaire: 'glossaire', podcast: 'podcast'};
   const state = {step: 'dossier', corpus: '', timer: null, images: [], refs: null, loading: 0};
 
   // ------------------------------------------------------------------ petits outils
@@ -135,7 +137,7 @@
     if (ready.length) {
       box.replaceChildren(`${ready.length} document(s) coché(s) et prêt(s)` +
         (privateDocs ? `, dont ${privateDocs} PDF téléversé(s) (privé(s))` : '') +
-        (waiting.length ? ` · ${waiting.length} encore en traitement (pas pris en compte)` : '') + '.');
+        (waiting.length ? `. ${waiting.length} autre(s) encore en traitement, pas pris en compte` : '') + '.');
       box.dataset.error = false;
     } else {
       box.replaceChildren('Aucun document coché et prêt dans ce dossier. ',
@@ -158,8 +160,8 @@
     }
     ul.replaceChildren(...list.map(c => {
       const li = el('li', {dataset: {id: c.id}}, el('strong', {text: c.sujet || c.id}), ' ', badge(c.statut),
-        el('span', {className: 'meta', text: ` ${dateFr(c.cree_le)} · ${c.documents ?? '?'} document(s)` +
-          (c.demande_par ? ` · par ${c.demande_par}` : '')}));
+        el('div', {className: 'meta', text: `Lancé le ${dateFr(c.cree_le)} avec ${c.documents ?? '?'} document(s)` +
+          (c.demande_par ? `, par ${c.demande_par}` : '') + '.'}));
       if (c.statut === 'en_cours') li.append(el('div', {className: 'meta',
         text: 'Construction en cours : avec un vrai modèle, compter plusieurs minutes. La page se met à jour seule.'}));
       if (c.statut === 'erreur') li.append(el('div', {className: 'alert', text: c.erreur || 'Échec de la construction.'}));
@@ -170,7 +172,7 @@
           action('Voir le corpus', () => openCorpus(c.id), false),
           action('Word', () => download(corpusUrl(c.id) + '/corpus_pedagogique.docx', 'corpus_pedagogique.docx')),
           action('JSON', () => download(corpusUrl(c.id) + '/corpus.json', 'corpus.json')),
-          action('Produire des supports →', async () => { state.corpus = c.id; goto('supports'); })));
+          action('Produire les supports', async () => { state.corpus = c.id; goto('supports'); })));
       }
       if (c.id === state.corpus) li.classList.add('current');
       return li;
@@ -178,7 +180,7 @@
   }
 
   function refNode(ref, nums) {
-    const label = `[${nums[ref.doc_id] || 'source'}, p. ${ref.page}]`;
+    const label = `${nums[ref.doc_id] || 'Source'}, page ${ref.page}`;          // l'étiquette remplace les crochets
     return isWeb(ref.lien)
       ? el('a', {href: ref.lien, target: '_blank', rel: 'noopener', className: 'ref', title: ref.extrait || '',
         text: label})
@@ -216,8 +218,8 @@
     const nums = Object.fromEntries(cp.bibliographie.filter(b => b.numero).map(b => [b.doc_id, b.numero]));
     const view = byId('corpus-view');
     const parts = [el('h2', {text: cp.titre}),
-      el('p', {className: 'meta', text: `Créé le ${dateFr(cp.cree_le)} · ${cp.doc_ids.length} document(s) · ` +
-        `${cp.sequences.length} séquence(s)` + (cp.referentiel ? ` · ${cp.referentiel.nom}` : '')})];
+      el('p', {className: 'meta', text: `Construit le ${dateFr(cp.cree_le)} à partir de ${cp.doc_ids.length} document(s), ` +
+        `en ${cp.sequences.length} séquence(s)` + (cp.referentiel ? `, pour le diplôme ${cp.referentiel.nom}` : '') + '.'})];
     if (cp.echecs_modele && cp.echecs_modele.length) parts.push(el('p', {className: 'alert',
       text: "Le modèle n'a pas répondu correctement à certaines demandes : plan de repli ou points clés incomplets. " +
         'Vérifiez que le modèle est joignable, puis relancez la construction.'}));
@@ -268,7 +270,7 @@
     parts.push(el('div', {className: 'file-actions'},
       action('Télécharger le Word', () => download(corpusUrl(cid) + '/corpus_pedagogique.docx', 'corpus_pedagogique.docx'), false),
       action('Télécharger le JSON', () => download(corpusUrl(cid) + '/corpus.json', 'corpus.json')),
-      action('Produire des supports →', async () => goto('supports'))));
+      action('Produire les supports', async () => goto('supports'))));
     view.replaceChildren(...parts);
     view.hidden = false;
     view.scrollIntoView({behavior: 'smooth', block: 'start'});
@@ -305,7 +307,7 @@
     }
     if (!ready.some(c => c.id === state.corpus)) state.corpus = ready[0].id;
     byId('supports-corpus').replaceChildren(...ready.map(c => el('option',
-      {value: c.id, text: `${c.sujet || c.id} · ${dateFr(c.cree_le)}`, selected: c.id === state.corpus})));
+      {value: c.id, text: `${c.sujet || c.id} (${dateFr(c.cree_le)})`, selected: c.id === state.corpus})));
     await loadSupports(state.corpus);
   }
 
@@ -334,12 +336,12 @@
       return;
     }
     ul.replaceChildren(...list.map(s => {
-      const li = el('li', {}, el('strong', {text: (s.supports || []).join(', ')}), ' ', badge(s.statut),
-        el('span', {className: 'meta', text: ` ${dateFr(s.cree_le)} · séquences ${(s.sequences || []).join(', ')}`}));
+      const li = el('li', {}, el('strong', {text: (s.supports || []).map(x => NOMS[x] || x).join(', ')}), ' ', badge(s.statut),
+        el('div', {className: 'meta', text: `Lancé le ${dateFr(s.cree_le)}, séquence(s) ${(s.sequences || []).join(', ')}.`}));
       if (s.statut === 'en_cours') li.append(el('div', {className: 'meta',
         text: 'Production en cours : la fiche, le glossaire et le podcast prennent plusieurs minutes avec un vrai modèle.'}));
       if (s.statut === 'erreur') li.append(el('div', {className: 'alert', text: s.erreur || 'Échec de la production.'}));
-      for (const r of s.remarques || []) li.append(el('div', {className: 'meta', text: '📝 ' + r}));
+      for (const r of s.remarques || []) li.append(el('div', {className: 'meta', text: 'À savoir : ' + r}));
       if (s.statut === 'pret') {
         const path = name => corpusUrl(cid) + '/supports/' + encodeURIComponent(s.id) + '/' + encodeURIComponent(name);
         li.append(el('div', {className: 'file-actions'}, ...(s.fichiers || []).flatMap(name => {
