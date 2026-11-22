@@ -167,12 +167,15 @@
       if (c.statut === 'erreur') li.append(el('div', {className: 'alert', text: c.erreur || 'Échec de la construction.'}));
       if (c.exclus_prives && c.exclus_prives.length) li.append(el('div', {className: 'alert',
         text: `Documents privés laissés de côté (modèle en ligne, sans votre accord) : ${c.exclus_prives.join(', ')}.`}));
+      const empty = c.statut === 'pret' && c.points === 0;      // le modèle n'a écrit aucun point clé
+      if (empty) li.append(el('div', {className: 'alert', text: 'Corpus vide : le modèle n’a écrit aucun point clé ' +
+        '(il n’a pas répondu correctement). Vérifiez que le modèle est joignable, puis construisez à nouveau le corpus.'}));
       if (c.statut === 'pret') {
         li.append(el('div', {className: 'file-actions'},
           action('Voir le corpus', () => openCorpus(c.id), false),
           action('Word', () => download(corpusUrl(c.id) + '/corpus_pedagogique.docx', 'corpus_pedagogique.docx')),
           action('JSON', () => download(corpusUrl(c.id) + '/corpus.json', 'corpus.json')),
-          action('Produire les supports', async () => { state.corpus = c.id; goto('supports'); })));
+          empty ? null : action('Produire les supports', async () => { state.corpus = c.id; goto('supports'); })));
       }
       if (c.id === state.corpus) li.classList.add('current');
       return li;
@@ -295,12 +298,12 @@
     const current = folder;
     const list = await json(corpusUrl());
     if (current !== folder || state.step !== 'supports') return;
-    const ready = list.filter(c => c.statut === 'pret');
+    const ready = list.filter(c => c.statut === 'pret' && c.points !== 0);   // pas de supports vides
     byId('supports-form').hidden = !ready.length;
     const empty = byId('supports-empty');
     empty.hidden = Boolean(ready.length);
     if (!ready.length) {
-      empty.replaceChildren('Aucun corpus prêt dans ce dossier. ',
+      empty.replaceChildren('Aucun corpus prêt avec des points clés dans ce dossier. ',
         el('a', {href: '#corpus', text: 'Construisez d’abord un corpus dans « Mon corpus »'}), '.');
       byId('supports-list').replaceChildren();
       return;
