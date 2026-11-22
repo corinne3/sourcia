@@ -32,7 +32,7 @@ from pydantic import BaseModel, Field
 
 from sourcia.core.text import normalize, tokenize
 from sourcia.formation.corpus import Passage
-from sourcia.formation.quizgen import VALUE_RE, make_question
+from sourcia.formation.quizgen import find_values, make_question
 from sourcia.search.bm25 import BM25
 
 SUPPORTS = ("qcm", "cartes", "presentation", "infographie", "fiche", "glossaire", "podcast")
@@ -259,7 +259,7 @@ def build_cartes(cp, items: list[Item], all_texts: list[str], topic: frozenset) 
 def build_chiffres(items: list[Item]) -> list[Chiffre]:
     out, seen = [], set()
     for it in items:
-        for m in VALUE_RE.finditer(it.texte):
+        for m in find_values(it.texte):
             value = f"{m.group(1)} {' '.join(m.group(2).split())}"
             if value in seen:
                 continue

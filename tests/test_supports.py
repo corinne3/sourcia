@@ -449,3 +449,20 @@ def test_slides_are_balanced():
         pages = paginate([pt] * n)
         assert sum(map(len, pages)) == n and max(map(len, pages)) - min(map(len, pages)) <= 1
         assert all(sum(card_height(x.texte) + 0.14 for x in p) <= ZONE_POINTS[1] - ZONE_POINTS[0] for p in pages)
+
+
+def test_more_units_and_the_sign_is_kept():
+    """Vu en vrai : un seul chiffre clé (60 cm) ; « +7 points » ou « 0,92 UFL » n'étaient pas reconnus."""
+    from sourcia.formation.quizgen import find_values, make_question
+
+    def found(s):
+        return [(m.group(1), m.group(2)) for m in find_values(s)]
+
+    assert found("supérieure à la moyenne des témoins +7 points") == [("+7", "points")]
+    assert found("inférieure de -8 points") == [("-8", "points")]
+    assert found("0,92 UFL/kg MS, soit 0,85 UFL") == [("0,92", "UFL/kg MS"), ("0,85", "UFL")]
+    assert found("120 g/kg MS et 14 t/ha") == [("120", "g/kg MS"), ("14", "t/ha")]
+    assert found("entre 50-60 cm") == [("60", "cm")]                   # un intervalle, pas un signe moins
+    assert found("les 3 points clés") == []                             # « points » sans signe : pas une mesure
+    q = make_question("La catégorie E dépasse la moyenne des témoins de +7 points.", [])
+    assert q["choix"][q["bonne_reponse"]] == "+7 points" and all(c.startswith("+") for c in q["choix"])
