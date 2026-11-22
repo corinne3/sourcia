@@ -209,16 +209,46 @@ def build_qcm(items: list[Item], all_texts: list[str], topic: frozenset, per_seq
     return out
 
 
+PETITS_MOTS = {"de", "des", "du", "d", "la", "le", "les", "l", "un", "une", "à", "au", "aux", "en", "et", "ou",
+               "par", "pour", "sur", "dans", "avec", "sans", "que", "qui", "est", "sont", "son", "sa", "ses", "leur",
+               "leurs", "ce", "cette", "ces", "se", "ne", "pas", "plus", "très", "entre", "selon", "comme",
+               "a", "ont", "été", "être", "doit", "doivent", "peut", "peuvent"}
+
+
+def sentence_start(text: str) -> str | None:
+    """Début d'une phrase à faire compléter (carte sans information précise à masquer).
+
+    On coupe après « : » s'il arrive assez tôt, sinon vers 40 % des mots ; jamais sur un petit mot (« de »,
+    « la », « est »…) qui laisserait une suite trop évidente ou incompréhensible. None si la phrase est trop
+    courte pour en cacher une partie utile."""
+    words = text.split()
+    if len(words) < 6:
+        return None
+    colon = next((k for k, w in enumerate(words) if w == ":" or w.endswith(":")), None)
+    cut = colon + 1 if colon is not None and 3 <= colon + 1 <= 0.7 * len(words) else max(3, round(0.4 * len(words)))
+    def unfinished(k):                               # petit mot en dernier, ou parenthèse pas refermée
+        head = " ".join(words[:k])
+        return words[k - 1].lower().strip(",;").split("'")[-1] in PETITS_MOTS | {""} or head.count("(") > head.count(")")
+
+    while cut < len(words) - 2 and unfinished(cut):
+        cut += 1                                     # « … permettent de » → « … permettent de plusieurs »
+    start = " ".join(words[:cut]).rstrip(",;")
+    return start if cut < len(words) - 1 else None
+
+
 def build_cartes(cp, items: list[Item], all_texts: list[str], topic: frozenset) -> list[Carte]:
     out = []
     rank: dict[int, int] = {}
     for it in items:
         rank[it.sequence] = rank.get(it.sequence, 0) + 1
         q = make_question(it.texte, all_texts, topic)
+        start = None if q else sentence_start(it.texte)
         if q:
             answer = q["choix"][q["bonne_reponse"]]
             recto, verso, reponse = q["enonce"], f"{answer}. {it.texte}", answer
-        else:                                        # rien de précis à masquer : question ouverte
+        elif start:                                  # rien de précis à masquer : la fin de la phrase à retrouver
+            recto, verso, reponse = f"Complétez la phrase : « {start}… »", it.texte, ""
+        else:                                        # phrase très courte : question ouverte sur la séquence
             titre = cp.sequences[it.sequence - 1].titre
             recto, verso, reponse = f"« {titre} » : que faut-il retenir ? (point {rank[it.sequence]})", it.texte, ""
         out.append(Carte(sequence=it.sequence, recto=recto, verso=verso, reference=it.ref, reponse=reponse,

@@ -387,3 +387,26 @@ def test_podcast_lines_reusing_verified_points_are_kept(corpus_dir, ctx):
     voices = [r["voix"] for r in sup.podcast["repliques"]]
     assert "Et pour les vaches malades ?" not in [r["texte"] for r in sup.podcast["repliques"]]  # question orpheline
     assert all(not (a == b == "animateur") for a, b in zip(voices, voices[1:]))   # jamais deux questions à la suite
+
+
+# ---------------------------------------------------------------------- finitions (test réel du 22/11 avec Gemini)
+def test_card_without_detail_asks_to_finish_the_sentence(corpus_dir):
+    """Vu en vrai : « Sélection variétale : que faut-il retenir ? (point 2) », un élève ne peut pas y répondre.
+    Sans chiffre ni culture à masquer, le recto donne le début de la phrase vérifiée, le verso la phrase entière."""
+    from sourcia.formation.supports import sentence_start
+
+    phrase = ("Les sorghos multicoupes (type sudan-grass) permettent plusieurs coupes successives et sont destinés "
+              "au pâturage, à la fauche ou à l'enrubannage, sans apport d'amidon.")
+    start = sentence_start(phrase)
+    assert phrase.startswith(start) and 0 < len(start) < len(phrase) / 2
+    assert start.split()[-1] not in {"de", "la", "les", "et"}
+    long = ("Le choix variétal doit prioriser la valeur énergétique (UFL par kg de matière sèche) en fonction de "
+            "l'objectif de valorisation (ensilage, biomasse ou usage industriel).")
+    assert sentence_start(long).endswith("sèche)")                                    # parenthèse refermée
+    assert sentence_start("Le sorgho résiste bien.") is None                           # trop court
+    cp = load_corpus(corpus_dir)
+    cards = build_supports(cp, None, ["cartes"]).cartes
+    assert not any("que faut-il retenir" in c.recto for c in cards)
+    ouvertes = [c for c in cards if not c.reponse]
+    assert ouvertes and all(c.recto.startswith("Complétez la phrase : « ") and c.verso == c.phrase for c in ouvertes)
+    assert all(c.verso.startswith(c.recto.split("« ")[1].removesuffix("… »")) for c in ouvertes)
