@@ -8,18 +8,20 @@
 </head>
 <body class="folders">
 <header class="page-header"><div class="header-content">
-  <a href="/">SourcIA</a>
-  <h1>Dossiers pédagogiques</h1>
-  <nav class="steps" aria-label="Parcours SourcIA">
-    <a href="/">1. Catalogue</a>
-    <a href="/dossiers#dossier" data-step="dossier">2. Mon dossier</a>
-    <a href="/dossiers#corpus" data-step="corpus">3. Mon corpus</a>
-    <a href="/dossiers#supports" data-step="supports">4. Mes supports</a>
+  <div class="marque"><p class="logo"><a href="/">SourcIA</a></p>
+    <h1 class="sub">Votre espace enseignant : dossier, corpus et supports</h1></div>
+  <nav class="steps" aria-label="Les quatre étapes du parcours">
+    <a href="/" data-step="catalogue"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="41" rx="16" ry="5" fill="#b9a98a"/><ellipse cx="26" cy="33" rx="5.5" ry="7.5" fill="#8a6a3b" transform="rotate(20 26 33)"/><path d="M24 29c1-3 3-4 5-4" stroke="#c9a46a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></span><span class="nom">1. Catalogue</span><span class="aide">trouver des sources</span></a>
+    <a href="/dossiers#dossier" data-step="dossier"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="43" rx="16" ry="5" fill="#b9a98a"/><path d="M26 42V25" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 31c-8 0-11-6-11-10 7 0 11 4 11 10z" fill="#4e9b63"/><path d="M26 28c7 0 11-6 11-10-7 0-11 4-11 10z" fill="#2e7d4b"/></svg></span><span class="nom">2. Mon dossier</span><span class="aide">ranger et cocher</span></a>
+    <a href="/dossiers#corpus" data-step="corpus"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="45" rx="16" ry="5" fill="#b9a98a"/><path d="M26 44V15" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 35c-9 0-13-6-13-11 8 0 13 5 13 11z" fill="#4e9b63"/><path d="M26 28c9 0 13-6 13-11-8 0-13 5-13 11z" fill="#2e7d4b"/><g fill="#2f4fb8"><circle cx="26" cy="7.5" r="3.6"/><circle cx="31.5" cy="11.5" r="3.6"/><circle cx="29.5" cy="17" r="3.6"/><circle cx="22.5" cy="17" r="3.6"/><circle cx="20.5" cy="11.5" r="3.6"/></g><circle cx="26" cy="12.5" r="3" fill="#f5c518"/></svg></span><span class="nom">3. Mon corpus</span><span class="aide">préparer le contenu</span></a>
+    <a href="/dossiers#supports" data-step="supports"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="46" rx="16" ry="5" fill="#b9a98a"/><path d="M26 45V17" stroke="#b88a1c" stroke-width="3" stroke-linecap="round"/><path d="M26 38c-7 0-10-4-10-8 6 0 10 3 10 8z" fill="#c9a24a"/><g fill="#e0a82e"><ellipse cx="21.5" cy="14" rx="3.3" ry="5.4" transform="rotate(-22 21.5 14)"/><ellipse cx="30.5" cy="14" rx="3.3" ry="5.4" transform="rotate(22 30.5 14)"/><ellipse cx="21" cy="23" rx="3.3" ry="5.4" transform="rotate(-22 21 23)"/><ellipse cx="31" cy="23" rx="3.3" ry="5.4" transform="rotate(22 31 23)"/><ellipse cx="26" cy="7" rx="3.1" ry="5.4"/></g></svg></span><span class="nom">4. Mes supports</span><span class="aide">QCM, cartes, diapos</span></a>
   </nav>
 </div></header>
 <main>
 <form id="login">
   <label>Jeton enseignant <input id="token" type="password" required autocomplete="off"></label>
+  <p class="aide-jeton">Le jeton vous est donné par la personne qui gère SourcIA dans votre établissement. Il n’est
+    jamais enregistré : si vous rechargez la page ou revenez au catalogue, il faudra le saisir à nouveau.</p>
   <button>Accéder à mes dossiers</button>
 </form>
 <p id="message" role="status" aria-live="polite"></p>
