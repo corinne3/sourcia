@@ -245,6 +245,11 @@ def cmd_extract(args) -> None:
 def cmd_qualify(args) -> None:
     ctx = _ctx(args)
     todo = [d for d in ctx.store.canonical() if d.status in ("extracted", "qualified")]
+    if args.themes:                                  # thèmes seuls : rapide, sans modèle, le reste de la fiche gardé
+        changed = sum(ctx.qualifier.refresh_themes(d) for d in todo)
+        ctx.qualifier.save()
+        print(f"Thèmes recalculés : {changed} fiche(s) modifiée(s) sur {len(todo)}.")
+        return
     if args.doc:
         todo = [d for d in todo if d.id in args.doc]
     if args.limit:
@@ -903,6 +908,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--llm", action="store_true", help="ajouter la passe « modèle » (plus lente)")
     sp.add_argument("--limit", type=int)
     sp.add_argument("--force", action="store_true", help="recalculer les fiches déjà en cache")
+    sp.add_argument("--themes", action="store_true", help="recalculer seulement les thèmes des fiches existantes")
     sp.add_argument("--doc", nargs="*", help="seulement ces documents (identifiants) ; affiche la fiche")
 
     sp = add("fiche", cmd_fiche, "M3 : afficher la fiche d'un document (identifiant ou morceau de titre)")
