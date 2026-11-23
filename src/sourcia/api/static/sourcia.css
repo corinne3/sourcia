@@ -198,6 +198,27 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--blanc); 
 .folders li.current { background: var(--colza-pale); border-radius: 12px; padding-inline: 12px; border-bottom-color: transparent; }
 .folders li .alert { display: flex; margin-top: 8px; }
 #zip { margin-top: 6px; }
+
+/* parcourir le catalogue : des thèmes en pastilles (comme les graines des cases à cocher), puis la liste */
+.graines { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 4px 0 14px; }
+.graines button { min-height: 0; padding: 6px 14px; font: 400 .95rem/1.3 var(--texte); color: var(--terre);
+  background: var(--craie); border: 2px solid var(--trait); border-radius: 999px; box-shadow: none; }
+.graines button:hover:not(:disabled) { background: var(--craie); border-color: var(--sillon); }
+.graines button:active:not(:disabled) { transform: none; box-shadow: none; }
+.graines button[aria-pressed=true] { background: var(--colza-pale); border-color: var(--colza); color: var(--colza-texte);
+  font-weight: 700; }
+.graines .n { margin-left: 8px; font-size: .82rem; color: var(--terre-douce); }
+.graines button[aria-pressed=true] .n { color: var(--colza-texte); }
+#search .graines, #search .row { flex: 1 1 100%; }   /* le formulaire est en ligne : ces deux blocs prennent la largeur */
+#search label.affiner { flex: 2 1 320px; }
+#catalogue-total { margin: 0 0 10px; }
+#catalogue-total:empty { display: none; }
+.catalogue-liste li { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.catalogue-liste .titre { font-weight: 700; }
+.catalogue-liste .meta { margin: 2px 0 0; }
+.folders .catalogue-liste li > button { flex: none; margin-left: 0; }
+.catalogue-liste .deja { flex: none; background: var(--prairie-pale); color: var(--prairie-texte); }
+#more { margin: 4px 0 18px; }
 #step-hint { padding: 14px 18px; border: 2px dashed var(--sillon); border-radius: 16px; background: var(--blanc); }
 
 /* étapes 3 et 4 dans la même page : « Mon dossier » se cache quand on regarde le corpus ou les supports */

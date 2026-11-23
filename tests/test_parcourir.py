@@ -106,3 +106,13 @@ def test_document_already_in_the_folder_is_marked(client):
 def test_only_the_folder_owner_can_browse(client):
     del client.headers["Authorization"]
     assert client.get(f"/api/dossiers/{client.folder}/parcourir-catalogue").status_code == 401
+
+
+# ---------------------------------------------------------------------- la page
+def test_page_lists_the_catalogue_and_filters_update_by_themselves():
+    page = (ROOT / "src/sourcia/api/static/dossiers.html").read_text(encoding="utf-8")
+    assert 'id="themes"' in page and 'id="more"' in page and 'id="source"' in page
+    assert "/parcourir-catalogue?" in page and "Déjà dans le dossier" in page
+    filters = page[page.index('<form id="filters">'):page.index("</form>", page.index('<form id="filters">'))]
+    assert "<button" not in filters and "Appliquer" not in filters               # plus de bouton « Appliquer »
+    assert 'name="q" required' not in page                                         # la liste s'affiche sans rien taper

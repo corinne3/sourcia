@@ -42,8 +42,16 @@
   <div id="detail" hidden>
     <section id="imports">
       <h2>Ajouter une source</h2>
-      <form id="search"><label>Recherche dans le catalogue <input name="q" required></label><button>Rechercher</button></form>
-      <ul id="results"></ul>
+      <p class="sub" id="catalogue-total" aria-live="polite"></p>
+      <form id="search" role="search">
+        <div id="themes" class="graines" role="group" aria-label="Thèmes du catalogue"></div>
+        <div class="row">
+          <label>Source <select name="source" id="source"><option value="">Toutes les sources</option></select></label>
+          <label class="affiner">Affiner par des mots <input name="q" type="search" placeholder="par exemple : sorgho sécheresse"></label>
+        </div>
+      </form>
+      <ul id="results" class="catalogue-liste"></ul>
+      <button type="button" id="more" class="secondary" hidden>Voir 20 documents de plus</button>
       <form id="upload"><label>PDF personnel <input name="file" type="file" accept=".pdf,application/pdf" required></label><button>Ajouter le PDF</button></form>
     </section>
     <section>
@@ -54,7 +62,6 @@
         <label>Type <select name="kind"><option value="">Tous</option><option value="pdf">PDF</option><option value="page">Page web</option><option value="video">Vidéo</option></select></label>
         <label>État <select name="status"><option value="">Tous</option><option value="en_attente">En attente</option><option value="traitement">En cours</option><option value="pret">Prêt</option><option value="erreur">Erreur</option></select></label>
         <label>Tri <select name="sort"><option value="ajout">Ordre d’ajout</option><option value="titre">Titre</option><option value="date">Date</option></select></label>
-        <button>Appliquer</button>
       </form>
       <ul id="documents"></ul>
       <h3>Connaissances du corpus sélectionné</h3>
@@ -240,6 +247,10 @@ async function loadDetail() {
   const [data, corpus] = await Promise.all([json(url + '?' + filters), json(url + '/corpus?texte=false')]);
   if (current !== revision) return;
   byId("detail").hidden = false;
+  if (catalogFolder !== folder && data.role !== 'lecture') {
+    catalogFolder = folder;
+    loadCatalog().catch(error => message(error.message, true));
+  }
   exportAvailable = data.export_disponible;
   byId("zip").disabled = exportInProgress || !exportAvailable;
   const editable = data.role !== 'lecture';
@@ -336,7 +347,11 @@ byId('logout').onclick = () => {
   ++revision;
   clearTimeout(timer);
   byId('folders').replaceChildren();
-  for (const id of ['results', 'documents', 'summary', 'shares']) byId(id).replaceChildren();
+  for (const id of ['results', 'documents', 'summary', 'shares', 'themes']) byId(id).replaceChildren();
+  catalogFolder = '';
+  browseTheme = '';
+  byId('catalogue-total').textContent = '';
+  byId('more').hidden = true;
   for (const id of ['login', 'create', 'search', 'upload', 'filters', 'share']) byId(id).reset();
   byId('notification').textContent = '';
   byId('workspace').hidden = true;
@@ -360,26 +375,122 @@ byId('folders').onchange = () => {
   byId('documents').replaceChildren();
   byId('summary').replaceChildren();
   byId('shares').replaceChildren();
+  browseTheme = '';
+  byId('search').reset();
   loadDetail().catch(error => message(error.message, true));
 };
 
+// filtres des documents du dossier : la liste se met à jour dès qu'on change un choix (plus de bouton « Appliquer »)
 submit('filters', loadDetail);
-submit('search', async data => {
-  const destination = folder;
-  const result = await json(base + '/' + destination + '/recherche-catalogue?' + new URLSearchParams(data));
-  if (destination !== folder) return;
-  byId('results').replaceChildren(...result.map(doc => {
-    const li = item(doc.titre + ' · ' + doc.source + ' ');
-    li.append(button('Ajouter', async () => {
-      await json(base + '/' + destination + '/catalogue',
-                 {method: 'POST', body: JSON.stringify({document_id: doc.id})});
-      if (destination === folder) await loadDetail();
-      message('Ressource ajoutée.');
-    }));
-    return li;
-  }));
-  if (!result.length) byId('results').append(item('Aucune ressource trouvée.'));
+let filterTimer = null;
+byId('filters').addEventListener('change', () => loadDetail().catch(error => message(error.message, true)));
+byId('filters').addEventListener('input', event => {
+  if (event.target.name !== 'q') return;
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => loadDetail().catch(error => message(error.message, true)), 350);
 });
+
+// --- parcourir le catalogue : une liste dès l'ouverture, des thèmes, une source, des mots pour affiner
+let catalogFolder = '', browseTheme = '', browsePage = 1, browseRevision = 0, browseTimer = null;
+const THEMES_VISIBLES = 14;
+
+async function loadCatalog(more = false) {
+  if (!folder) return;
+  const destination = folder, current = ++browseRevision;
+  const page = more ? browsePage + 1 : 1;
+  const form = new FormData(byId('search'));
+  const params = new URLSearchParams({q: form.get('q') || '', source: form.get('source') || '', theme: browseTheme, page});
+  const data = await json(base + '/' + destination + '/parcourir-catalogue?' + params);
+  if (destination !== folder || current !== browseRevision) return;
+  browsePage = page;
+  const filtered = Boolean(browseTheme || form.get('source') || (form.get('q') || '').trim());
+  byId('catalogue-total').textContent = data.total
+    ? data.total + (data.total > 1 ? ' documents' : ' document') + (filtered
+        ? ' correspondent à vos choix.'
+        : ' dans le catalogue, les plus récents d’abord. Choisissez un thème ou tapez des mots pour affiner.')
+    : '';
+  showThemes(data.themes);
+  showSources(data.sources);
+  const rows = data.documents.map(doc => catalogRow(doc, destination));
+  if (more) byId('results').append(...rows);
+  else byId('results').replaceChildren(...rows);
+  if (!data.total) byId('results').replaceChildren(item(filtered
+    ? 'Aucun document ne correspond. Retirez un filtre ou essayez d’autres mots.'
+    : 'Le catalogue est vide : la personne qui gère SourcIA doit d’abord l’importer.'));
+  byId('more').hidden = page * data.par_page >= data.total;
+}
+
+function showThemes(themes) {
+  const chip = (label, value, count) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(browseTheme === value));
+    b.append(label);
+    if (count !== undefined) {
+      const n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = count;
+      b.append(n);
+    }
+    b.addEventListener('click', () => {
+      browseTheme = browseTheme === value ? '' : value;
+      loadCatalog().catch(error => message(error.message, true));
+    });
+    return b;
+  };
+  const shown = themes.slice(0, THEMES_VISIBLES);
+  if (browseTheme && !shown.some(t => t.nom === browseTheme)) shown.push({nom: browseTheme, n: 0});
+  byId('themes').replaceChildren(chip('Tous les thèmes', ''), ...shown.map(t => chip(t.nom, t.nom, t.n)));
+}
+
+function showSources(sources) {
+  const select = byId('source'), chosen = select.value;
+  const options = [new Option('Toutes les sources', '')];
+  for (const s of sources) options.push(new Option(s.nom + ' (' + s.n + ')', s.id));
+  if (chosen && !sources.some(s => s.id === chosen)) options.push(new Option(chosen + ' (0)', chosen));
+  select.replaceChildren(...options);
+  select.value = chosen;
+}
+
+function catalogRow(doc, destination) {
+  const li = document.createElement('li');
+  const title = document.createElement(doc.url ? 'a' : 'span');
+  title.className = 'titre';
+  title.textContent = doc.titre || 'Document sans titre';
+  if (doc.url) Object.assign(title, {href: doc.url, target: '_blank', rel: 'noopener'});
+  const meta = document.createElement('p');
+  meta.className = 'meta';
+  meta.textContent = [doc.source_nom, doc.annee, doc.kind === 'pdf' ? 'PDF' : 'page web'].filter(Boolean).join(', ');
+  const text = document.createElement('div');
+  text.append(title, meta);
+  li.append(text);
+  const done = () => {
+    const tag = document.createElement('span');
+    tag.className = 'tag deja';
+    tag.textContent = 'Déjà dans le dossier';
+    return tag;
+  };
+  if (doc.deja_ajoute) li.append(done());
+  else li.append(button('Ajouter', async () => {
+    await json(base + '/' + destination + '/catalogue', {method: 'POST', body: JSON.stringify({document_id: doc.id})});
+    li.lastElementChild.replaceWith(done());
+    if (destination === folder) await loadDetail();
+    message('Document ajouté au dossier : son traitement commence.');
+  }));
+  return li;
+}
+
+byId('search').addEventListener('submit', event => {
+  event.preventDefault();
+  loadCatalog().catch(error => message(error.message, true));
+});
+byId('source').addEventListener('change', () => loadCatalog().catch(error => message(error.message, true)));
+byId('search').addEventListener('input', event => {
+  if (event.target.name !== 'q') return;
+  clearTimeout(browseTimer);
+  browseTimer = setTimeout(() => loadCatalog().catch(error => message(error.message, true)), 350);
+});
+byId('more').addEventListener('click', () => loadCatalog(true).catch(error => message(error.message, true)));
 
 submit('upload', async data => {
   await json(base + '/' + folder + '/documents', {method: 'POST', body: data});
