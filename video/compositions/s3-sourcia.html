@@ -1,0 +1,70 @@
+<template>
+  <style>
+    @font-face { font-family: "Fredoka"; font-weight: 500 600; src: url("assets/app/fonts/fredoka.woff2") format("woff2"); }
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-normal.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; overflow: hidden; background: var(--craie); font-family: "Atkinson Hyperlegible", sans-serif; }
+    #s3-marque { position: absolute; left: 160px; top: 150px; display: flex; align-items: baseline; gap: 40px; }
+    #s3-nom { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 190px; line-height: 1; color: var(--terre); letter-spacing: -.02em; }
+    #s3-nom span { display: inline-block; }
+    #s3-devise { font-size: 50px; color: var(--terre-douce); }
+    /* la frise des 4 étapes de l'app, en grand : le pot, le nom, l'aide ; le sillon qui se remplit */
+    #s3-frise { position: absolute; left: 160px; right: 160px; top: 500px; display: grid; grid-template-columns: repeat(4, 1fr); }
+    .etape { position: relative; display: grid; justify-items: center; gap: 10px; text-align: center; }
+    .pot { position: relative; z-index: 2; width: 230px; height: 230px; display: grid; place-items: center; border-radius: 50%;
+      background: var(--blanc); border: 5px solid var(--trait); }
+    .pot svg { width: 168px; height: 168px; }
+    .etape .nom { margin-top: 18px; font-family: "Fredoka", sans-serif; font-weight: 500; font-size: 48px; color: var(--terre); }
+    .etape .aide { font-size: 32px; color: var(--terre-douce); }
+    .sillon { position: absolute; z-index: 1; top: 115px; left: calc(50% + 126px); width: calc(100% - 252px); height: 0;
+      border-top: 6px dashed var(--sillon); }
+    .sillon i { position: absolute; left: 0; right: 0; top: -6px; height: 6px; background: var(--prairie); transform-origin: left center; }
+  </style>
+  <div id="root" data-composition-id="s3" data-width="1920" data-height="1080">
+    <div id="s3-marque">
+      <div id="s3-nom"><span>S</span><span>o</span><span>u</span><span>r</span><span>c</span><span>I</span><span>A</span></div>
+      <div id="s3-devise" class="clip" data-start="0" data-duration="5">Du champ à la classe</div>
+    </div>
+    <div id="s3-frise">
+      <div class="etape" id="s3-e1">
+        <div class="pot" id="s3-pot1"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="41" rx="16" ry="5" fill="#b9a98a"/><ellipse cx="26" cy="33" rx="5.5" ry="7.5" fill="#8a6a3b" transform="rotate(20 26 33)"/><path d="M24 29c1-3 3-4 5-4" stroke="#c9a46a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></div>
+        <div class="nom">1. Catalogue</div><div class="aide">trouver des sources</div>
+        <div class="sillon"><i id="s3-s1"></i></div>
+      </div>
+      <div class="etape" id="s3-e2">
+        <div class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="43" rx="16" ry="5" fill="#b9a98a"/><path d="M26 42V25" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 31c-8 0-11-6-11-10 7 0 11 4 11 10z" fill="#4e9b63"/><path d="M26 28c7 0 11-6 11-10-7 0-11 4-11 10z" fill="#2e7d4b"/></svg></div>
+        <div class="nom">2. Mon dossier</div><div class="aide">ranger et cocher</div>
+        <div class="sillon"><i id="s3-s2"></i></div>
+      </div>
+      <div class="etape" id="s3-e3">
+        <div class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="45" rx="16" ry="5" fill="#b9a98a"/><path d="M26 44V15" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 35c-9 0-13-6-13-11 8 0 13 5 13 11z" fill="#4e9b63"/><path d="M26 28c9 0 13-6 13-11-8 0-13 5-13 11z" fill="#2e7d4b"/><g fill="#2f4fb8"><circle cx="26" cy="7.5" r="3.6"/><circle cx="31.5" cy="11.5" r="3.6"/><circle cx="29.5" cy="17" r="3.6"/><circle cx="22.5" cy="17" r="3.6"/><circle cx="20.5" cy="11.5" r="3.6"/></g><circle cx="26" cy="12.5" r="3" fill="#f5c518"/></svg></div>
+        <div class="nom">3. Mon corpus</div><div class="aide">préparer le contenu</div>
+        <div class="sillon"><i id="s3-s3"></i></div>
+      </div>
+      <div class="etape" id="s3-e4">
+        <div class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="46" rx="16" ry="5" fill="#b9a98a"/><path d="M26 45V17" stroke="#b88a1c" stroke-width="3" stroke-linecap="round"/><path d="M26 38c-7 0-10-4-10-8 6 0 10 3 10 8z" fill="#c9a24a"/><g fill="#e0a82e"><ellipse cx="21.5" cy="14" rx="3.3" ry="5.4" transform="rotate(-22 21.5 14)"/><ellipse cx="30.5" cy="14" rx="3.3" ry="5.4" transform="rotate(22 30.5 14)"/><ellipse cx="21" cy="23" rx="3.3" ry="5.4" transform="rotate(-22 21 23)"/><ellipse cx="31" cy="23" rx="3.3" ry="5.4" transform="rotate(22 31 23)"/><ellipse cx="26" cy="7" rx="3.1" ry="5.4"/></g></svg></div>
+        <div class="nom">4. Mes supports</div><div class="aide">QCM, cartes, diapos</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // le nom, lettre à lettre
+    tl.fromTo("#s3-nom span", { opacity: 0.25, filter: "blur(4px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.16, stagger: 0.06 }, 0.1);
+    tl.fromTo("#s3-devise", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2 }, 0.75);
+    // la frise : chaque pot pousse (ressort doux), puis le sillon vers le suivant se remplit
+    const pots = ["#s3-e1", "#s3-e2", "#s3-e3", "#s3-e4"];
+    pots.forEach((p, i) => {
+      const t = 1.0 + i * 0.55;
+      tl.fromTo(p + " .pot", { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(1.6)" }, t);
+      tl.fromTo(p + " .pot svg", { y: 26 }, { y: 0, duration: 0.6, ease: "expo.out" }, t + 0.1);
+      tl.fromTo([p + " .nom", p + " .aide"], { opacity: 0 }, { opacity: 1, duration: 0.18, stagger: 0.08 }, t + 0.2);
+      if (i < 3) tl.fromTo("#s3-s" + (i + 1), { scaleX: 0 }, { scaleX: 1, duration: 0.45, ease: "power2.inOut" }, t + 0.3);
+    });
+    // transition : on entre dans l'étape 1 par son pot (zoom à travers), sa couleur blanche devient le plan suivant
+    tl.to(["#s3-marque", "#s3-e2", "#s3-e3", "#s3-e4", "#s3-e1 .nom", "#s3-e1 .aide", "#s3-e1 .sillon"],
+      { opacity: 0, filter: "blur(10px)", duration: 0.25, ease: "power2.in" }, 4.35);
+    tl.to("#s3-pot1", { scale: 14, duration: 0.55, ease: "power3.in" }, 4.4);
+    tl.to("#s3-pot1 svg", { opacity: 0, duration: 0.15 }, 4.4);
+    window.__timelines["s3"] = tl;
+  </script>
+</template>

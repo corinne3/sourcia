@@ -1,0 +1,145 @@
+<template>
+  <style>
+    @font-face { font-family: "Fredoka"; font-weight: 500 600; src: url("assets/app/fonts/fredoka.woff2") format("woff2"); }
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; src: url("assets/app/fonts/atkinson-hyperlegible-gras.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; overflow: hidden; background: var(--craie); font-family: "Atkinson Hyperlegible", sans-serif;
+      color: var(--terre); font-size: 30px; line-height: 1.45; }
+    .planche { position: absolute; background: var(--blanc); border: 3px solid var(--trait); border-radius: 34px; padding: 44px 54px; }
+    h2, h3 { font-family: "Fredoka", sans-serif; font-weight: 600; line-height: 1.12; }
+    /* l'écran « Mes supports » de l'app */
+    #s6-liste { left: 110px; right: 110px; top: 110px; }
+    #s6-liste h2 { font-size: 62px; margin-bottom: 18px; }
+    #s6-liste strong { font-size: 34px; }
+    .statut { display: inline-flex; align-items: center; gap: 10px; margin-left: 18px; font-weight: 700; font-size: 28px; padding: 4px 18px;
+      border-radius: 999px; background: var(--prairie-pale); color: var(--prairie-texte); vertical-align: 4px; }
+    .statut svg { width: 24px; height: 24px; fill: currentColor; }
+    .sub { color: var(--terre-douce); font-size: 28px; margin-top: 6px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 26px; }
+    .actions span { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 28px; color: var(--bleuet); background: var(--blanc);
+      border: 3px solid var(--bleuet); border-radius: 18px; padding: 10px 24px; box-shadow: 0 6px 0 #c9d2ef; }
+    /* les vrais fichiers produits */
+    .sortie { position: absolute; inset: 0; }
+    .etiquette { position: absolute; left: 110px; top: 70px; font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 64px; color: var(--terre); }
+    #s6-qcm { left: 110px; right: 110px; top: 200px; }
+    #s6-qcm .q { font-size: 40px; line-height: 1.35; font-weight: 700; }
+    #s6-qcm ol { list-style: none; margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 26px; }
+    #s6-qcm li { font-size: 38px; padding: 18px 26px; border: 3px solid var(--trait); border-radius: 18px; }
+    #s6-bonne { background: var(--prairie-pale); }
+    #s6-qcm .rep { font-size: 36px; margin-top: 22px; color: var(--prairie-texte); font-weight: 700; }
+    .image { position: absolute; border-radius: 24px; border: 3px solid var(--trait); background: var(--blanc); overflow: hidden; }
+    .image img { display: block; width: 100%; height: auto; }
+    #s6-cartes { left: 330px; top: 190px; width: 1260px; height: 830px; }
+    #s6-diapo { left: 210px; top: 190px; width: 1500px; height: 844px; }
+    #s6-diapo img { height: 100%; }
+    #s6-info { left: 560px; top: 190px; width: 800px; height: 850px; }
+    #s6-fiche, #s6-glossaire, #s6-podcast { left: 110px; right: 110px; top: 200px; }
+    .reco { font-size: 40px; line-height: 1.4; margin-top: 30px; padding-left: 24px; border-left: 7px solid var(--prairie); }
+    .ref { display: inline-block; margin-left: 10px; padding: 2px 16px 2px 24px; font-size: 28px; font-weight: 700; white-space: nowrap;
+      color: var(--ble-texte); background: var(--ble); clip-path: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 50%); }
+    .terme { font-size: 40px; line-height: 1.4; margin-top: 30px; }
+    .terme b { color: var(--bleuet); }
+    .voix { font-size: 40px; line-height: 1.4; margin-top: 30px; padding: 24px 34px; border-radius: 24px; max-width: 1350px; }
+    .voix b { font-family: "Fredoka", sans-serif; font-weight: 600; }
+    .animateur { background: var(--bleuet-pale); }
+    .expert { background: var(--prairie-pale); margin-left: 220px; }
+    #s6-bilan { position: absolute; left: 110px; top: 420px; font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 104px;
+      line-height: 1.12; color: var(--terre); }
+    #s6-bilan span { display: inline-block; }
+    #s6-bilan .accent { color: var(--prairie); }
+  </style>
+  <div id="root" data-composition-id="s6" data-width="1920" data-height="1080">
+    <section class="planche clip" id="s6-liste" data-start="0" data-duration="2.2">
+      <h2>Supports produits</h2>
+      <strong>QCM, cartes, présentation, infographie, fiche technique, glossaire, podcast</strong>
+      <span class="statut"><svg viewBox="0 0 52 52"><path d="M23.5 50h5V20h-5z"/><ellipse cx="19" cy="17" rx="5" ry="9" transform="rotate(-22 19 17)"/><ellipse cx="33" cy="17" rx="5" ry="9" transform="rotate(22 33 17)"/><ellipse cx="26" cy="8" rx="4.5" ry="8"/></svg>prêt</span>
+      <p class="sub">Séquence(s) 1, 2, 3.</p>
+      <div class="actions">
+        <span>QCM pour les élèves</span><span>QCM corrigé</span><span>QCM Moodle (GIFT)</span><span>Cartes pour Anki (CSV)</span>
+        <span>Cartes à découper</span><span>Infographie A4</span><span>Fiche technique</span><span>Glossaire</span>
+        <span>Script de podcast</span><span id="s6-btn-pres">Présentation</span>
+      </div>
+    </section>
+
+    <div class="sortie clip" id="s6-o1" data-start="2.1" data-duration="1.15">
+      <div class="etiquette">Un QCM</div>
+      <section class="planche" id="s6-qcm">
+        <div class="q">Complétez : « Les variétés de type ‘ensilage’ (E) possèdent une valeur énergétique élevée, permettant une distribution en ration de base quasi exclusive pour les …… »</div>
+        <ol><li id="s6-bonne">A. bovins</li><li>B. ovins</li><li>C. caprins</li><li>D. porcs</li></ol>
+        <p class="rep" id="s6-rep">Réponse : A <span class="ref">S3, page 1</span></p>
+      </section>
+    </div>
+    <div class="sortie clip" id="s6-o2" data-start="3.2" data-duration="1.25">
+      <div class="etiquette">Des cartes de révision</div>
+      <div class="image" id="s6-cartes"><img src="assets/supports/cartes.png" alt="Cartes de révision produites" /></div>
+    </div>
+    <div class="sortie clip" id="s6-o3" data-start="4.4" data-duration="1.15">
+      <div class="etiquette">Une présentation</div>
+      <div class="image" id="s6-diapo"><img src="assets/supports/diapo2.png" alt="Diapositive produite" /></div>
+    </div>
+    <div class="sortie clip" id="s6-o4" data-start="5.5" data-duration="1.25">
+      <div class="etiquette">Une infographie</div>
+      <div class="image" id="s6-info"><img id="s6-info-img" src="assets/supports/infographie.png" alt="Infographie produite" /></div>
+    </div>
+    <div class="sortie clip" id="s6-o5" data-start="6.7" data-duration="1.25">
+      <div class="etiquette">Une fiche technique</div>
+      <section class="planche" id="s6-fiche">
+        <h3 style="font-size: 52px">Fiche technique : Conduite du sorgho fourrager en conditions sèches</h3>
+        <p class="reco">Sélectionner des variétés de type ‘ensilage’ (E) pour leur valeur énergétique élevée. <span class="ref">S3, page 1</span></p>
+        <p class="reco">Utiliser la valeur énergétique exprimée en UFL comme critère de choix principal. <span class="ref">S4, page 1</span></p>
+      </section>
+    </div>
+    <div class="sortie clip" id="s6-o6" data-start="7.9" data-duration="1.05">
+      <div class="etiquette">Un glossaire</div>
+      <section class="planche" id="s6-glossaire">
+        <p class="terme"><b>Gène BMR</b> : lignification réduite, ce qui améliore la digestibilité et donne des valeurs énergétiques très élevées. <span class="ref">S3, page 1</span></p>
+        <p class="terme"><b>UFL</b> : la valeur énergétique, critère de choix principal des variétés de sorgho monocoupe. <span class="ref">S4, page 1</span></p>
+      </section>
+    </div>
+    <div class="sortie clip" id="s6-o7" data-start="8.9" data-duration="2.0">
+      <div class="etiquette">Et même un podcast</div>
+      <section class="planche" id="s6-podcast">
+        <p class="voix animateur"><b>Animateur</b> : Pourquoi le sorgho est-il si intéressant pour nos éleveurs ?</p>
+        <p class="voix expert"><b>Expert</b> : C’est une culture particulièrement adaptée aux conditions séchantes. <span class="ref">S1, page 1</span></p>
+      </section>
+    </div>
+    <div id="s6-bilan" class="clip" data-start="10.9" data-duration="2.5"><span class="accent">12</span> <span>questions,</span> <span class="accent">16</span> <span>cartes,</span><br /><span class="accent">10</span> <span>diapositives</span></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // l'écran « Mes supports » : statut prêt, puis les boutons de téléchargement arrivent
+    tl.fromTo("#s6-liste", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.35, ease: "expo.out" }, 0);
+    tl.fromTo("#s6-liste .statut", { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.8)" }, 0.3);
+    tl.fromTo("#s6-liste .actions span", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.25, stagger: 0.06, ease: "expo.out" }, 0.45);
+    // le bouton « Présentation » grossit et devient le monde suivant (l'objet devient le monde)
+    tl.to("#s6-btn-pres", { scale: 1.15, backgroundColor: "#e6ebf8", duration: 0.2 }, 1.75);
+    tl.to("#s6-liste", { opacity: 0, filter: "blur(10px)", duration: 0.2, ease: "power2.in" }, 2.0);
+    // 1. QCM : la bonne réponse s'allume
+    tl.fromTo("#s6-qcm", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.35, ease: "expo.out" }, 2.1);
+    tl.fromTo("#s6-o1 .etiquette", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.15 }, 2.15);
+    tl.fromTo("#s6-bonne", { backgroundColor: "#ffffff", borderColor: "#dcd8c9" }, { backgroundColor: "#e3f1e6", borderColor: "#2e7d4b", duration: 0.25 }, 2.6);
+    tl.fromTo("#s6-rep", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 2.7);
+    // 2. cartes : arrivent de la droite, floues puis nettes (balayage)
+    tl.fromTo("#s6-cartes", { x: 700, filter: "blur(16px)" }, { x: 0, filter: "blur(0px)", duration: 0.35, ease: "expo.out" }, 3.2);
+    tl.fromTo("#s6-o2 .etiquette", { opacity: 0 }, { opacity: 1, duration: 0.12 }, 3.25);
+    // 3. présentation : la diapo s'ouvre depuis le centre
+    tl.fromTo("#s6-diapo", { clipPath: "inset(45% 45% 45% 45% round 24px)" }, { clipPath: "inset(0% 0% 0% 0% round 24px)", duration: 0.4, ease: "power3.out" }, 4.4);
+    tl.fromTo("#s6-o3 .etiquette", { opacity: 0 }, { opacity: 1, duration: 0.12 }, 4.45);
+    // 4. infographie : on la parcourt de haut en bas
+    tl.fromTo("#s6-info", { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "expo.out" }, 5.5);
+    tl.fromTo("#s6-info-img", { y: 0 }, { y: -260, duration: 1.0, ease: "power1.inOut" }, 5.6);
+    tl.fromTo("#s6-o4 .etiquette", { opacity: 0 }, { opacity: 1, duration: 0.12 }, 5.55);
+    // 5. fiche, 6. glossaire, 7. podcast : chacun sa façon d'arriver
+    tl.fromTo("#s6-fiche .reco", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.3, stagger: 0.18, ease: "expo.out" }, 6.8);
+    tl.fromTo("#s6-fiche", { opacity: 0 }, { opacity: 1, duration: 0.15 }, 6.7);
+    tl.fromTo("#s6-o5 .etiquette", { opacity: 0 }, { opacity: 1, duration: 0.12 }, 6.75);
+    tl.fromTo("#s6-glossaire", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25 }, 7.9);
+    tl.fromTo("#s6-o6 .etiquette", { opacity: 0 }, { opacity: 1, duration: 0.12 }, 7.95);
+    tl.fromTo("#s6-podcast", { opacity: 0 }, { opacity: 1, duration: 0.12 }, 8.9);
+    tl.fromTo("#s6-podcast .voix", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.3, stagger: 0.35, ease: "back.out(1.5)" }, 8.95);
+    tl.fromTo("#s6-o7 .etiquette", { opacity: 0 }, { opacity: 1, duration: 0.12 }, 8.95);
+    // le bilan, avec les vrais nombres
+    tl.fromTo("#s6-bilan span", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.06 }, 10.92);
+    window.__timelines["s6"] = tl;
+  </script>
+</template>

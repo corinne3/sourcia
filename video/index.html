@@ -1,0 +1,97 @@
+<!doctype html>
+<html
+  lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      /* La charte de l'application SourcIA (« Du champ à la classe »), reprise telle quelle */
+      :root {
+        --craie: #f7f8f3;
+        --blanc: #ffffff;
+        --terre: #2a231c;
+        --terre-douce: #5e5145;
+        --trait: #dcd8c9;
+        --sillon: #b9a98a;
+        --bleuet: #2f4fb8;
+        --bleuet-fonce: #213a8c;
+        --bleuet-pale: #e6ebf8;
+        --colza: #f5c518;
+        --colza-pale: #fdf3c4;
+        --colza-texte: #6a5300;
+        --prairie: #2e7d4b;
+        --prairie-pale: #e3f1e6;
+        --prairie-texte: #1f5a35;
+        --coquelicot: #c93a23;
+        --coquelicot-pale: #fbe7e2;
+        --coquelicot-texte: #8e2616;
+        --ble: #efe3be;
+        --ble-texte: #6b5418;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--craie);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: var(--craie);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="74.9"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div id="s1" data-composition-id="s1" data-composition-src="compositions/s1-fiches.html" data-start="0" data-duration="8.7" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="s2" data-composition-id="s2" data-composition-src="compositions/s2-questions.html" data-start="8.7" data-duration="6.9" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="s3" data-composition-id="s3" data-composition-src="compositions/s3-sourcia.html" data-start="15.6" data-duration="5" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="s4" data-composition-id="s4" data-composition-src="compositions/s4-catalogue.html" data-start="20.6" data-duration="13.5" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="s5" data-composition-id="s5" data-composition-src="compositions/s5-corpus.html" data-start="34.1" data-duration="14.8" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="s6" data-composition-id="s6" data-composition-src="compositions/s6-supports.html" data-start="48.9" data-duration="13.4" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="s7" data-composition-id="s7" data-composition-src="compositions/s7-promesse.html" data-start="62.3" data-duration="6.6" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="s8" data-composition-id="s8" data-composition-src="compositions/s8-fin.html" data-start="68.9" data-duration="6" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <audio id="musique" class="clip" src="assets/bgm/track.wav" data-start="0" data-duration="74.9" data-track-index="2" data-volume="0.45" data-fade-in="0.4" data-fade-out="2.5"></audio>
+      <audio id="voix-v1" class="clip" src="assets/voice/v1.wav" data-start="0.3" data-duration="8.64" data-track-index="3" data-volume="1"></audio>
+      <audio id="voix-v2" class="clip" src="assets/voice/v2.wav" data-start="8.9" data-duration="6.84" data-track-index="3" data-volume="1"></audio>
+      <audio id="voix-v3" class="clip" src="assets/voice/v3.wav" data-start="15.8" data-duration="4.52" data-track-index="3" data-volume="1"></audio>
+      <audio id="voix-v4" class="clip" src="assets/voice/v4.wav" data-start="20.9" data-duration="6.52" data-track-index="3" data-volume="1"></audio>
+      <audio id="voix-v5" class="clip" src="assets/voice/v5.wav" data-start="27.7" data-duration="6.28" data-track-index="3" data-volume="1"></audio>
+      <audio id="voix-v6" class="clip" src="assets/voice/v6.wav" data-start="34.4" data-duration="5.88" data-track-index="3" data-volume="1"></audio>
+      <audio id="voix-v7" class="clip" src="assets/voice/v7.wav" data-start="40.5" data-duration="8.16" data-track-index="3" data-volume="1"></audio>
+      <audio id="voix-v8" class="clip" src="assets/voice/v8.wav" data-start="49.2" data-duration="11.32" data-track-index="3" data-volume="1"></audio>
+      <audio id="voix-v9" class="clip" src="assets/voice/v9.wav" data-start="62.6" data-duration="6.28" data-track-index="3" data-volume="1"></audio>
+      <audio id="voix-v10" class="clip" src="assets/voice/v10.wav" data-start="69.2" data-duration="3.48" data-track-index="3" data-volume="1"></audio>
+      <audio id="souffle-1" class="clip" src="assets/sfx/whoosh.mp3" data-start="20.0" data-duration="0.57" data-track-index="4" data-volume="0.45"></audio>
+      <audio id="clic-1" class="clip" src="assets/sfx/click.mp3" data-start="23.0" data-duration="0.37" data-track-index="4" data-volume="0.55"></audio>
+      <audio id="clic-2" class="clip" src="assets/sfx/click-soft.mp3" data-start="24.8" data-duration="0.37" data-track-index="4" data-volume="0.6"></audio>
+      <audio id="clic-3" class="clip" src="assets/sfx/click.mp3" data-start="25.65" data-duration="0.37" data-track-index="4" data-volume="0.55"></audio>
+      <audio id="pop-1" class="clip" src="assets/sfx/pop.mp3" data-start="26.8" data-duration="0.72" data-track-index="4" data-volume="0.4"></audio>
+      <audio id="clic-4" class="clip" src="assets/sfx/click-soft.mp3" data-start="29.3" data-duration="0.37" data-track-index="4" data-volume="0.6"></audio>
+      <audio id="clic-5" class="clip" src="assets/sfx/click.mp3" data-start="41.95" data-duration="0.37" data-track-index="4" data-volume="0.55"></audio>
+      <audio id="souffle-2" class="clip" src="assets/sfx/whoosh-short.mp3" data-start="52.1" data-duration="0.57" data-track-index="4" data-volume="0.4"></audio>
+      <audio id="souffle-3" class="clip" src="assets/sfx/whoosh.mp3" data-start="62.3" data-duration="0.57" data-track-index="4" data-volume="0.35"></audio>
+      <audio id="pop-2" class="clip" src="assets/sfx/pop.mp3" data-start="63.05" data-duration="0.72" data-track-index="4" data-volume="0.4"></audio>
+      <audio id="pop-3" class="clip" src="assets/sfx/pop.mp3" data-start="67.05" data-duration="0.72" data-track-index="4" data-volume="0.4"></audio>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
