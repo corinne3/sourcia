@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
@@ -190,6 +190,15 @@ class Dossiers:
                            ("Téléchargement ou indexation impossible. Vérifiez la source avant de réessayer.", document_id))
 
 
+SOURCE_NAMES = {"arvalis": "Arvalis", "terres-inovia": "Terres Inovia", "chambres-agriculture": "Chambres d'agriculture",
+                "idele": "Idele", "exemple": "Exemple (fictif)"}
+
+
+def source_name(source: str) -> str:
+    """Nom lisible d'une source du catalogue (« terres-inovia » → « Terres Inovia »)."""
+    return SOURCE_NAMES.get(source) or source.replace("-", " ").capitalize()
+
+
 def serialize(row):
     doc = Document.model_validate_json(row["payload"])
     fiche = Fiche.model_validate_json(row["fiche"]) if row["fiche"] else None
@@ -308,6 +317,50 @@ def create_dossiers_router(ctx):
             if doc and not doc.private:
                 hits.append({"id": doc.id, "titre": doc.title, "source": doc.source})
         return hits
+
+    @router.get("/{folder_id}/parcourir-catalogue")
+    def browse_catalog(folder_id: str, q: str = "", theme: str = "", source: str = "",
+                       page: int = Query(1, ge=1), par_page: int = Query(20, ge=1, le=50),
+                       email: str = Depends(identity)):
+        """Le catalogue en liste, sans rien taper : les plus récents d'abord, filtrés par thème, source ou mots.
+        Les nombres par thème et par source tiennent compte des autres filtres. Jamais de document privé."""
+        with store.db() as db:
+            store.folder(db, folder_id, email)
+            already = {row["catalog_id"] for row in db.execute(
+                "SELECT catalog_id FROM documents WHERE folder = ? AND catalog_id IS NOT NULL", (folder_id,))}
+        docs = [d for d in ctx.store.canonical() if not d.private and d.status != "error"]
+        themes = {d.id: (ctx.qualifier.get(d.id).themes if ctx.qualifier.get(d.id) else []) for d in docs}
+        if q.strip():                                    # des mots : l'ordre de pertinence de la recherche
+            rank = {}
+            for hit in ctx.index.search(q, k=300):
+                rank.setdefault(hit.doc_id, len(rank))
+            docs = sorted((d for d in docs if d.id in rank), key=lambda d: rank[d.id])
+        else:                                            # rien tapé : les plus récents d'abord
+            docs.sort(key=lambda d: (d.date or "", d.title), reverse=True)
+        by_theme = [d for d in docs if not source or d.source == source]
+        by_source = [d for d in docs if not theme or theme in themes[d.id]]
+        shown = [d for d in by_theme if not theme or theme in themes[d.id]]
+        if theme and not q.strip():                      # un thème : d'abord les documents qui l'ont dans leur titre
+            word = normalize(theme)
+            shown.sort(key=lambda d: word not in normalize(d.title))
+        theme_counts: dict[str, int] = {}
+        for d in by_theme:
+            for t in themes[d.id]:
+                theme_counts[t] = theme_counts.get(t, 0) + 1
+        source_counts: dict[str, int] = {}
+        for d in by_source:
+            source_counts[d.source] = source_counts.get(d.source, 0) + 1
+        start = (page - 1) * par_page
+        return {
+            "total": len(shown), "page": page, "par_page": par_page,
+            "documents": [{"id": d.id, "titre": d.title, "source": d.source, "source_nom": source_name(d.source),
+                           "annee": (d.date or "")[:4] or None, "kind": d.kind, "url": d.current_url,
+                           "themes": themes[d.id], "deja_ajoute": d.id in already}
+                          for d in shown[start:start + par_page]],
+            "themes": [{"nom": t, "n": n} for t, n in sorted(theme_counts.items(), key=lambda x: (-x[1], x[0]))],
+            "sources": [{"id": s, "nom": source_name(s), "n": n}
+                        for s, n in sorted(source_counts.items(), key=lambda x: (-x[1], x[0]))],
+        }
 
     @router.post("/{folder_id}/catalogue", status_code=202)
     def add_catalog(folder_id: str, req: CatalogResource, tasks: BackgroundTasks, email: str = Depends(identity)):
