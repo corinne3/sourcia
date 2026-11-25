@@ -3,6 +3,9 @@ data/*
 !data/samples/
 !data/samples/**
 
+# Paquets du catalogue (scripts/catalogue_paquet.py) : textes de tiers, à transmettre en privé seulement
+catalogue-*.tar.gz
+
 # Secrets
 .env
 *.key

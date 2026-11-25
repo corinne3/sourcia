@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dossiers pédagogiques · SourcIA</title>
+<link rel="stylesheet" href="/assets/sourcia.css?v=saed-20261125b">
+</head>
+<body class="folders">
+<a class="skip-link" href="#contenu">Aller au contenu</a><header class="page-header"><div class="header-content"><div class="marque"><a class="brand" href="/" aria-label="SourcIA — accueil"><span class="brand-symbol" aria-hidden="true">S</span><span>SourcIA<small>RESSOURCES PÉDAGOGIQUES</small></span></a></div><nav class="steps" aria-label="Les quatre étapes du parcours"><a href="/" data-step="catalogue"><span class="step-number" aria-hidden="true">1</span><span class="nom">Catalogue</span></a><a href="/dossiers#dossier" data-step="dossier"><span class="step-number" aria-hidden="true">2</span><span class="nom">Mon dossier</span></a><a href="/dossiers#corpus" data-step="corpus"><span class="step-number" aria-hidden="true">3</span><span class="nom">Mon contenu</span></a><a href="/dossiers#supports" data-step="supports"><span class="step-number" aria-hidden="true">4</span><span class="nom">Mes supports</span></a></nav></div></header>
+<main id="contenu"><div class="intro"><span class="eyebrow">VOTRE ESPACE ENSEIGNANT</span><h1>Votre prochain cours <em>commence ici.</em></h1><p>Rassemblez vos sources dans un dossier, préparez le contenu de votre cours et créez vos supports.</p></div>
+<form id="login"><span class="eyebrow">CONNEXION ENSEIGNANT</span><h2>Retrouvez vos dossiers</h2><p class="sub">Votre espace pour passer des sources au cours.</p>
+  <label>Jeton enseignant <input id="token" type="password" required autocomplete="off"></label>
+  <p class="aide-jeton">Le jeton vous est donné par la personne qui gère SourcIA dans votre établissement, parfois sous
+    la forme d’un lien qui vous connecte d’un clic. Une fois saisi, vous restez connecté 12 heures sur cet ordinateur,
+    même en revenant au catalogue. « Se déconnecter » ferme la session.</p>
+  <button>Accéder à mes dossiers</button>
+</form>
+<p id="message" role="status" aria-live="polite"></p>
+<div id="workspace" hidden>
+  <section>
+    <h2>Mes dossiers</h2>
+    <form id="create">
+      <label>Nom (facultatif) <input name="title" maxlength="200"></label>
+      <button>Créer un dossier</button>
+    </form>
+    <div class="folder-actions">
+      <label>Dossier ouvert <select id="folders"></select></label>
+      <p id="account" class="compte"></p>
+      <button id="logout" class="secondary" type="button">Se déconnecter</button>
+    </div>
+  </section>
+  <section id="bienvenue" hidden>
+    <h2>Pour commencer</h2>
+    <ol class="guide">
+      <li><strong>Créez un dossier</strong> pour votre cours, juste au-dessus, ou essayez tout de suite avec un exemple.</li>
+      <li><strong>Ajoutez des sources</strong> du catalogue ou vos propres PDF. Elles sont cochées pour la suite.</li>
+      <li><strong>Préparez le contenu</strong> du cours (étape 3), puis <strong>produisez vos supports</strong> (étape 4).</li>
+    </ol>
+    <button type="button" id="exemple">Essayer avec un exemple : le sorgho fourrager</button>
+  </section>
+  <div id="detail" hidden>
+    <section id="imports">
+      <h2>Ajouter une source</h2>
+      <p class="sub" id="catalogue-total" aria-live="polite"></p>
+      <form id="search" role="search">
+        <div id="themes" class="graines" role="group" aria-label="Thèmes du catalogue"></div>
+        <div class="row">
+          <label>Source <select name="source" id="source"><option value="">Toutes les sources</option></select></label>
+          <label class="affiner">Affiner par des mots <input name="q" type="search" placeholder="par exemple : sorgho sécheresse"></label>
+        </div>
+      </form>
+      <ul id="results" class="catalogue-liste"></ul>
+      <button type="button" id="more" class="secondary" hidden>Voir 20 documents de plus</button>
+      <form id="upload"><label>PDF personnel <input name="file" type="file" accept=".pdf,application/pdf" required></label><button>Ajouter le PDF</button></form>
+    </section>
+    <section>
+      <h2>Documents du dossier</h2>
+      <p id="notification" role="status" aria-live="polite"></p>
+      <form id="filters">
+        <label>Recherche <input name="q"></label>
+        <label>Type <select name="kind"><option value="">Tous</option><option value="pdf">PDF</option><option value="page">Page web</option><option value="video">Vidéo</option></select></label>
+        <label>État <select name="status"><option value="">Tous</option><option value="en_attente">En attente</option><option value="traitement">En cours</option><option value="pret">Prêt</option><option value="erreur">Erreur</option></select></label>
+        <label>Tri <select name="sort"><option value="ajout">Ordre d’ajout</option><option value="titre">Titre</option><option value="date">Date</option></select></label>
+      </form>
+      <ul id="documents"></ul>
+      <h3>Ce que disent les documents cochés</h3>
+      <ul id="summary"></ul>
+      <button type="button" id="zip" disabled>Télécharger la sélection en ZIP</button>
+    </section>
+    <section id="sharing">
+      <h2>Partage du dossier</h2>
+      <form id="share">
+        <label>Adresse e-mail <input name="email" type="email" required></label>
+        <label>Accès <select name="role"><option value="lecture">Lecture</option><option value="modification">Modification</option><option value="">Retirer l’accès</option></select></label>
+        <button>Enregistrer</button>
+      </form>
+      <ul id="shares"></ul>
+    </section>
+  </div>
+  <!-- Étapes 3 et 4 du parcours (static/parcours.js) : même page, pour garder le jeton en mémoire -->
+  <p id="step-hint" class="sub" hidden>Choisissez ou créez un dossier ci-dessus pour continuer.</p>
+  <div id="step-corpus" class="step-panel" hidden>
+    <section>
+      <h2>Le contenu de mon cours</h2>
+      <p class="sub">SourcIA prépare les séquences du cours à partir des <strong>seuls documents cochés et prêts</strong>
+        de ce dossier. Chaque information renvoie à son document, à sa page et à l’extrait exact.</p>
+      <p id="corpus-ready" role="status" aria-live="polite"></p>
+      <form id="corpus-form">
+        <label class="wide">Sujet de la formation <textarea name="sujet" required maxlength="500"
+          placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
+        <details class="wide reglages"><summary>Adapter au public et à la durée (facultatif)</summary><div class="row">
+        <label>Apprenants <select name="apprenants">
+          <option value="etudiants">étudiants</option><option value="eleves">élèves</option><option value="apprentis">apprentis</option>
+          <option value="salaries">salariés</option><option value="chefs_entreprise">chefs d’entreprise</option>
+          <option value="conseillers">conseillers</option><option value="autre">autre</option></select></label>
+        <label>Niveau <select name="niveau">
+          <option value="cap">CAP</option><option value="bac_pro">bac pro</option><option value="bac">bac</option>
+          <option value="bts" selected>BTS</option><option value="licence">licence</option>
+          <option value="master_ingenieur">master / ingénieur</option><option value="sans_diplome">sans diplôme</option></select></label>
+        <label>Expérience <select name="experience">
+          <option value="debutant">débutant</option><option value="intermediaire">intermédiaire</option>
+          <option value="confirme">confirmé</option></select></label>
+        <label>Durée (min) <input type="number" name="duree_min" value="120" min="10" max="2400"></label>
+        <label>Séquences <input type="number" name="sequences" value="4" min="1" max="12"></label>
+        </div></details>
+        <label class="check wide"><input type="checkbox" name="diplomante" id="corpus-diplomante"> Formation diplômante
+          (séquences rattachées aux capacités du référentiel)</label>
+        <div id="corpus-diplome" class="wide" hidden>
+          <label>Diplôme <select name="diplome" id="corpus-referentiel"></select></label>
+          <p class="sub">Capacités visées :</p>
+          <div class="caps" id="corpus-caps"></div>
+        </div>
+        <label class="check wide"><input type="checkbox" name="autoriser_documents_prives"> Autoriser l’envoi de mes
+          documents privés (PDF téléversés) au modèle en ligne</label>
+        <p class="sub wide">Sans cette case, vos PDF téléversés ne sont jamais envoyés à un modèle en ligne : ils sont
+          laissés de côté et le contenu le signale. Avec un modèle local, ils sont toujours utilisés.</p>
+        <button id="corpus-go">Préparer le contenu</button>
+      </form>
+      <p id="corpus-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+    <section>
+      <h2>Contenus préparés</h2>
+      <ul id="corpus-list"></ul>
+    </section>
+    <section id="corpus-view" class="corpus-view" hidden></section>
+  </div>
+  <div id="step-supports" class="step-panel" hidden>
+    <section>
+      <h2>Mes supports</h2>
+      <p class="sub">Les supports sont faits à partir du contenu préparé à l’étape 3 : chaque question, carte ou diapo
+        garde la référence de son information (document et page).</p>
+      <p id="supports-empty" class="sub" hidden></p>
+      <form id="supports-form" hidden>
+        <label class="wide">Contenu <select name="corpus" id="supports-corpus"></select></label>
+        <fieldset class="wide"><legend>Séquences</legend><div class="chk" id="supports-seqs"></div></fieldset>
+        <fieldset class="wide"><legend>Supports</legend><div class="chk" id="supports-kinds">
+          <label><input type="checkbox" value="qcm" checked> QCM (élèves, corrigé, Moodle)</label>
+          <label><input type="checkbox" value="cartes" checked> Cartes (Anki, à découper)</label>
+          <label><input type="checkbox" value="presentation" checked> Présentation (.pptx)</label>
+          <label><input type="checkbox" value="infographie" checked> Infographie (A4)</label>
+          <label><input type="checkbox" value="fiche"> Fiche technique <span class="tag">rédigé par l’IA, plus long</span></label>
+          <label><input type="checkbox" value="glossaire"> Glossaire <span class="tag">rédigé par l’IA</span></label>
+          <label><input type="checkbox" value="podcast"> Script de podcast <span class="tag">rédigé par l’IA</span></label>
+        </div></fieldset>
+        <label class="check wide"><input type="checkbox" name="avec_modele"> L’IA ajoute des questions au QCM (chacune est
+          vérifiée dans le document cité)</label>
+        <button id="supports-go">Produire les supports</button>
+      </form>
+      <p id="supports-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+    <section>
+      <h2>Supports produits</h2>
+      <ul id="supports-list"></ul>
+    </section>
+  </div>
+</div>
+</main><footer class="site-footer"><div><strong>SourcIA</strong><span>Du champ à la classe · Challenge IA SAED</span></div><p>Des sources citées, des contenus à vérifier et à adapter par l’enseignant.</p></footer>
+<script>
+'use strict';
+const byId = id => document.getElementById(id);
+const base = '/api/dossiers';
+let token = '';      // jeton saisi : seulement le temps d'ouvrir la session (le cookie protégé prend le relais)
+let account = '';    // adresse de l'enseignant connecté
+let folder = '';
+let timer;
+let revision = 0;
+let exportInProgress = false;
+let exportAvailable = false;
+
+function message(text, error = false) {
+  byId('message').textContent = text;
+  byId('message').dataset.error = error;
+}
+
+async function request(path, options = {}) {
+  const headers = token ? {Authorization: 'Bearer ' + token} : {};   // sinon : le cookie de session
+  if (typeof options.body === 'string') headers['Content-Type'] = 'application/json';
+  const response = await fetch(path, {...options, headers, cache: 'no-store'});
+  if (response.status === 401 && account && !path.endsWith('/session')) {
+    byId('logout').click();                                          // session expirée : retour à la connexion
+    throw new Error('Votre session a expiré : saisissez à nouveau votre jeton.');
+  }
+  if (!response.ok) {
+    const details = await response.json().catch(() => ({}));
+    throw new Error(typeof details.detail === 'string' ? details.detail : 'Échec de la requête (' + response.status + ')');
+  }
+  return response;
+}
+
+async function json(path, options) {
+  return (await request(path, options)).json();
+}
+
+function submit(id, action) {
+  byId(id).addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = event.submitter;
+    if (button) button.disabled = true;
+    try {
+      message('');
+      await action(new FormData(event.currentTarget));
+    } catch (error) {
+      message(error.message, true);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+}
+
+function item(text) {
+  const li = document.createElement('li');
+  li.textContent = text;
+  return li;
+}
+
+function button(text, action) {
+  const result = document.createElement('button');
+  result.type = 'button';
+  result.textContent = text;
+  result.addEventListener('click', async () => {
+    result.disabled = true;
+    try { await action(); }
+    catch (error) { message(error.message, true); }
+    finally { result.disabled = false; }
+  });
+  return result;
+}
+
+async function loadFolders(preferred) {
+  const folders = await json(base);
+  const options = [new Option('Choisir un dossier', '')];
+  for (const entry of folders) options.push(new Option(entry.title, entry.id));
+  byId('folders').replaceChildren(...options);
+  // on rouvre le dossier demandé, sinon le dernier ouvert sur cet ordinateur, sinon le seul qui existe
+  const last = localStorage.getItem('sourcia-dossier');
+  const wanted = [preferred, last, folders.length === 1 ? folders[0].id : ''].find(id => id && folders.some(f => f.id === id));
+  byId('folders').value = wanted || '';
+  folder = byId('folders').value;
+  byId('bienvenue').hidden = Boolean(folder);
+  await loadDetail();
+}
+
+// le compteur du jour d'un visiteur, affiché avant d'atteindre la limite (rappelé après chaque lancement)
+async function refreshAccount() {
+  const response = await fetch(base + '/session', {cache: 'no-store'}).catch(() => null);
+  if (!response || !response.ok) return;
+  const session = await response.json();
+  if (!session.visiteur) return;
+  const reste = session.reste || {};
+  byId('account').textContent = 'Mode visiteur : vos dossiers restent dans ce navigateur pendant un mois. '
+    + `Aujourd’hui, il vous reste ${reste.corpus ?? 0} contenu(s) à préparer et ${reste.supports ?? 0} production(s) de supports.`;
+}
+window.refreshAccount = refreshAccount;
+
+async function loadDetail() {
+  clearTimeout(timer);
+  const current = ++revision;
+  if (!folder) {
+    byId("detail").hidden = true;
+    return;
+  }
+  const url = base + '/' + folder;
+  const filters = new URLSearchParams(new FormData(byId('filters')));
+  const [data, corpus] = await Promise.all([json(url + '?' + filters), json(url + '/corpus?texte=false')]);
+  if (current !== revision) return;
+  byId("detail").hidden = false;
+  if (catalogFolder !== folder && data.role !== 'lecture') {
+    catalogFolder = folder;
+    loadCatalog().catch(error => message(error.message, true));
+  }
+  exportAvailable = data.export_disponible;
+  byId("zip").disabled = exportInProgress || !exportAvailable;
+  const editable = data.role !== 'lecture';
+  byId('imports').hidden = !editable;
+  byId('sharing').hidden = data.role !== 'proprietaire';
+  byId("notification").textContent = data.notification || (data.en_cours ? "Traitement des documents en cours…" : "");
+  byId('shares').replaceChildren(...data.shares.map(share => item(share.email + ' · ' + share.role)));
+  const statuses = {en_attente: 'en attente', traitement: 'en cours', pret: 'prêt', erreur: 'erreur'};
+  byId('documents').replaceChildren(...data.documents.map(doc => {
+    const li = item(doc.title);
+    const badge = document.createElement("span");
+    badge.className = "document-status";
+    badge.dataset.status = doc.status;
+    badge.textContent = statuses[doc.status];
+    li.append(badge);
+    if (doc.error) li.append(" · " + doc.error);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = doc.selected;
+    checkbox.disabled = !editable;
+    checkbox.setAttribute('aria-label', 'Inclure ' + doc.title);
+    checkbox.addEventListener('change', async () => {
+      const checked = checkbox.checked;
+      checkbox.disabled = true;
+      try {
+        await json(url + '/documents/' + doc.id, {method: 'PATCH', body: JSON.stringify({selected: checked})});
+        await loadDetail();
+      } catch (error) {
+        checkbox.checked = !checked;
+        checkbox.disabled = false;
+        message(error.message, true);
+      }
+    });
+    li.prepend(checkbox);
+    if (editable && doc.status !== 'pret') {
+      li.append(' ', button('Relancer', async () => {
+        await json(url + '/documents/' + doc.id + '/reessayer', {method: 'POST'});
+        await loadDetail();
+      }));
+    }
+    return li;
+  }));
+  if (!data.documents.length) byId("documents").append(item("Aucun document ne correspond à cette vue."));
+  byId('summary').replaceChildren(...corpus.documents.map(doc => {
+    const fiche = doc.fiche || {};
+    const details = [fiche.resume, ...(fiche.themes || []), fiche.type?.value].filter(Boolean);
+    return item(doc.title + (details.length ? ' · ' + details.join(' · ') : ''));
+  }));
+  if (!corpus.documents.length) byId("summary").append(item("Aucun document prêt dans la sélection."));
+  if (data.en_cours) timer = setTimeout(() => loadDetail().catch(error => message(error.message, true)), 2000);
+}
+
+// le jeton ouvre une session (cookie protégé, 12 h) : on ne le garde pas dans la page
+async function connect(jeton) {
+  const session = await json(base + '/session', {method: 'POST', body: JSON.stringify({jeton})});
+  await openWorkspace(session.email);
+}
+
+async function openWorkspace(email, visiteur = false) {
+  account = email;
+  token = '';
+  // accès libre : un compte visiteur est créé tout seul, sans jeton ; il garde ses dossiers dans ce navigateur
+  byId('account').textContent = visiteur
+    ? 'Mode visiteur : vos dossiers restent dans ce navigateur pendant un mois.'
+    : 'Connecté : ' + email;
+  byId('logout').hidden = visiteur;
+  if (visiteur) refreshAccount();
+  await loadFolders();
+  byId('token').value = '';
+  byId('workspace').hidden = false;
+  byId('login').hidden = true;
+}
+
+submit('login', async () => connect(byId('token').value.trim()));
+
+// lien de connexion (#jeton=…) : à l'ouverture de la page, ou collé dans l'onglet déjà ouvert (seul le # change)
+async function useLink() {
+  const link = location.hash.match(/^#jeton=([^&]+)/);
+  if (!link) return false;
+  history.replaceState(null, '', location.pathname + '#dossier');     // le jeton disparaît de la barre d'adresse
+  try { await connect(decodeURIComponent(link[1])); } catch (error) { message(error.message, true); }
+  return true;
+}
+window.addEventListener('hashchange', () => { useLink(); });
+
+// à l'ouverture : le lien, sinon une session déjà ouverte sur cet ordinateur
+(async () => {
+  if (await useLink()) return;
+  const response = await fetch(base + '/session', {cache: 'no-store'}).catch(() => null);
+  if (response && response.ok) {
+    const session = await response.json();
+    await openWorkspace(session.email, session.visiteur).catch(error => message(error.message, true));
+  }
+})();
+
+byId('logout').onclick = () => {
+  if (account) fetch(base + '/session', {method: 'DELETE'}).catch(() => {});
+  account = '';
+  byId('account').textContent = '';
+  token = '';
+  folder = '';
+  ++revision;
+  clearTimeout(timer);
+  byId('folders').replaceChildren();
+  for (const id of ['results', 'documents', 'summary', 'shares', 'themes']) byId(id).replaceChildren();
+  catalogFolder = '';
+  browseTheme = '';
+  byId('catalogue-total').textContent = '';
+  byId('more').hidden = true;
+  for (const id of ['login', 'create', 'search', 'upload', 'filters', 'share']) byId(id).reset();
+  byId('notification').textContent = '';
+  byId('workspace').hidden = true;
+  byId('detail').hidden = true;
+  byId('login').hidden = false;
+  message('');
+};
+
+byId('exemple').addEventListener('click', async () => {
+  byId('exemple').disabled = true;
+  try {
+    const created = await json(base + '/exemple', {method: 'POST', body: '{}'});
+    await loadFolders(created.id);
+    message('Dossier d’exemple créé : ses ' + created.documents + ' documents sont en cours de traitement. '
+      + 'Quand ils sont prêts, passez à l’étape 3 « Mon contenu ».');
+  } catch (error) { message(error.message, true); } finally { byId('exemple').disabled = false; }
+});
+
+submit('create', async data => {
+  const created = await json(base, {method: 'POST', body: JSON.stringify(Object.fromEntries(data))});
+  byId('create').reset();
+  byId('results').replaceChildren();
+  await loadFolders(created.id);
+});
+
+byId('folders').onchange = () => {
+  folder = byId('folders').value;
+  if (folder) localStorage.setItem('sourcia-dossier', folder);
+  byId('bienvenue').hidden = Boolean(folder);
+  byId("detail").hidden = true;
+  byId("notification").textContent = "";
+  byId('results').replaceChildren();
+  byId('documents').replaceChildren();
+  byId('summary').replaceChildren();
+  byId('shares').replaceChildren();
+  browseTheme = '';
+  byId('search').reset();
+  loadDetail().catch(error => message(error.message, true));
+};
+
+// filtres des documents du dossier : la liste se met à jour dès qu'on change un choix (plus de bouton « Appliquer »)
+submit('filters', loadDetail);
+let filterTimer = null;
+byId('filters').addEventListener('change', () => loadDetail().catch(error => message(error.message, true)));
+byId('filters').addEventListener('input', event => {
+  if (event.target.name !== 'q') return;
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => loadDetail().catch(error => message(error.message, true)), 350);
+});
+
+// --- parcourir le catalogue : une liste dès l'ouverture, des thèmes, une source, des mots pour affiner
+let catalogFolder = '', browseTheme = '', browsePage = 1, browseRevision = 0, browseTimer = null;
+const THEMES_VISIBLES = 14;
+
+async function loadCatalog(more = false) {
+  if (!folder) return;
+  const destination = folder, current = ++browseRevision;
+  const page = more ? browsePage + 1 : 1;
+  const form = new FormData(byId('search'));
+  const params = new URLSearchParams({q: form.get('q') || '', source: form.get('source') || '', theme: browseTheme, page});
+  const data = await json(base + '/' + destination + '/parcourir-catalogue?' + params);
+  if (destination !== folder || current !== browseRevision) return;
+  browsePage = page;
+  const filtered = Boolean(browseTheme || form.get('source') || (form.get('q') || '').trim());
+  byId('catalogue-total').textContent = data.total
+    ? data.total + (data.total > 1 ? ' documents' : ' document') + (filtered
+        ? ' correspondent à vos choix.'
+        : ' dans le catalogue, les plus récents d’abord. Choisissez un thème ou tapez des mots pour affiner.')
+    : '';
+  showThemes(data.themes);
+  showSources(data.sources);
+  const rows = data.documents.map(doc => catalogRow(doc, destination));
+  if (more) byId('results').append(...rows);
+  else byId('results').replaceChildren(...rows);
+  if (!data.total) byId('results').replaceChildren(item(filtered
+    ? 'Aucun document ne correspond. Retirez un filtre ou essayez d’autres mots.'
+    : 'Le catalogue est vide : la personne qui gère SourcIA doit d’abord l’importer.'));
+  byId('more').hidden = page * data.par_page >= data.total;
+}
+
+function showThemes(themes) {
+  const chip = (label, value, count) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(browseTheme === value));
+    b.append(label);
+    if (count !== undefined) {
+      const n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = count;
+      b.append(n);
+    }
+    b.addEventListener('click', () => {
+      browseTheme = browseTheme === value ? '' : value;
+      loadCatalog().catch(error => message(error.message, true));
+    });
+    return b;
+  };
+  const shown = themes.slice(0, THEMES_VISIBLES);
+  if (browseTheme && !shown.some(t => t.nom === browseTheme)) shown.push({nom: browseTheme, n: 0});
+  byId('themes').replaceChildren(chip('Tous les thèmes', ''), ...shown.map(t => chip(t.nom, t.nom, t.n)));
+}
+
+function showSources(sources) {
+  const select = byId('source'), chosen = select.value;
+  const options = [new Option('Toutes les sources', '')];
+  for (const s of sources) options.push(new Option(s.nom + ' (' + s.n + ')', s.id));
+  if (chosen && !sources.some(s => s.id === chosen)) options.push(new Option(chosen + ' (0)', chosen));
+  select.replaceChildren(...options);
+  select.value = chosen;
+}
+
+function catalogRow(doc, destination) {
+  const li = document.createElement('li');
+  const title = document.createElement(doc.url ? 'a' : 'span');
+  title.className = 'titre';
+  title.textContent = doc.titre || 'Document sans titre';
+  if (doc.url) Object.assign(title, {href: doc.url, target: '_blank', rel: 'noopener'});
+  const meta = document.createElement('p');
+  meta.className = 'meta';
+  meta.textContent = [doc.source_nom, doc.annee, doc.kind === 'pdf' ? 'PDF' : 'page web'].filter(Boolean).join(', ');
+  const text = document.createElement('div');
+  text.append(title, meta);
+  li.append(text);
+  const done = () => {
+    const tag = document.createElement('span');
+    tag.className = 'tag deja';
+    tag.textContent = 'Déjà dans le dossier';
+    return tag;
+  };
+  if (doc.deja_ajoute) li.append(done());
+  else li.append(button('Ajouter', async () => {
+    await json(base + '/' + destination + '/catalogue', {method: 'POST', body: JSON.stringify({document_id: doc.id})});
+    li.lastElementChild.replaceWith(done());
+    if (destination === folder) await loadDetail();
+    message('Document ajouté au dossier : son traitement commence.');
+  }));
+  return li;
+}
+
+byId('search').addEventListener('submit', event => {
+  event.preventDefault();
+  loadCatalog().catch(error => message(error.message, true));
+});
+byId('source').addEventListener('change', () => loadCatalog().catch(error => message(error.message, true)));
+byId('search').addEventListener('input', event => {
+  if (event.target.name !== 'q') return;
+  clearTimeout(browseTimer);
+  browseTimer = setTimeout(() => loadCatalog().catch(error => message(error.message, true)), 350);
+});
+byId('more').addEventListener('click', () => loadCatalog(true).catch(error => message(error.message, true)));
+
+submit('upload', async data => {
+  await json(base + '/' + folder + '/documents', {method: 'POST', body: data});
+  byId('upload').reset();
+  await loadDetail();
+});
+
+submit('share', async data => {
+  const payload = {email: data.get('email'), role: data.get('role') || null};
+  await json(base + '/' + folder + '/partages', {method: 'PUT', body: JSON.stringify(payload)});
+  byId('share').reset();
+  await loadDetail();
+});
+
+byId('zip').onclick = async () => {
+  exportInProgress = true;
+  byId("zip").disabled = true;
+  try {
+    const response = await request(base + '/' + folder + '/export.zip');
+    const url = URL.createObjectURL(await response.blob());
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'corpus.zip';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    message(error.message, true);
+  } finally {
+    exportInProgress = false;
+    byId("zip").disabled = !exportAvailable;
+  }
+};
+</script>
+<script src="/assets/parcours.js?v=saed-20261125b"></script>
+</body>
+</html>

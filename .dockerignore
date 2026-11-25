@@ -1,0 +1,24 @@
+# Ce qui n'entre JAMAIS dans l'image
+# secrets
+.env
+.env.*
+!.env.example
+*.key
+# données : PDF et textes de tiers, comptes, dossiers des enseignants (elles vivent dans le volume /data)
+data/
+data_*/
+models/
+catalogue-*.tar.gz
+# environnement de développement
+.git/
+.github/
+.venv/
+venv/
+**/__pycache__/
+**/*.py[cod]
+**/*.egg-info/
+.pytest_cache/
+.vscode/
+.idea/
+tests/
+docs/

@@ -1,8 +1,14 @@
 """Ligne de commande SourcIA : une commande par étape, pour tester module par module.
 
+Chaque jour :   ``sourcia collect-sites``  (sites de config/sites.yaml : exploration + nouveaux PDF + rapport)
+                ``sourcia check-links``    (liens du catalogue : déplacés, morts, injoignables + rapport)
 Ordre normal :  add-site / add-folder / import-catalog  →  download  →  extract  →  qualify  →  index
                 →  search / select  →  (eval)
 Puis (M7) :     ``sourcia formation``  (support de formation à partir de la dernière sélection exportée)
+       ou :     ``sourcia corpus``  (étape 3 seule : corpus pédagogique corpus.json + document Word, sans QCM)
+                ``sourcia corpus --dossier <id>``  (corpus des documents cochés d'un dossier enseignant)
+                ``sourcia corpus-word <dossier>``  (refaire le Word après une correction de corpus.json)
+Puis (étape 4) : ``sourcia supports <dossier du corpus>``  (QCM, cartes, présentation, infographie…)
 Raccourci :     ``sourcia demo``  (exemples fictifs, tout le pipeline en une commande, sans Internet)
 """
 from __future__ import annotations
@@ -37,14 +43,16 @@ def _bar(i: int, n: int, label: str = "") -> None:
 
 
 def _load_cloud_keys(path: Path | None = None) -> None:
-    """Lit les clés cloud du fichier .env (GEMINI_API_KEY…). Une variable déjà définie n'est jamais écrasée."""
+    """Lit les clés cloud du fichier .env (GEMINI_API_KEY…) et le secret de session du mode serveur.
+    Une variable déjà définie n'est jamais écrasée."""
     path = path or REPO_ROOT / ".env"
     if not path.exists():
         return
     for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
         key, sep, value = line.strip().partition("=")
         key, value = key.strip(), value.strip().strip('"').strip("'")
-        if sep and value and not key.startswith("#") and key.startswith(("GEMINI_", "GOOGLE_", "AZURE_", "OPENAI_", "MISTRAL_")):
+        wanted = ("GEMINI_", "GOOGLE_", "AZURE_", "OPENAI_", "MISTRAL_", "SOURCIA_SESSION_SECRET")
+        if sep and value and not key.startswith("#") and key.startswith(wanted):
             os.environ.setdefault(key, value)
 
 
@@ -118,6 +126,60 @@ def cmd_add_site(args) -> None:
         print("  Étape suivante : sourcia download")
 
 
+def cmd_collect_sites(args) -> None:
+    from datetime import datetime
+
+    from sourcia.collect import sites as S
+    from sourcia.collect.web import WebCollector
+
+    ctx = _ctx(args)
+    try:
+        todo = S.select_sites(S.load_sites(ctx.settings.resolve(args.sites_file)), args.site)
+    except ValueError as exc:
+        sys.exit(f"Erreur : {exc}")
+    cfg = ctx.settings.collect
+    if args.max_pages:
+        cfg.max_pages_per_site = args.max_pages
+    download = cfg.download_pdfs and not args.no_download
+    started = datetime.now()
+    print(f"Collecte du {started:%Y-%m-%d %H:%M} · {len(todo)} site(s) · {cfg.max_pages_per_site} pages max par site"
+          f" · téléchargement : {'oui' if download else 'non'} · {cfg.delay_s} s entre deux requêtes, robots.txt respecté")
+
+    def progress(site, rep):
+        print(f"→ {site.nom}  {site.url} …" if rep is None else S.format_site(rep), flush=True)
+
+    reports = S.collect_sites(WebCollector(ctx.settings), ctx.store, todo, ctx.pdf_dir, download, progress)
+    report = S.run_report(reports, {"sites": [s.nom for s in todo], "max_pages": cfg.max_pages_per_site,
+                                    "telechargement": download, "fichier_sites": args.sites_file}, started)
+    path = S.write_report(report, ctx.settings.data / "collecte")
+    print(S.format_total(report))
+    print(f"Rapport : {path}")
+    if report["total"]["sites_en_echec"]:
+        sys.exit(1)                                    # pour un lancement automatique : signaler le problème
+
+
+def cmd_check_links(args) -> None:
+    from sourcia.collect.links import check_links, format_report
+    from sourcia.collect.sites import write_report
+    from sourcia.collect.web import WebCollector
+
+    ctx = _ctx(args)
+    states = {s.strip() for s in (args.etat or "").split(",") if s.strip()}
+    docs = [d for d in ctx.store if not d.private and d.url.startswith(("http://", "https://"))
+            and (not args.source or d.source in args.source)
+            and (not states or (d.link.state if d.link else "jamais") in states)]
+    if args.limit:
+        docs = docs[: args.limit]
+    print(f"Vérification de {len(docs)} liens (en-têtes seulement, rien n'est téléchargé ;"
+          f" {ctx.settings.collect.delay_s} s entre deux requêtes, robots.txt respecté)…")
+    report = check_links(WebCollector(ctx.settings), ctx.store, docs,
+                         progress=lambda i, n, d: _bar(i, n, d.title))
+    report["options"] = {"sources": args.source, "etat": sorted(states) or None, "limit": args.limit}
+    path = write_report(report, ctx.settings.data / "liens")
+    print("\n" + format_report(report))
+    print(f"Rapport : {path}")
+
+
 def cmd_add_folder(args) -> None:
     from sourcia.collect.local import scan_folder
 
@@ -183,6 +245,11 @@ def cmd_extract(args) -> None:
 def cmd_qualify(args) -> None:
     ctx = _ctx(args)
     todo = [d for d in ctx.store.canonical() if d.status in ("extracted", "qualified")]
+    if args.themes:                                  # thèmes seuls : rapide, sans modèle, le reste de la fiche gardé
+        changed = sum(ctx.qualifier.refresh_themes(d) for d in todo)
+        ctx.qualifier.save()
+        print(f"Thèmes recalculés : {changed} fiche(s) modifiée(s) sur {len(todo)}.")
+        return
     if args.doc:
         todo = [d for d in todo if d.id in args.doc]
     if args.limit:
@@ -392,6 +459,22 @@ def _latest_selection(ctx) -> Path | None:
     return files[-1] if files else None
 
 
+def _read_selection(args, ctx) -> tuple:
+    """Demande et documents d'une sélection exportée : le fichier donné, sinon la dernière (si ni demande ni
+    sujet). Renvoie (None, []) s'il n'y a pas de sélection à lire."""
+    from sourcia.core.demande import Demande
+
+    if not (args.selection or (not args.demande_fichier and not args.sujet and _latest_selection(ctx))):
+        return None, []
+    path = Path(args.selection) if args.selection else _latest_selection(ctx)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    doc_ids = [r["id"] for r in data["documents"] if r.get("id")]
+    base = Demande.model_validate(data["demande_structuree"]) if data.get("demande_structuree") \
+        else Demande(sujet=data["demande"])
+    print(f"Sélection lue : {path.name} ({len(doc_ids)} documents)")
+    return base, doc_ids
+
+
 def _demande_from_args(args, base=None):
     """Demande structurée : fichier YAML (--demande-fichier), puis options de la ligne de commande par-dessus."""
     from sourcia.core.demande import Demande
@@ -439,24 +522,17 @@ def cmd_demande(args) -> None:
 
 def cmd_formation(args) -> None:
     """M7 : créer le support de formation à partir d'une sélection, piloté par la demande structurée."""
-    from sourcia.core.demande import Demande
     from sourcia.formation.builder import FormationBuilder
     from sourcia.formation.render import load, write
     from sourcia.select.funnel import select_demande
 
     ctx = _ctx(args)
-    base, doc_ids = None, []
     if args.reprendre:
         old = load(Path(args.reprendre))
         base, doc_ids = old.demande, [i for i in old.doc_ids if i not in old.personnel_ids]
         print(f"Reprise de {Path(args.reprendre).name} : même demande, mêmes sources, blocs personnels conservés")
-    elif args.selection or (not args.demande_fichier and not args.sujet and _latest_selection(ctx)):
-        path = Path(args.selection) if args.selection else _latest_selection(ctx)
-        data = json.loads(path.read_text(encoding="utf-8"))
-        doc_ids = [r["id"] for r in data["documents"] if r.get("id")]
-        base = Demande.model_validate(data["demande_structuree"]) if data.get("demande_structuree") \
-            else Demande(sujet=data["demande"])
-        print(f"Sélection lue : {path.name} ({len(doc_ids)} documents)")
+    else:
+        base, doc_ids = _read_selection(args, ctx)
     d = _demande_from_args(args, base)
     if not doc_ids:
         sel = select_demande(ctx.selector, d)
@@ -488,6 +564,146 @@ def cmd_formation(args) -> None:
     print("Fichiers :")
     for p in paths:
         print(f"  {p}")
+
+
+def cmd_corpus(args) -> None:
+    """Étape 3 : corpus pédagogique (corpus.json) à partir des documents cochés et des acquis visés, sans QCM."""
+    from sourcia.formation.corpus_pedagogique import build_corpus, write_corpus
+    from sourcia.select.funnel import select_demande
+
+    ctx = _ctx(args)
+    if args.dossier:                                 # documents cochés et prêts d'un dossier enseignant
+        return _corpus_dossier(args, ctx)
+    # documents cochés : --documents (prioritaire), sinon ceux de la sélection exportée
+    base, doc_ids = _read_selection(args, ctx) if (args.selection or not args.documents) else (None, [])
+    if args.documents:
+        doc_ids = [x.strip() for x in args.documents.split(",") if x.strip()]
+        unknown = [x for x in doc_ids if ctx.store.get(x) is None]
+        if unknown:
+            sys.exit(f"Documents inconnus dans le catalogue : {', '.join(unknown)}")
+    d = _demande_from_args(args, base)
+    if not doc_ids:
+        sel = select_demande(ctx.selector, d)
+        ctx.qualifier.save()
+        doc_ids = [c.document.id for c in sel]
+        print(f"Aucun document coché : sélection automatique de {len(doc_ids)} documents pour « {d.sujet} »")
+    if not doc_ids:
+        sys.exit("Aucune source sélectionnée (index vide ? lancer sourcia index).")
+    print(f"Demande : {d.profil} · {d.apprenants}/{d.niveau} · "
+          f"{'diplômante ' + str(d.diplome) + ' ' + ','.join(d.capacites) if d.diplomante else 'non diplômante'}")
+    print(f"Modèle : {ctx.settings.llm.provider} / {ctx.settings.llm.model} (compter 1 à 3 min par appel en local)")
+    cp = build_corpus(ctx, d, doc_ids, n_seq=args.sequences, log=print)
+    paths = write_corpus(cp, ctx.settings.path("corpus", ".keep").parent,
+                         ctx=None if args.sans_illustrations else ctx, max_illustrations=args.max_illustrations)
+    try:
+        from sourcia.formation.export_word import corpus_to_docx
+
+        paths.append(corpus_to_docx(cp, paths[0].parent / "corpus_pedagogique.docx"))
+    except ImportError as exc:                       # python-docx absent : le corpus.json suffit pour la suite
+        print(f"  ⚠️ {exc}")
+    except Exception as exc:                         # le corpus.json est déjà écrit : on le dit, sans tout arrêter
+        print(f"  ⚠️ document Word non produit ({type(exc).__name__} : {str(exc)[:150]}) ; "
+              f"corpus.json est utilisable, réessayer avec : sourcia corpus-word {paths[0].parent}")
+    _corpus_summary(cp, paths)
+
+
+def _corpus_summary(cp, paths) -> None:
+    n_p = sum(len(s.points) for s in cp.sequences)
+    n_r = sum(len(s.retires) for s in cp.sequences) + len(cp.retires)
+    n_s = len(cp.synthese.paragraphes) if cp.synthese else 0
+    print(f"\n{len(cp.sequences)} séquences · {n_p} points clés · {n_s} paragraphes de synthèse"
+          f" · {len(cp.illustrations)} illustrations"
+          f" · {sum(b.citee for b in cp.bibliographie)} sources citées · {n_r} éléments retirés par les contrôles"
+          f" · {cp.appels_modele} appels au modèle · {cp.duree_s} s")
+    if cp.couverture:
+        ok = sum(bool(c["sequences"]) for c in cp.couverture)
+        print(f"Référentiel : {ok}/{len(cp.couverture)} capacités visées couvertes")
+    if cp.exclus_prives:
+        print(f"  🔒 documents privés exclus (modèle en ligne, sans accord) : {', '.join(cp.exclus_prives)}")
+    for r in cp.remarques[:8]:
+        print(f"  📝 {r}")
+    print("Fichiers :")
+    for p in paths:
+        print(f"  {p}")
+
+
+def _corpus_dossier(args, ctx) -> None:
+    """``sourcia corpus --dossier <id>`` : en local, sans jeton, comme la route POST …/corpus-pedagogique."""
+    try:
+        from sourcia.api.dossiers import Dossiers
+    except ImportError:
+        sys.exit('Les dossiers enseignants demandent l\'extra api : pip install -e ".[api]"')
+    from sourcia.formation.dossier_context import build_dossier_corpus, mark_ready
+
+    if args.selection or args.documents:
+        sys.exit("Avec --dossier, les documents sont ceux cochés dans le dossier : pas de sélection ni de --documents.")
+    dossiers = Dossiers(ctx)
+    with dossiers.db() as db:
+        row = db.execute("SELECT title FROM folders WHERE id = ?", (args.dossier,)).fetchone()
+    if row is None:
+        sys.exit(f"Dossier introuvable : {args.dossier}")
+    d = _demande_from_args(args, None)
+    print(f"Dossier : {row['title']} · demande : {d.sujet}")
+    print(f"Modèle : {ctx.settings.llm.provider} / {ctx.settings.llm.model} (compter 1 à 3 min par appel en local)")
+    try:
+        cp, paths = build_dossier_corpus(ctx, dossiers, args.dossier, d, sequences=args.sequences,
+                                         autoriser_documents_prives=args.autoriser_documents_prives,
+                                         max_illustrations=0 if args.sans_illustrations else args.max_illustrations,
+                                         log=print)
+    except ValueError as exc:                        # aucun document coché et prêt
+        sys.exit(str(exc))
+    mark_ready(paths[0].parent, cp, cree_le=cp.cree_le, demande_par="ligne de commande")
+    _corpus_summary(cp, paths)
+
+
+def cmd_supports(args) -> None:
+    """Étape 4 : supports (QCM, cartes, présentation, infographie…) à partir d'un corpus.json SEULEMENT."""
+    from sourcia.formation.corpus_pedagogique import load_corpus
+    from sourcia.formation.supports import SANS_MODELE, build_supports, write_supports
+
+    src = Path(args.chemin)
+    folder = src if src.is_dir() else src.parent if src.is_file() else None   # un chemin absent n'est rien
+    if folder is None or not (folder / "corpus.json").is_file():
+        sys.exit(f"corpus.json introuvable : {src}")
+    try:
+        seqs = [int(x) for x in args.sequences.split(",") if x.strip()] if args.sequences else None
+    except ValueError:
+        sys.exit("--sequences : des numéros séparés par des virgules, ex. 1,3")
+    supports = [x.strip() for x in args.supports.split(",") if x.strip()] if args.supports else list(SANS_MODELE)
+    cp = load_corpus(folder)
+    ctx = _ctx(args)                                 # sert seulement aux supports qui demandent le modèle
+    print(f"Corpus : {cp.titre} ({len(cp.sequences)} séquences) · supports : {', '.join(supports)}")
+    try:
+        sup = build_supports(cp, seqs, supports, ctx=ctx, log=print, avec_modele=args.avec_modele,
+                             qcm_par_sequence=args.qcm_par_sequence)
+    except ValueError as exc:                        # séquence ou support inconnu
+        sys.exit(str(exc))
+    paths = write_supports(sup, cp, folder)
+    n_mod = sum(q.origine == "modele" for q in sup.qcm)
+    print(f"\nSéquences {', '.join(map(str, sup.sequences))} · {len(sup.qcm)} questions ({n_mod} du modèle) · "
+          f"{len(sup.cartes)} cartes · {len(sup.chiffres)} chiffres clés · {len(sup.retires)} éléments retirés"
+          f" · {sup.appels_modele} appels au modèle · {sup.duree_s} s")
+    for r in sup.remarques[:8]:
+        print(f"  📝 {r}")
+    print("Fichiers :")
+    for p in paths:
+        print(f"  {p}")
+
+
+def cmd_corpus_word(args) -> None:
+    """Refait le document Word à partir d'un corpus.json existant (corrigé à la main, ou reçu de l'équipe)."""
+    from sourcia.formation.corpus_pedagogique import load_corpus
+    from sourcia.formation.export_word import corpus_to_docx
+
+    src = Path(args.chemin)
+    if not (src / "corpus.json" if src.is_dir() else src).exists():
+        sys.exit(f"corpus.json introuvable : {src}")
+    folder = src if src.is_dir() else src.parent
+    out = Path(args.sortie) if args.sortie else folder / "corpus_pedagogique.docx"
+    try:
+        print(f"Document Word écrit : {corpus_to_docx(load_corpus(src), out, base_dir=folder)}")
+    except ImportError as exc:
+        sys.exit(str(exc))
 
 
 def cmd_valider_formation(args) -> None:
@@ -556,13 +772,62 @@ def cmd_referentiel(args) -> None:
         print(f"validées : {stats['valides']} · corrigées : {stats['corriges']} · rejetées : {stats['rejetes']} · statut : {r.statut}")
 
 
+def cmd_comptes(args) -> None:
+    """Comptes enseignants des dossiers : ajouter, retirer, lister, demo (jeton affiché une seule fois)."""
+    from sourcia.comptes import DEMO_EMAIL, Comptes
+
+    ctx = _ctx(args)
+    comptes = Comptes(ctx.settings.path("comptes.json"))
+    url = (args.url or "http://127.0.0.1:8000").rstrip("/")
+
+    def show(email: str, token: str) -> None:
+        print(f"Jeton de {email} (affiché une seule fois : à transmettre par un moyen privé) :\n  {token}")
+        print(f"Lien de connexion directe (même secret que le jeton) :\n  {url}/dossiers#jeton={token}")
+
+    if args.action == "lister":
+        rows = comptes.lister()
+        if not rows:
+            print("Aucun compte. Créez-en un : sourcia comptes ajouter prenom.nom@lycee.fr")
+        for r in rows:
+            where = "data/comptes.json" if r["source"] == "fichier" else "variable SOURCIA_DOSSIER_ACCOUNTS"
+            print(f"  {r['email']}  ({where}" + (f", créé le {r['cree_le']}" if r["cree_le"] else "")
+                  + (", démonstration" if r["demo"] else "") + ")")
+        return
+    if args.action == "demo":
+        from sourcia.api.demo import create_demo
+
+        try:
+            token, folder_id, docs = create_demo(ctx, args.sujet, args.documents, log=print)
+        except ValueError as exc:
+            sys.exit(str(exc))
+        print(f"Dossier « Démo : {args.sujet} » prêt ({sum(d['statut'] == 'pret' for d in docs)}/{len(docs)} documents traités).")
+        show(DEMO_EMAIL, token)
+        return
+    if not args.email:
+        sys.exit(f"Indiquez l'adresse : sourcia comptes {args.action} prenom.nom@lycee.fr")
+    try:
+        if args.action == "ajouter":
+            show(args.email.strip().casefold(), comptes.ajouter(args.email, remplacer=args.remplacer))
+        elif comptes.retirer(args.email):
+            print(f"Compte {args.email} retiré : son jeton et ses sessions ne marchent plus. Ses dossiers restent.")
+        else:
+            sys.exit(f"{args.email} n'est pas dans data/comptes.json (un compte de la variable "
+                     "SOURCIA_DOSSIER_ACCOUNTS se retire dans la variable).")
+    except ValueError as exc:
+        sys.exit(str(exc))
+
+
 def cmd_serve(args) -> None:
     import uvicorn
 
     from sourcia.api.app import create_app
 
+    try:
+        app = create_app(args.config)
+    except RuntimeError as exc:                      # mode serveur sans secret de session : message clair, pas de pile
+        raise SystemExit(f"❌ {exc}") from None
     print(f"Interface : http://{args.host}:{args.port}  (Ctrl+C pour arrêter)")
-    uvicorn.run(create_app(args.config), host=args.host, port=args.port, log_level="warning")
+    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
 
 
 def cmd_mcp(args) -> None:
@@ -609,6 +874,19 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--no-download", action="store_true", help="lister seulement (pas de téléchargement)")
     sp.add_argument("--medias", action="store_true", help="collecter aussi vidéos, photos, jeux de données et audio des pages")
 
+    sp = add("collect-sites", cmd_collect_sites,
+             "M1 : collecter les sites de config/sites.yaml (exploration, nouveaux PDF, rapport par site)")
+    sp.add_argument("--site", action="append", help="seulement ce site (nom dans sites.yaml) ; répétable")
+    sp.add_argument("--no-download", action="store_true", help="lister seulement (pas de téléchargement)")
+    sp.add_argument("--max-pages", type=int, help="pages HTML visitées au maximum par site")
+    sp.add_argument("--sites-file", default="config/sites.yaml", help="liste des sites (défaut : config/sites.yaml)")
+
+    sp = add("check-links", cmd_check_links,
+             "M1 : vérifier les liens du catalogue (déplacés, morts, injoignables) sans rien télécharger")
+    sp.add_argument("--source", action="append", help="seulement cette source (ex. arvalis) ; répétable")
+    sp.add_argument("--etat", help="seulement ces états : ok,moved,dead,unreachable,jamais (jamais vérifiés)")
+    sp.add_argument("--limit", type=int, help="nombre de liens au plus")
+
     sp = add("add-folder", cmd_add_folder, "M1 : ajouter un dossier de documents (privés par défaut)")
     sp.add_argument("folder")
     sp.add_argument("--source", default="prive")
@@ -630,6 +908,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--llm", action="store_true", help="ajouter la passe « modèle » (plus lente)")
     sp.add_argument("--limit", type=int)
     sp.add_argument("--force", action="store_true", help="recalculer les fiches déjà en cache")
+    sp.add_argument("--themes", action="store_true", help="recalculer seulement les thèmes des fiches existantes")
     sp.add_argument("--doc", nargs="*", help="seulement ces documents (identifiants) ; affiche la fiche")
 
     sp = add("fiche", cmd_fiche, "M3 : afficher la fiche d'un document (identifiant ou morceau de titre)")
@@ -684,6 +963,29 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--quiz", type=int, default=4, help="questions QCM par séquence (0 : aucune)")
     demande_opts(sp)
 
+    sp = add("corpus", cmd_corpus, "étape 3 : corpus pédagogique (corpus.json) à partir des documents cochés, sans QCM")
+    sp.add_argument("selection", nargs="?", help="fichier selection-*.json (défaut : la dernière sélection exportée)")
+    sp.add_argument("--documents", help="identifiants des documents cochés, séparés par des virgules")
+    sp.add_argument("--dossier", help="identifiant d'un dossier enseignant : ses documents cochés et prêts")
+    sp.add_argument("--autoriser-documents-prives", action="store_true",
+                    help="accord pour envoyer les documents privés (PDF téléversés) à un modèle en ligne")
+    sp.add_argument("--sans-illustrations", action="store_true", help="ne pas reprendre les images des documents")
+    sp.add_argument("--max-illustrations", type=int, default=12, help="nombre d'illustrations au plus (défaut 12)")
+    sp.add_argument("--sujet", help="sujet (sinon : celui de la demande ou de la sélection)")
+    sp.add_argument("--sequences", type=int, default=4, help="nombre de séquences au plus (hors capacités à couvrir)")
+    demande_opts(sp)
+
+    sp = add("corpus-word", cmd_corpus_word, "refaire le document Word d'un corpus (corpus.json → corpus_pedagogique.docx)")
+    sp.add_argument("chemin", help="dossier corpus-<date> ou fichier corpus.json")
+    sp.add_argument("--sortie", help="chemin du .docx (défaut : corpus_pedagogique.docx dans le dossier du corpus)")
+
+    sp = add("supports", cmd_supports, "étape 4 : supports à partir d'un corpus (QCM, cartes, présentation, infographie…)")
+    sp.add_argument("chemin", help="dossier corpus-<date> ou fichier corpus.json")
+    sp.add_argument("--sequences", help="numéros des séquences, ex. 1,3 (défaut : toutes)")
+    sp.add_argument("--supports", help="qcm,cartes,presentation,infographie (défaut) ; avec modèle : fiche,glossaire,podcast")
+    sp.add_argument("--avec-modele", action="store_true", help="le modèle complète le QCM (questions contrôlées)")
+    sp.add_argument("--qcm-par-sequence", type=int, default=4, help="questions par séquence au plus (défaut 4)")
+
     sp = add("valider-formation", cmd_valider_formation, "M8 : importer les rattachements validés (rattachements.csv)")
     sp.add_argument("dossier")
     sp.add_argument("--par", required=True, help="nom de l'enseignant qui valide")
@@ -694,6 +996,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--fichiers", nargs="*", help="construire : PDF déjà téléchargés (sinon téléchargement depuis chlorofil.fr)")
     sp.add_argument("--csv", help="importer : tableau rempli par l'enseignant")
     sp.add_argument("--par", help="importer : nom de l'enseignant")
+
+    sp = add("comptes", cmd_comptes, "comptes enseignants des dossiers (ajouter, retirer, lister, demo)")
+    sp.add_argument("action", choices=["ajouter", "retirer", "lister", "demo"])
+    sp.add_argument("email", nargs="?", help="adresse de l'enseignant (ajouter, retirer)")
+    sp.add_argument("--remplacer", action="store_true", help="ajouter : donner un nouveau jeton à un compte existant")
+    sp.add_argument("--url", help="adresse du serveur pour le lien de connexion (défaut http://127.0.0.1:8000)")
+    sp.add_argument("--sujet", default="sorgho fourrager", help="demo : sujet des documents du dossier de démonstration")
+    sp.add_argument("--documents", type=int, default=4, help="demo : nombre de documents (défaut 4)")
 
     sp = add("serve", cmd_serve, "M6 : interface web du formateur et API")
     sp.add_argument("--host", default="127.0.0.1")

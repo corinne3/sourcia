@@ -1,0 +1,177 @@
+<template>
+  <style>
+    @font-face { font-family: "Fredoka"; font-weight: 500 600; src: url("assets/app/fonts/fredoka.woff2") format("woff2"); }
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; src: url("assets/app/fonts/atkinson-hyperlegible-gras.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; overflow: hidden; background: var(--craie); font-family: "Atkinson Hyperlegible", sans-serif;
+      color: var(--terre); font-size: 30px; line-height: 1.5; }
+    /* les planches de l'app (static/sourcia.css), à 1,75× */
+    #s4-page { position: absolute; left: 110px; right: 110px; top: 50px; }
+    .planche { background: var(--blanc); border: 3px solid var(--trait); border-radius: 34px; padding: 44px 54px; margin-bottom: 34px; }
+    .planche h2 { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 62px; line-height: 1.1; margin-bottom: 14px; }
+    .sub { color: var(--terre-douce); }
+    .graines { display: flex; flex-wrap: wrap; gap: 14px 16px; margin: 24px 0 26px; }
+    .graines b { font-weight: 400; padding: 9px 24px; font-size: 29px; background: var(--craie); border: 3px solid var(--trait); border-radius: 999px; }
+    .graines b small { margin-left: 12px; font-size: 28px; color: var(--terre-douce); }
+    .graines b.on { background: var(--colza-pale); border-color: var(--colza); color: var(--colza-texte); font-weight: 700; }
+    .graines b.on small { color: var(--colza-texte); }
+    #s4-chip-sorgho-on { position: absolute; }
+    .listes { position: relative; height: 420px; }
+    .liste { position: absolute; inset: 0; list-style: none; }
+    .liste li { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 18px 4px;
+      border-bottom: 3px dotted var(--trait); }
+    .liste .t { font-weight: 700; color: var(--bleuet); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 3px; }
+    .liste .m { font-size: 28px; color: var(--terre-douce); margin-top: 2px; }
+    .bouton { flex: none; font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 29px; color: #fff; background: var(--bleuet);
+      padding: 14px 30px; border-radius: 20px; box-shadow: 0 7px 0 var(--bleuet-fonce); }
+    .etiquette { position: absolute; right: 4px; font-weight: 700; font-size: 28px; padding: 6px 20px; border-radius: 999px;
+      background: var(--prairie-pale); color: var(--prairie-texte); }
+    .statut { display: inline-flex; align-items: center; gap: 10px; margin-left: 18px; font-weight: 700; font-size: 28px; padding: 4px 18px;
+      border-radius: 999px; background: var(--prairie-pale); color: var(--prairie-texte); }
+    .statut svg { width: 24px; height: 24px; fill: currentColor; }
+    #s4-docs ul { list-style: none; }
+    #s4-docs li { display: flex; align-items: center; padding: 14px 4px; border-bottom: 3px dotted var(--trait); }
+    #s4-docs li:last-child { border-bottom: 0; }
+    .case { flex: none; width: 34px; height: 34px; margin-right: 22px; border-radius: 7px; background: var(--bleuet); position: relative; }
+    .case::after { content: ""; position: absolute; left: 11px; top: 4px; width: 9px; height: 18px; border: solid #fff; border-width: 0 4px 4px 0; transform: rotate(45deg); }
+    .bandeau { padding: 16px 24px; border-radius: 20px; background: var(--prairie-pale); color: var(--prairie-texte); margin-bottom: 16px; }
+    /* le PDF personnel et la case d'accord (écran Mon corpus) */
+    #s4-prive { position: absolute; left: 110px; right: 110px; top: 150px; }
+    .ligne { display: flex; align-items: center; gap: 26px; margin: 18px 0 8px; }
+    .fichier { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 29px; color: var(--bleuet); background: var(--blanc);
+      border: 3px solid var(--bleuet); border-radius: 18px; padding: 12px 26px; }
+    #s4-nomfichier { position: relative; width: 640px; height: 46px; }
+    #s4-nomfichier span { position: absolute; left: 0; top: 0; white-space: nowrap; }
+    .accord { display: flex; gap: 22px; align-items: flex-start; margin-top: 34px; padding: 28px 30px; border-radius: 26px;
+      background: var(--craie); border: 3px solid var(--trait); }
+    .vide { flex: none; width: 38px; height: 38px; margin-top: 6px; border-radius: 8px; border: 3px solid var(--terre-douce); background: var(--blanc); }
+    .accord .sub { margin-top: 10px; }
+    #s4-surligne { background: linear-gradient(transparent 58%, var(--colza-pale) 58%); }
+    #s4-curseur { position: absolute; left: 0; top: 0; width: 66px; height: 66px; z-index: 20; }
+    #s4-curseur svg { width: 66px; height: 66px; transform-origin: 12px 8px; }
+  </style>
+  <div id="root" data-composition-id="s4" data-width="1920" data-height="1080">
+    <div id="s4-page">
+      <section class="planche" id="s4-ajouter">
+        <h2>Ajouter une source</h2>
+        <div class="listes" style="height: 50px">
+          <p class="sub liste" id="s4-total-a">573 documents dans le catalogue, les plus récents d’abord.</p>
+          <p class="sub liste" id="s4-total-b">86 documents correspondent à vos choix.</p>
+        </div>
+        <div class="graines">
+          <b id="s4-tous">Tous les thèmes</b>
+          <b>rendement<small>309</small></b><b>maïs<small>308</small></b><b>fourrage<small>191</small></b>
+          <b>légumineuses<small>144</small></b><b id="s4-sorgho">sorgho<small>86</small></b><b>ensilage<small>81</small></b>
+          <b>sécheresse<small>57</small></b>
+        </div>
+        <div class="listes">
+          <ul class="liste" id="s4-liste-a">
+            <li><div><div class="t">Réussir le choix des variétés en maïs fourrage en région Centre</div><div class="m">Arvalis, 2026, page web</div></div><span class="bouton">Ajouter</span></li>
+            <li><div><div class="t">Pois protéagineux : des bénéfices économiques à l’échelle de la rotation</div><div class="m">Terres Inovia, 2026, page web</div></div><span class="bouton">Ajouter</span></li>
+            <li><div><div class="t">Stratégie de désherbage des protéagineux d’hiver</div><div class="m">Terres Inovia, 2026, page web</div></div><span class="bouton">Ajouter</span></li>
+          </ul>
+          <ul class="liste" id="s4-liste-b">
+            <li id="s4-r1"><div><div class="t">Variétés de sorgho fourrager monocoupe : les derniers résultats</div><div class="m">Arvalis, 2025, page web</div></div><span class="bouton" id="s4-b1">Ajouter</span><span class="etiquette" id="s4-d1">Déjà dans le dossier</span></li>
+            <li id="s4-r2"><div><div class="t">Sorgho grain : les résultats des variétés étudiées en post-inscription</div><div class="m">Arvalis, 2025, page web</div></div><span class="bouton">Ajouter</span></li>
+            <li id="s4-r3"><div><div class="t">Variétés de sorgho fourrager : valeurs agronomiques et énergétiques</div><div class="m">Arvalis, 2024, page web</div></div><span class="bouton" id="s4-b3">Ajouter</span><span class="etiquette" id="s4-d3">Déjà dans le dossier</span></li>
+          </ul>
+        </div>
+      </section>
+      <section class="planche" id="s4-docs">
+        <h2>Documents du dossier</h2>
+        <p class="bandeau">Traitement terminé. 5 document(s) prêt(s), 0 en erreur.</p>
+        <ul>
+          <li><i class="case"></i>Différentes variétés de sorgho destinées à l’alimentation animale<span class="statut"><svg viewBox="0 0 52 52"><path d="M23.5 50h5V20h-5z"/><ellipse cx="19" cy="17" rx="5" ry="9" transform="rotate(-22 19 17)"/><ellipse cx="33" cy="17" rx="5" ry="9" transform="rotate(22 33 17)"/><ellipse cx="26" cy="8" rx="4.5" ry="8"/></svg>prêt</span></li>
+          <li><i class="case"></i>Utiliser le sorgho ensilé en alimentation bovine<span class="statut"><svg viewBox="0 0 52 52"><path d="M23.5 50h5V20h-5z"/><ellipse cx="19" cy="17" rx="5" ry="9" transform="rotate(-22 19 17)"/><ellipse cx="33" cy="17" rx="5" ry="9" transform="rotate(22 33 17)"/><ellipse cx="26" cy="8" rx="4.5" ry="8"/></svg>prêt</span></li>
+          <li><i class="case"></i>Mélanges d’ensilages de sorgho et de maïs pour les rations de bovins<span class="statut"><svg viewBox="0 0 52 52"><path d="M23.5 50h5V20h-5z"/><ellipse cx="19" cy="17" rx="5" ry="9" transform="rotate(-22 19 17)"/><ellipse cx="33" cy="17" rx="5" ry="9" transform="rotate(22 33 17)"/><ellipse cx="26" cy="8" rx="4.5" ry="8"/></svg>prêt</span></li>
+          <li><i class="case"></i>Sorgho fourrager : valeurs agronomiques et énergétiques 2017<span class="statut"><svg viewBox="0 0 52 52"><path d="M23.5 50h5V20h-5z"/><ellipse cx="19" cy="17" rx="5" ry="9" transform="rotate(-22 19 17)"/><ellipse cx="33" cy="17" rx="5" ry="9" transform="rotate(22 33 17)"/><ellipse cx="26" cy="8" rx="4.5" ry="8"/></svg>prêt</span></li>
+          <li><i class="case"></i>Variétés de sorgho fourrager monocoupe : les derniers résultats<span class="statut"><svg viewBox="0 0 52 52"><path d="M23.5 50h5V20h-5z"/><ellipse cx="19" cy="17" rx="5" ry="9" transform="rotate(-22 19 17)"/><ellipse cx="33" cy="17" rx="5" ry="9" transform="rotate(22 33 17)"/><ellipse cx="26" cy="8" rx="4.5" ry="8"/></svg>prêt</span></li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="planche clip" id="s4-prive" data-start="7.0" data-duration="6.5" data-hold>
+      <h2>PDF personnel</h2>
+      <div class="ligne">
+        <span class="fichier" id="s4-choisir">Choisir un fichier</span>
+        <div id="s4-nomfichier"><span id="s4-nf-a" class="sub">Aucun fichier n’a été sélectionné</span><span id="s4-nf-b">mon-cours-sorgho.pdf</span></div>
+        <span class="bouton">Ajouter le PDF</span>
+      </div>
+      <div class="accord">
+        <i class="vide"></i>
+        <div><b>Autoriser l’envoi de mes documents privés (PDF téléversés) au modèle en ligne</b>
+          <p class="sub"><span id="s4-surligne">Sans cette case, vos PDF téléversés ne sont jamais envoyés à un modèle en ligne</span> : ils sont laissés de côté et le corpus le signale.</p></div>
+      </div>
+    </section>
+
+    <div id="s4-curseur"><svg viewBox="0 0 32 32"><path d="M6 3l19 15-8.5 1.2L21 28l-4 1.8-4.6-8.9L6 26z" fill="#2a231c" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const root = document.querySelector('[data-composition-id="s4"]');
+    // ---- le curseur suit des points de passage (positions lues sur les vrais éléments, à chaque image)
+    const passages = [
+      { t: 0, x: 1980, y: 900 }, { t: 1.4, x: 1980, y: 900 }, { t: 2.3, sel: "#s4-sorgho" }, { t: 3.3, sel: "#s4-sorgho" },
+      { t: 4.1, sel: "#s4-b1" }, { t: 4.5, sel: "#s4-b1" }, { t: 4.95, sel: "#s4-b3" }, { t: 5.4, sel: "#s4-b3" },
+      { t: 6.1, x: 1700, y: 1150 }, { t: 7.9, x: 1700, y: 1150 }, { t: 8.6, sel: "#s4-choisir" }, { t: 13.5, sel: "#s4-choisir" },
+    ];
+    const curseur = document.getElementById("s4-curseur");
+    // position dans la mise en page (offsetLeft/Top) : ne dépend ni des transformations ni de l'ordre des images ;
+    // aux instants visés, la page n'est pas déplacée (caméra au repos)
+    function point(p) {
+      if (!p.sel) return [p.x, p.y];
+      let el = document.querySelector(p.sel), x = 0, y = 0;
+      const w = el.offsetWidth, h = el.offsetHeight;
+      while (el && el !== root) { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; }
+      return [x + w * 0.55, y + h * 0.55];
+    }
+    const ease = gsap.parseEase("power2.inOut");
+    function placer(t) {
+      let i = passages.findIndex((p) => p.t > t);
+      if (i === -1) i = passages.length;
+      const a = passages[Math.max(0, i - 1)], b = passages[Math.min(passages.length - 1, i)];
+      const [ax, ay] = point(a), [bx, by] = point(b);
+      const k = b.t === a.t ? 1 : ease(Math.min(1, Math.max(0, (t - a.t) / (b.t - a.t))));
+      gsap.set(curseur, { x: ax + (bx - ax) * k, y: ay + (by - ay) * k });
+    }
+    const horloge = { t: 0 };
+    tl.fromTo(horloge, { t: 0 }, { t: 13.5, duration: 13.5, ease: "none", onUpdate: () => placer(horloge.t) }, 0);
+    const clic = (t) => tl.fromTo("#s4-curseur svg", { scale: 1 }, { scale: 0.82, duration: 0.08, yoyo: true, repeat: 1, ease: "power2.out" }, t);
+
+    // ---- arrivée : la planche est déjà là (le blanc du pot), elle se pose
+    tl.fromTo("#s4-page", { scale: 1.04, filter: "blur(6px)" }, { scale: 1, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, 0);
+    tl.set("#s4-liste-b", { opacity: 0 }, 0);
+    tl.set(["#s4-total-b", "#s4-d1", "#s4-d3"], { opacity: 0 }, 0);
+    tl.set("#s4-tous", { attr: { class: "on" } }, 0);
+    // ---- clic sur « sorgho » : la pastille s'allume, le nombre change, la liste se remplace
+    clic(2.4);
+    tl.set("#s4-sorgho", { attr: { class: "on" } }, 2.45);
+    tl.set("#s4-tous", { attr: { class: "" } }, 2.45);
+    tl.fromTo("#s4-sorgho", { scale: 1 }, { scale: 1.08, duration: 0.12, yoyo: true, repeat: 1 }, 2.45);
+    tl.to("#s4-total-a", { opacity: 0, duration: 0.12 }, 2.5);
+    tl.fromTo("#s4-total-b", { opacity: 0 }, { opacity: 1, duration: 0.18 }, 2.6);
+    tl.to("#s4-liste-a", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power3.in" }, 2.5);
+    tl.set("#s4-liste-b", { opacity: 1 }, 2.66);
+    tl.fromTo("#s4-liste-b li", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, stagger: 0.07 }, 2.66);
+    // ---- « Ajouter » deux fois : le bouton devient l'étiquette
+    clic(4.2);
+    tl.to("#s4-b1", { opacity: 0, duration: 0.08 }, 4.25);
+    tl.fromTo("#s4-d1", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(1.7)" }, 4.25);
+    clic(5.05);
+    tl.to("#s4-b3", { opacity: 0, duration: 0.08 }, 5.1);
+    tl.fromTo("#s4-d3", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(1.7)" }, 5.1);
+    // ---- la caméra descend vers « Documents du dossier » : les documents sont prêts
+    tl.to("#s4-page", { y: -905, duration: 0.65, ease: "power2.inOut" }, 5.7);
+    tl.fromTo("#s4-docs li .statut", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.3, stagger: 0.12, ease: "back.out(1.8)" }, 6.2);
+    // ---- le PDF personnel : changement de planche (flou), le fichier est choisi, la phrase d'accord se souligne
+    tl.to("#s4-page", { opacity: 0, filter: "blur(10px)", duration: 0.2, ease: "power2.in" }, 6.85);
+    tl.fromTo("#s4-prive", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25 }, 7.02);
+    tl.set("#s4-nf-b", { opacity: 0 }, 0);
+    clic(8.7);
+    tl.to("#s4-nf-a", { opacity: 0, duration: 0.1 }, 8.75);
+    tl.fromTo("#s4-nf-b", { opacity: 0 }, { opacity: 1, duration: 0.15 }, 8.8);
+    tl.fromTo("#s4-surligne", { backgroundSize: "0% 100%" }, { backgroundSize: "100% 100%", duration: 1.2, ease: "power2.inOut" }, 10.1);
+    tl.set("#s4-surligne", { backgroundRepeat: "no-repeat" }, 0);
+    window.__timelines["s4"] = tl;
+  </script>
+</template>

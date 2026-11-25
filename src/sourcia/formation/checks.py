@@ -106,7 +106,25 @@ ENTITIES = ["sorgho", "mais", "meteil", "luzerne", "trefle", "dactyle", "fetuque
             "triticale", "pois", "vesce", "feverole", "colza", "ble", "orge", "avoine", "seigle", "tournesol", "soja",
             "betterave", "moha", "millet", "chanvre", "lin", "sainfoin", "lotier", "chicoree", "plantain",
             "vache", "bovin", "ovin", "brebis", "caprin", "chevre", "porc", "porcin", "volaille", "equin", "cheval"]
+# Les animaux de la liste, et les mots qui désignent le même animal (pour les QCM : une mauvaise réponse du même
+# type que la bonne, jamais un synonyme de la bonne).
+ANIMAL_GROUPS = [{"vache", "bovin"}, {"ovin", "brebis"}, {"caprin", "chevre"}, {"porc", "porcin"}, {"volaille"},
+                 {"equin", "cheval"}]
+ANIMALS = set().union(*ANIMAL_GROUPS)
 _ENT_RE = re.compile(r"\b(" + "|".join(sorted(map(re.escape, ENTITIES), key=len, reverse=True)) + r")s?\b")
+
+
+def has_term(term: str, text: str) -> bool:
+    """Le terme figure dans le texte, au singulier ou au pluriel (« sorgho multicoupe » est trouvé dans « les
+    sorghos multicoupes » : vu le 22/11, le terme était retiré du glossaire alors qu'il est dans la source)."""
+    from sourcia.core.text import normalize
+
+    words = normalize(term).split()
+    if not words:
+        return False
+    stems = [w[:-1] if len(w) > 3 and w[-1] in "sx" else w for w in words]      # une seule lettre : « grass »
+    pattern = r"\s+".join(re.escape(w) + r"[sx]?" for w in stems)
+    return re.search(rf"\b{pattern}\b", normalize(text)) is not None
 
 
 def entities(text: str) -> set[str]:

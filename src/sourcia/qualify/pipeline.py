@@ -102,6 +102,18 @@ class Qualifier:
         cloud = self.settings.llm.provider == "litellm"
         return bool(self.llm) and self.settings.qualify.llm_pass and not (doc.private and cloud)
 
+    def refresh_themes(self, doc) -> bool:
+        """Recalcule seulement les thèmes d'une fiche existante (rien d'autre ne change, aucun appel au modèle)."""
+        from sourcia.qualify.rules import themes_of
+
+        old, text_data = self.fiches.get(doc.id), load_text(doc.id, self.text_dir)
+        if old is None or text_data is None:
+            return False
+        themes = themes_of(first_pages_text(text_data, self.settings.extract.first_pages), doc.keywords, THEMES_VOCAB)
+        changed = themes != old.themes
+        old.themes = themes
+        return changed
+
     def qualify(self, doc, use_llm: bool = False, force: bool = False) -> Fiche | None:
         old = self.fiches.get(doc.id)
         if old and not force and (not use_llm or "llm" in old.passes):

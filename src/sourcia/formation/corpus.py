@@ -9,7 +9,6 @@ from dataclasses import dataclass
 import numpy as np
 
 from sourcia.extract.pdf import chunks as make_chunks
-from sourcia.extract.pdf import load_text
 from sourcia.search.bm25 import BM25
 
 
@@ -32,7 +31,7 @@ class SelectionCorpus:
         self.docs = [d for d in self.docs if d not in blocked]
         self.passages: list[Passage] = []
         for d in self.docs:
-            data = load_text(d.id, ctx.text_dir)
+            data = ctx.text_of(d.id)            # catalogue : data/text ; dossier : data/dossiers/<id>/text
             if data:
                 for page, piece in make_chunks(data, s.extract.chunk_words, s.extract.overlap_words):
                     self.passages.append(Passage(d.id, page, piece))

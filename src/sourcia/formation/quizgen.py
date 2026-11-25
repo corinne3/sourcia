@@ -11,10 +11,19 @@ import hashlib
 import re
 
 from sourcia.core.text import normalize
-from sourcia.formation.checks import ENTITIES, entities
+from sourcia.formation.checks import ANIMAL_GROUPS, ANIMALS, ENTITIES, entities
 
-UNIT = r"(?:t\s?MS/ha|t\s?MS|kg/ha|q/ha|€/t\s?MS|€/ha|€|%|mm|°C|ha|unités|vaches|cm|jours|UFL/kg\s?MS)"
-VALUE_RE = re.compile(rf"(\d+(?:[,.]\d+)?)\s?({UNIT})")
+UNIT = (r"(?:t\s?MS/ha|t\s?MS|t/ha|kg/ha|kg\s?MS|g/kg\s?MS|q/ha|€/t\s?MS|€/ha|€|%|mm|°C|ha|unités|vaches|cm|jours"
+        r"|UFL/kg\s?MS|UFL|points?)")
+# Le signe est gardé (« +7 points » et « -8 points » ne disent pas la même chose), seulement s'il suit une espace ou
+# une parenthèse : dans « 50-60 cm », le tiret est un intervalle, pas un signe moins.
+VALUE_RE = re.compile(rf"((?:(?<![^\s(])[+\-−])?\d+(?:[,.]\d+)?)\s?({UNIT})")
+
+
+def find_values(text: str) -> list[re.Match]:
+    """Les valeurs chiffrées avec leur unité. « points » seulement avec un signe (« +7 points ») : « 3 points
+    clés » n'est pas une mesure."""
+    return [m for m in VALUE_RE.finditer(text) if not m.group(2).startswith("point") or m.group(1)[0] in "+-−"]
 
 
 DISPLAY = {"mais": "maïs", "meteil": "méteil", "trefle": "trèfle", "fetuque": "fétuque", "feverole": "féverole",
@@ -24,15 +33,24 @@ DISPLAY = {"mais": "maïs", "meteil": "méteil", "trefle": "trèfle", "fetuque":
 def _fmt(x: float, like: str) -> str:
     dec = len(like.split(",")[1]) if "," in like else len(like.split(".")[1]) if "." in like else 0
     s = f"{x:.{dec}f}"
-    return s.replace(".", ",") if "," in like else s
+    s = s.replace(".", ",") if "," in like else s
+    if like.startswith("+") and x > 0:
+        s = "+" + s
+    return s.replace("-", "−") if like.startswith("−") else s
 
 
 def _values(texts: list[str]) -> dict[str, set[str]]:
     out: dict[str, set[str]] = {}
     for t in texts:
-        for v, u in VALUE_RE.findall(t):
-            out.setdefault(" ".join(u.split()), set()).add(v)
+        for m in find_values(t):
+            out.setdefault(" ".join(m.group(2).split()), set()).add(m.group(1))
     return out
+
+
+def synonyms(entity: str) -> set[str]:
+    """L'entité et les mots qui désignent la même chose (« bovin » : « vache »)."""
+    group = next((g for g in ANIMAL_GROUPS if entity in g), set())
+    return {entity, entity.replace(" ", "-"), entity.replace("-", " ")} | group
 
 
 def _order(key: str, n: int) -> int:
@@ -42,12 +60,13 @@ def _order(key: str, n: int) -> int:
 def make_question(text: str, corpus_texts: list[str], topic: frozenset = frozenset()) -> dict | None:
     """Une question à partir d'une phrase vérifiée, ou None si rien de précis à demander.
     ``topic`` : mots du sujet ; on ne masque pas une culture du sujet (« Le …… fourrager » : trop facile)."""
-    m = VALUE_RE.search(text)
+    found = find_values(text)
+    m = found[0] if found else None
     if m:
         val, unit = m.group(1), " ".join(m.group(2).split())
-        in_sentence = {v for v, _ in VALUE_RE.findall(text)}            # pas de distracteur présent dans la phrase
+        in_sentence = {f.group(1) for f in found}                       # pas de distracteur présent dans la phrase
         pool = [v for v in sorted(_values(corpus_texts).get(unit, set())) if v not in in_sentence]
-        x = float(val.replace(",", "."))
+        x = float(val.replace(",", ".").replace("−", "-"))
         for f in (0.5, 0.75, 1.5, 2.0, 1.25):                          # valeurs voisines si les sources n'en ont pas assez
             cand = _fmt(x * f, val)
             if cand not in in_sentence and cand not in pool:
@@ -63,17 +82,35 @@ def make_question(text: str, corpus_texts: list[str], topic: frozenset = frozens
         askable = sorted(e for e in ents if not set(tokenize(e)) & topic)
         if not askable:
             return None
-        target = askable[0]
         t_norm = normalize(text)
-        mm = re.search(rf"\b{re.escape(target)}s?\b", t_norm)
-        if not mm or len(t_norm) != len(text):
+        if len(t_norm) != len(text):
+            return None
+        target = mm = None
+        for e in askable:                            # le premier mot qui est vraiment cette culture ou cet animal
+            found = re.search(rf"\b{re.escape(e)}s?\b", t_norm)
+            # « mais » sans tréma est la conjonction, pas la culture (vu le 22/11 : « biomasse mais une faible
+            # valeur » devenait « biomasse …… une faible valeur », réponse attendue « maïs »)
+            if found and (e not in DISPLAY or DISPLAY[e] in text[found.start(): found.end()].lower()) \
+                    and len(re.findall(rf"\b{re.escape(e)}s?\b", t_norm)) == 1:   # sinon la réponse reste visible
+                target, mm = e, found
+                break
+        if mm is None:
             return None
         right = text[mm.start(): mm.end()]
-        others = sorted({e for t in corpus_texts for e in entities(t)} - ents) or [e for e in ENTITIES if e not in ents]
-        if len(others) < 3:
-            others += [e for e in ENTITIES if e not in ents and e not in others]
-        others = [o for o in others if o not in entities(text)]
-        choices = [DISPLAY.get(o, o) for o in others[:3]]
+        # mauvaises réponses du MÊME type (un animal pour un animal, une culture pour une culture), jamais un
+        # synonyme de la bonne (vu le 22/11 : « maïs » et « sorgho » proposés pour « une ration pour les bovins »)
+        same = synonyms(target) | ents
+        kind = (lambda e: e in ANIMALS) if target in ANIMALS else (lambda e: e not in ANIMALS)
+        others = sorted(e for t in corpus_texts for e in entities(t) if kind(e) and e not in same)
+        others = list(dict.fromkeys(others + [e.replace(" ", "-") for e in ENTITIES
+                                              if kind(e) and e.replace(" ", "-") not in same]))
+        plural = right.endswith("s") and not target.endswith("s")       # « bovins » : « ovins », pas « ovin »
+        one_per_group, groups = [], set()            # « ovins » ou « brebis », pas les deux
+        for o in others:
+            if frozenset(synonyms(o)) not in groups:
+                groups.add(frozenset(synonyms(o)))
+                one_per_group.append(o)
+        choices = [DISPLAY.get(o, o) + ("s" if plural and not o.endswith("s") else "") for o in one_per_group[:3]]
         stem = text[: mm.start()] + "……" + text[mm.end():]
     pos = _order(text, 4)
     choices.insert(pos, right)

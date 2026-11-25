@@ -46,6 +46,7 @@ class CollectSettings(BaseModel):
     max_pdf_mb: float = 30.0
     respect_robots: bool = True
     download_pdfs: bool = True           # False : on ne garde que les liens (indexation par titre seulement)
+    min_article_words: int = 250         # article web plus court : page de liste ou brève, ignorée
 
 
 class ExtractSettings(BaseModel):
@@ -94,6 +95,10 @@ class ObservabilitySettings(BaseModel):
 
 class Settings(BaseModel):
     name: str = "local"
+    serveur: bool = False                          # en ligne : connexion obligatoire pour appeler le modèle ou écrire
+    acces_libre: bool = False                      # prototype : sans jeton, chaque visiteur reçoit un compte anonyme
+    limite_visiteur_corpus: int = 3                # par visiteur et par jour (protège la clé du modèle en ligne)
+    limite_visiteur_supports: int = 3
     data_dir: str = "data"
     models_dir: str = "models"
     referentiels: str = "config/referentiels"      # référentiels des diplômes (M8)
@@ -141,5 +146,7 @@ def load_settings(path: str | Path | None = None) -> Settings:
     path = Path(path)
     if not path.is_absolute():
         path = REPO_ROOT / path
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}
-    return Settings(**(data or {}))
+    data = (yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}) or {}
+    if os.environ.get("SOURCIA_DATA_DIR"):           # serveur : le volume persistant choisi par l'hébergeur
+        data["data_dir"] = os.environ["SOURCIA_DATA_DIR"]
+    return Settings(**data)

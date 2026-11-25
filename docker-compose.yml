@@ -1,0 +1,19 @@
+# Le serveur sur son PC, exactement comme en ligne :  docker compose up --build   puis  http://localhost:8000
+# Secrets lus dans .env (jamais dans l'image) : GEMINI_API_KEY et SOURCIA_SESSION_SECRET (voir .env.example).
+# Commandes d'administration dans le conteneur, par exemple :
+#   docker compose exec sourcia sourcia comptes ajouter prof@lycee.fr --url http://localhost:8000
+services:
+  sourcia:
+    build: .
+    image: sourcia
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - sourcia-data:/data       # comptes, dossiers, catalogue : survivent à l'arrêt et à la reconstruction
+    restart: unless-stopped
+
+volumes:
+  sourcia-data:
