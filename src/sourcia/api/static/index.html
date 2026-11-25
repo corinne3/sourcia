@@ -4,25 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SourcIA</title>
-<link rel="stylesheet" href="/assets/sourcia.css">
+<link rel="stylesheet" href="/assets/sourcia.css?v=saed-20261123">
 </head>
 <body class="home">
-<header class="page-header"><div class="header-content">
-  <div class="marque"><h1>SourcIA</h1>
-    <p class="sub">Du champ à la classe : des sources vérifiées pour préparer vos cours.</p></div>
-  <p id="etat"></p>
-  <nav class="steps" aria-label="Les quatre étapes du parcours">
-    <a href="/" data-step="catalogue" aria-current="page"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="41" rx="16" ry="5" fill="#b9a98a"/><ellipse cx="26" cy="33" rx="5.5" ry="7.5" fill="#8a6a3b" transform="rotate(20 26 33)"/><path d="M24 29c1-3 3-4 5-4" stroke="#c9a46a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></span><span class="nom">1. Catalogue</span><span class="aide">trouver des sources</span></a>
-    <a href="/dossiers#dossier" data-step="dossier"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="43" rx="16" ry="5" fill="#b9a98a"/><path d="M26 42V25" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 31c-8 0-11-6-11-10 7 0 11 4 11 10z" fill="#4e9b63"/><path d="M26 28c7 0 11-6 11-10-7 0-11 4-11 10z" fill="#2e7d4b"/></svg></span><span class="nom">2. Mon dossier</span><span class="aide">ranger et cocher</span></a>
-    <a href="/dossiers#corpus" data-step="corpus"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="45" rx="16" ry="5" fill="#b9a98a"/><path d="M26 44V15" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 35c-9 0-13-6-13-11 8 0 13 5 13 11z" fill="#4e9b63"/><path d="M26 28c9 0 13-6 13-11-8 0-13 5-13 11z" fill="#2e7d4b"/><g fill="#2f4fb8"><circle cx="26" cy="7.5" r="3.6"/><circle cx="31.5" cy="11.5" r="3.6"/><circle cx="29.5" cy="17" r="3.6"/><circle cx="22.5" cy="17" r="3.6"/><circle cx="20.5" cy="11.5" r="3.6"/></g><circle cx="26" cy="12.5" r="3" fill="#f5c518"/></svg></span><span class="nom">3. Mon corpus</span><span class="aide">préparer le contenu</span></a>
-    <a href="/dossiers#supports" data-step="supports"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="46" rx="16" ry="5" fill="#b9a98a"/><path d="M26 45V17" stroke="#b88a1c" stroke-width="3" stroke-linecap="round"/><path d="M26 38c-7 0-10-4-10-8 6 0 10 3 10 8z" fill="#c9a24a"/><g fill="#e0a82e"><ellipse cx="21.5" cy="14" rx="3.3" ry="5.4" transform="rotate(-22 21.5 14)"/><ellipse cx="30.5" cy="14" rx="3.3" ry="5.4" transform="rotate(22 30.5 14)"/><ellipse cx="21" cy="23" rx="3.3" ry="5.4" transform="rotate(-22 21 23)"/><ellipse cx="31" cy="23" rx="3.3" ry="5.4" transform="rotate(22 31 23)"/><ellipse cx="26" cy="7" rx="3.1" ry="5.4"/></g></svg></span><span class="nom">4. Mes supports</span><span class="aide">QCM, cartes, diapos</span></a>
-  </nav>
-</div></header>
-<main>
-  <h2>1. Ma demande</h2>
+<a class="skip-link" href="#contenu">Aller au contenu</a><header class="page-header"><div class="header-content"><div class="marque"><a class="brand" href="/" aria-label="SourcIA — accueil"><span class="brand-symbol" aria-hidden="true">S</span><span>SourcIA<small>RESSOURCES PÉDAGOGIQUES</small></span></a></div><nav class="steps" aria-label="Les quatre étapes du parcours"><a href="/" data-step="catalogue" aria-current="page"><span class="step-number" aria-hidden="true">1</span><span class="nom">Catalogue</span></a><a href="/dossiers#dossier" data-step="dossier"><span class="step-number" aria-hidden="true">2</span><span class="nom">Mon dossier</span></a><a href="/dossiers#corpus" data-step="corpus"><span class="step-number" aria-hidden="true">3</span><span class="nom">Mon corpus</span></a><a href="/dossiers#supports" data-step="supports"><span class="step-number" aria-hidden="true">4</span><span class="nom">Mes supports</span></a></nav></div></header>
+<main id="contenu"><div class="intro"><span class="eyebrow">DU CHAMP À LA CLASSE</span><h1>Des sources fiables pour <em>préparer vos cours.</em></h1><p>Explorez les ressources agricoles, rassemblez vos documents et transformez-les en supports adaptés à vos apprenants.</p><p id="etat" aria-live="polite"></p></div>
+  <h2 class="section-title">Que souhaitez-vous enseigner ?</h2>
   <form id="f">
-    <label>Sujet<textarea id="sujet" required placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
-    <fieldset><legend>Moi et ma formation</legend>
+    <label>Sujet<textarea id="sujet" required rows="2" placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
+<details class="search-options"><summary>Adapter la recherche à ma formation et à mon public<span>Profil, niveau, ressources et objectifs</span></summary><div class="options-content">    <fieldset><legend>Moi et ma formation</legend>
       <div class="row">
         <label>Je suis
           <select id="profil"><option value="formateur">formateur</option><option value="enseignant">enseignant</option>
@@ -79,8 +69,9 @@
     <fieldset><legend>Mon contenu personnel (privé : jamais envoyé à un modèle en ligne)</legend>
       <textarea id="notes" placeholder="Tes notes, exemples, consignes : elles sont ajoutées aux sources et citées comme « contenu personnel »."></textarea>
     </fieldset>
+</div></details>
     <div class="row"><button id="go">Trouver les sources</button>
-      <label>Lecture par le modèle des N premières<input type="number" id="llm_top" value="0"></label></div>
+      <label>Sources à analyser avec l’IA<input type="number" id="llm_top" value="0"></label></div>
   </form>
 
   <div class="status" id="status" role="status"></div>
@@ -107,7 +98,7 @@
     </div>
     <pre id="fsupport" hidden></pre>
   </div>
-</main>
+</main><footer class="site-footer"><div><strong>SourcIA</strong><span>Du champ à la classe · Challenge IA SAED</span></div><p>Des sources citées, des contenus à vérifier et à adapter par l’enseignant.</p></footer>
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -148,7 +139,7 @@ api("/api/etat").then(e => {
     status("etat", "Le catalogue est vide : la personne qui gère SourcIA doit d’abord l’importer (ou lancer la collecte).", true);
     return;
   }
-  $("etat").textContent = `${e.documents.documents ?? 0} documents · ${e.fiches} fiches · modèle ${e.modele} · ${e.build}` + (e.index ? "" : " · ⚠️ index absent");
+  $("etat").textContent = `${e.documents.documents ?? 0} documents agricoles · ${e.fiches} fiches disponibles` + (e.index ? "" : " · ⚠️ index absent");
 }).catch(() => status("etat", "Impossible de lire l’état du catalogue."));
 api("/api/referentiels").then(list => {
   REFS = list;

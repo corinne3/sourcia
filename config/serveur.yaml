@@ -6,6 +6,9 @@
 # ⚠️ Les documents PRIVÉS ne sont jamais envoyés au modèle sans l'accord de l'enseignant (verrou dans le code).
 name: serveur
 serveur: true                  # connexion obligatoire pour ce qui appelle le modèle ou écrit sur le disque
+acces_libre: true              # prototype : pas de jeton, chaque visiteur a son compte anonyme (cookie, 30 jours)
+limite_visiteur_corpus: 3      # par visiteur et par jour : protège la clé Gemini partagée
+limite_visiteur_supports: 3
 data_dir: /data                # volume persistant (comptes, dossiers, catalogue) ; SOURCIA_DATA_DIR le remplace
 formation_threshold: 0.6       # Gemini reformule davantage qu'un petit modèle (même réglage que gcp.yaml)
 

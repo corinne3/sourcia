@@ -99,7 +99,7 @@ def test_login_sets_protected_cookie_then_works_without_token(client):
     assert "Path=/api;" in cookie and "Secure" not in cookie and token not in cookie   # sert aussi au catalogue
     assert client.post("/api/dossiers", json={"title": "Avec cookie"}).status_code == 201   # sans en-tête
     assert [f["title"] for f in client.get("/api/dossiers").json()] == ["Avec cookie"]
-    assert client.get("/api/dossiers/session").json() == {"email": "d@lycee.fr"}
+    assert client.get("/api/dossiers/session").json() == {"email": "d@lycee.fr", "visiteur": False}
     assert client.delete("/api/dossiers/session").status_code == 204                 # se déconnecter
     client.cookies.clear()                                                           # (le navigateur l'efface)
     assert client.get("/api/dossiers").status_code == 401
@@ -128,7 +128,7 @@ def test_removed_account_loses_its_session(client):
 def test_bearer_token_still_accepted_and_session_route_is_not_a_folder(client):
     h = {"Authorization": f"Bearer {ENV_TOKEN}"}
     assert client.get("/api/dossiers", headers=h).status_code == 200
-    assert client.get("/api/dossiers/session", headers=h).json() == {"email": "var@lycee.fr"}
+    assert client.get("/api/dossiers/session", headers=h).json() == {"email": "var@lycee.fr", "visiteur": False}
     assert client.get("/api/dossiers/session").status_code == 401
 
 

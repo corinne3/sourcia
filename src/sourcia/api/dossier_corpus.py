@@ -101,6 +101,7 @@ def add_corpus_routes(router, ctx, store, identity) -> None:
         with lock:
             if folder_id in running:
                 raise HTTPException(409, "Un corpus est déjà en construction pour ce dossier")
+            router.quota(email, "corpus")                # visiteur : quelques corpus par jour
             running.add(folder_id)
         try:
             folder = new_corpus_folder(corpus_root(store, folder_id))
@@ -136,7 +137,13 @@ def add_corpus_routes(router, ctx, store, identity) -> None:
     @router.post("/{folder_id}/corpus-pedagogique/{cid}/supports", status_code=202)
     def start_supports(folder_id: str, cid: str, req: SupportsRequest, tasks: BackgroundTasks,
                        email: str = Depends(identity)):
-        return jobs.start(ready_corpus(folder_id, cid, email), req, tasks, email)
+        folder = ready_corpus(folder_id, cid, email)
+        router.quota(email, "supports")                  # visiteur : quelques productions par jour
+        try:
+            return jobs.start(folder, req, tasks, email)
+        except HTTPException:
+            router.quotas.refund(email, "supports")      # refusé (corpus vide…) : rien n'a été lancé
+            raise
 
     @router.get("/{folder_id}/corpus-pedagogique/{cid}/supports")
     def list_supports(folder_id: str, cid: str, email: str = Depends(identity)):

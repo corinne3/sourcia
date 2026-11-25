@@ -19,7 +19,7 @@ from starlette.background import BackgroundTask
 
 from sourcia.collect.store import file_sha1
 from sourcia.collect.web import WebCollector
-from sourcia.comptes import COOKIE, Comptes, Sessions
+from sourcia.comptes import COOKIE, VISITEUR_HEURES, Comptes, Quotas, Sessions, is_visitor
 from sourcia.core.models import Candidate, Document, Fiche
 from sourcia.core.text import normalize
 from sourcia.export.exporters import export
@@ -217,19 +217,37 @@ def create_dossiers_router(ctx):
     comptes = Comptes(ctx.settings.path("comptes.json"))
     sessions = Sessions(comptes)
     store = Dossiers(ctx)
+    settings = ctx.settings
+    quotas = Quotas(settings.path("quotas.json"), {"corpus": settings.limite_visiteur_corpus,
+                                                   "supports": settings.limite_visiteur_supports})
+
+    def https(request: Request) -> bool:
+        return request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https"
 
     def identity(request: Request, response: Response,
                  credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
-        """L'enseignant connecté : par son jeton (en-tête Authorization) ou par le cookie de session."""
+        """L'enseignant connecté : par son jeton (en-tête Authorization) ou par le cookie de session.
+        En accès libre, un visiteur sans rien reçoit un compte anonyme (cookie signé, 30 jours)."""
         response.headers["Cache-Control"] = "private, no-store"
         email = comptes.identify(credentials.credentials) if credentials else sessions.verify(request.cookies.get(COOKIE))
         if email:
             return email
+        if settings.acces_libre and not credentials:
+            email, cookie = sessions.create_visitor()
+            response.set_cookie(COOKIE, cookie, max_age=VISITEUR_HEURES * 3600, httponly=True, samesite="strict",
+                                secure=https(request), path="/api")
+            return email
         raise HTTPException(401, "Jeton enseignant requis", headers={"WWW-Authenticate": "Bearer"})
 
+    def quota(email: str, kind: str) -> None:
+        """Un visiteur ne lance que quelques corpus et supports par jour (la clé du modèle est partagée)."""
+        if quotas.use(email, kind) is None:
+            quoi = "corpus" if kind == "corpus" else "productions de supports"
+            raise HTTPException(429, f"Limite de la démonstration atteinte : {quotas.limits[kind]} {quoi} par jour et "
+                                     "par visiteur. Revenez demain, ou demandez un compte enseignant à la personne "
+                                     "qui gère SourcIA.")
+
     # --- session : on saisit son jeton une fois, un cookie protégé prend le relais (déclaré avant /{folder_id})
-    def https(request: Request) -> bool:
-        return request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https"
 
     @router.post("/session")
     def login(req: Login, request: Request, response: Response):
@@ -246,7 +264,7 @@ def create_dossiers_router(ctx):
 
     @router.get("/session")
     def current_session(email: str = Depends(identity)):
-        return {"email": email}
+        return {"email": email, "visiteur": is_visitor(email)}
 
     @router.delete("/session", status_code=204)
     def logout():
@@ -498,4 +516,5 @@ def create_dossiers_router(ctx):
 
     add_corpus_routes(router, ctx, store, identity)
     router.identity = identity                     # réutilisée par les routes du catalogue (mode serveur)
+    router.quota, router.quotas = quota, quotas    # limite des visiteurs, aussi pour le catalogue
     return router

@@ -96,6 +96,9 @@ class ObservabilitySettings(BaseModel):
 class Settings(BaseModel):
     name: str = "local"
     serveur: bool = False                          # en ligne : connexion obligatoire pour appeler le modèle ou écrire
+    acces_libre: bool = False                      # prototype : sans jeton, chaque visiteur reçoit un compte anonyme
+    limite_visiteur_corpus: int = 3                # par visiteur et par jour (protège la clé du modèle en ligne)
+    limite_visiteur_supports: int = 3
     data_dir: str = "data"
     models_dir: str = "models"
     referentiels: str = "config/referentiels"      # référentiels des diplômes (M8)
