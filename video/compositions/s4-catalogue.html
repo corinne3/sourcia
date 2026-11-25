@@ -1,17 +1,16 @@
 <template>
   <style>
-    @font-face { font-family: "Fredoka"; font-weight: 500 600; src: url("assets/app/fonts/fredoka.woff2") format("woff2"); }
     @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-normal.woff2") format("woff2"); }
     @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; src: url("assets/app/fonts/atkinson-hyperlegible-gras.woff2") format("woff2"); }
     #root { position: absolute; inset: 0; overflow: hidden; background: var(--craie); font-family: "Atkinson Hyperlegible", sans-serif;
       color: var(--terre); font-size: 30px; line-height: 1.5; }
     /* les planches de l'app (static/sourcia.css), à 1,75× */
     #s4-page { position: absolute; left: 110px; right: 110px; top: 50px; }
-    .planche { background: var(--blanc); border: 3px solid var(--trait); border-radius: 34px; padding: 44px 54px; margin-bottom: 34px; }
-    .planche h2 { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 62px; line-height: 1.1; margin-bottom: 14px; }
+    .planche { background: var(--blanc); border: 2px solid var(--trait); border-radius: 30px; padding: 44px 54px; margin-bottom: 34px; }
+    .planche h2 { font-family: var(--ui); font-weight: 700; color: var(--bleuet); letter-spacing: -.02em; font-size: 60px; line-height: 1.1; margin-bottom: 14px; }
     .sub { color: var(--terre-douce); }
     .graines { display: flex; flex-wrap: wrap; gap: 14px 16px; margin: 24px 0 26px; }
-    .graines b { font-weight: 400; padding: 9px 24px; font-size: 29px; background: var(--craie); border: 3px solid var(--trait); border-radius: 999px; }
+    .graines b { font-weight: 400; padding: 9px 24px; font-size: 29px; background: var(--blanc); border: 2px solid var(--trait); border-radius: 999px; }
     .graines b small { margin-left: 12px; font-size: 28px; color: var(--terre-douce); }
     .graines b.on { background: var(--colza-pale); border-color: var(--colza); color: var(--colza-texte); font-weight: 700; }
     .graines b.on small { color: var(--colza-texte); }
@@ -22,8 +21,8 @@
       border-bottom: 3px dotted var(--trait); }
     .liste .t { font-weight: 700; color: var(--bleuet); text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 3px; }
     .liste .m { font-size: 28px; color: var(--terre-douce); margin-top: 2px; }
-    .bouton { flex: none; font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 29px; color: #fff; background: var(--bleuet);
-      padding: 14px 30px; border-radius: 20px; box-shadow: 0 7px 0 var(--bleuet-fonce); }
+    .bouton { flex: none; font-family: var(--ui); font-weight: 700; font-size: 28px; color: #fff; background: var(--bleuet);
+      padding: 14px 32px; border-radius: 999px; }
     .etiquette { position: absolute; right: 4px; font-weight: 700; font-size: 28px; padding: 6px 20px; border-radius: 999px;
       background: var(--prairie-pale); color: var(--prairie-texte); }
     .statut { display: inline-flex; align-items: center; gap: 10px; margin-left: 18px; font-weight: 700; font-size: 28px; padding: 4px 18px;
@@ -32,14 +31,14 @@
     #s4-docs ul { list-style: none; }
     #s4-docs li { display: flex; align-items: center; padding: 14px 4px; border-bottom: 3px dotted var(--trait); }
     #s4-docs li:last-child { border-bottom: 0; }
-    .case { flex: none; width: 34px; height: 34px; margin-right: 22px; border-radius: 7px; background: var(--bleuet); position: relative; }
+    .case { flex: none; width: 34px; height: 34px; margin-right: 22px; border-radius: 8px; background: var(--bleuet); position: relative; }
     .case::after { content: ""; position: absolute; left: 11px; top: 4px; width: 9px; height: 18px; border: solid #fff; border-width: 0 4px 4px 0; transform: rotate(45deg); }
     .bandeau { padding: 16px 24px; border-radius: 20px; background: var(--prairie-pale); color: var(--prairie-texte); margin-bottom: 16px; }
     /* le PDF personnel et la case d'accord (écran Mon corpus) */
     #s4-prive { position: absolute; left: 110px; right: 110px; top: 150px; }
     .ligne { display: flex; align-items: center; gap: 26px; margin: 18px 0 8px; }
-    .fichier { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 29px; color: var(--bleuet); background: var(--blanc);
-      border: 3px solid var(--bleuet); border-radius: 18px; padding: 12px 26px; }
+    .fichier { font-family: var(--ui); font-weight: 700; font-size: 28px; color: var(--bleuet); background: var(--blanc);
+      border: 2px solid #cbc5df; border-radius: 999px; padding: 12px 26px; }
     #s4-nomfichier { position: relative; width: 640px; height: 46px; }
     #s4-nomfichier span { position: absolute; left: 0; top: 0; white-space: nowrap; }
     .accord { display: flex; gap: 22px; align-items: flex-start; margin-top: 34px; padding: 28px 30px; border-radius: 26px;

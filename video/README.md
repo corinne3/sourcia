@@ -1,6 +1,6 @@
 # Vidéo de démonstration de SourcIA (HyperFrames)
 
-Film de 75 s pour le jury : le parcours Catalogue → Dossier → Corpus → Supports, au design de l'application, avec
+Film de 75 s pour le jury : le parcours Catalogue → Mon dossier → Mon contenu → Mes supports, au design du site (style SAED), avec
 voix off française, musique et bruitages. La fiche du film est dans [`SPEC.md`](SPEC.md), le texte de la voix dans
 [`VOIX.md`](VOIX.md).
 
@@ -25,7 +25,7 @@ npx hyperframes render --docker -q delivery -o renders/sourcia-demo.mp4
 ```
 
 Le rendu dans Docker évite d'installer FFmpeg sur le PC. Le lien de fin est une variable (`lien`, dans
-`compositions/s8-fin.html`) : mettre l'adresse Azure définitive avant le rendu final.
+`compositions/s8-fin.html`) : elle vaut l'adresse du site en ligne.
 
 ## Refaire la voix et la musique
 

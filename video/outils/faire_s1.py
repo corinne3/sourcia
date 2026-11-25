@@ -20,7 +20,6 @@ colonnes = "\n".join(
 
 page = f"""<template>
   <style>
-    @font-face {{ font-family: "Fredoka"; font-weight: 500 600; src: url("assets/app/fonts/fredoka.woff2") format("woff2"); }}
     @font-face {{ font-family: "Atkinson Hyperlegible"; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-normal.woff2") format("woff2"); }}
     @font-face {{ font-family: "Atkinson Hyperlegible"; font-weight: 700; src: url("assets/app/fonts/atkinson-hyperlegible-gras.woff2") format("woff2"); }}
     #root {{ position: absolute; inset: 0; overflow: hidden; background: var(--craie); font-family: "Atkinson Hyperlegible", sans-serif; }}
@@ -33,9 +32,9 @@ page = f"""<template>
     #s1-voile {{ position: absolute; inset: 0;
       background: linear-gradient(90deg, var(--craie) 0%, var(--craie) 38%, rgba(247,248,243,.86) 50%, rgba(247,248,243,0) 70%); }}
     #s1-compteur {{ position: absolute; left: 130px; top: 300px; width: 720px; }}
-    #s1-nombre {{ font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 300px; line-height: .9; color: var(--bleuet);
+    #s1-nombre {{ font-family: var(--titre); font-weight: 700; font-size: 300px; line-height: .9; color: var(--bleuet);
       letter-spacing: -.02em; font-variant-numeric: tabular-nums; }}
-    #s1-legende {{ margin-top: 26px; font-family: "Fredoka", sans-serif; font-weight: 500; font-size: 58px; line-height: 1.12; color: var(--terre); }}
+    #s1-legende {{ margin-top: 26px; font-family: var(--titre); font-weight: 700; font-size: 58px; line-height: 1.12; color: var(--bleuet); }}
     #s1-sources {{ margin-top: 22px; font-size: 30px; color: var(--terre-douce); }}
   </style>
   <div id="root" data-composition-id="s1" data-width="1920" data-height="1080">

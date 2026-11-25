@@ -1,6 +1,5 @@
 <template>
   <style>
-    @font-face { font-family: "Fredoka"; font-weight: 500 600; src: url("assets/app/fonts/fredoka.woff2") format("woff2"); }
     @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-normal.woff2") format("woff2"); }
     @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; src: url("assets/app/fonts/atkinson-hyperlegible-gras.woff2") format("woff2"); }
     @font-face { font-family: "Atkinson Hyperlegible"; font-style: italic; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-italique.woff2") format("woff2"); }
@@ -8,12 +7,12 @@
       color: var(--terre); font-size: 30px; line-height: 1.5; }
     /* l'aperçu du corpus de l'app (écran « Mon corpus »), à 1,7× */
     #s5-camera { position: absolute; inset: 0; transform-origin: 0 0; }
-    #s5-vue { position: absolute; left: 110px; right: 110px; top: 60px; background: var(--blanc); border: 3px solid var(--trait);
-      border-radius: 34px; padding: 44px 56px 30px; }
-    #s5-vue h2 { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 58px; line-height: 1.12; }
+    #s5-vue { position: absolute; left: 110px; right: 110px; top: 60px; background: var(--blanc); border: 2px solid var(--trait);
+      border-radius: 30px; padding: 44px 56px 30px; }
+    #s5-vue h2 { font-family: var(--titre); font-weight: 700; font-size: 56px; line-height: 1.12; color: var(--bleuet); }
     .meta { margin-top: 10px; font-size: 28px; color: var(--terre-douce); }
     .sequence { margin-top: 28px; padding-top: 24px; border-top: 3px dotted var(--trait); }
-    .sequence h3 { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 42px; line-height: 1.2; margin-bottom: 10px; }
+    .sequence h3 { font-family: var(--ui); font-weight: 700; color: var(--bleuet); letter-spacing: -.02em; font-size: 40px; line-height: 1.2; margin-bottom: 10px; }
     .sequence p { margin-top: 6px; }
     .tag { display: inline-block; margin-left: 10px; padding: 3px 18px; border-radius: 999px; font-size: 28px; font-weight: 700;
       background: var(--colza-pale); color: var(--colza-texte); }
@@ -21,7 +20,7 @@
     ul.points { list-style: none; margin-top: 18px; }
     ul.points li { position: relative; padding: 8px 0 14px 24px; margin-bottom: 12px; border-left: 7px solid var(--prairie); }
     .ref { display: inline-block; margin-left: 12px; padding: 2px 18px 2px 26px; font-size: 28px; font-weight: 700; white-space: nowrap;
-      color: var(--ble-texte); background: var(--ble); clip-path: polygon(15px 0, 100% 0, 100% 100%, 15px 100%, 0 50%); }
+      color: var(--ble-texte); background: var(--ble); border-radius: 10px; padding: 2px 16px; }
     .resume { font-size: 28px; color: var(--terre-douce); margin-top: 6px; }
     #s5-extrait { margin-top: 12px; padding: 18px 24px; border-radius: 18px; background: var(--craie); border: 3px solid var(--trait); }
     #s5-extrait .titre { font-size: 28px; font-weight: 700; color: var(--terre-douce); }
@@ -31,7 +30,7 @@
     /* ce qui a été retiré : une ligne du carnet de contrôle du corpus (corpus.json) */
     #s5-retire { position: absolute; left: 110px; right: 110px; bottom: 70px; padding: 30px 40px; border-radius: 28px;
       background: var(--coquelicot-pale); border: 3px solid #efc2b8; }
-    #s5-retire .label { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 36px; color: var(--coquelicot-texte); }
+    #s5-retire .label { font-family: var(--ui); font-weight: 700; font-size: 36px; color: var(--coquelicot-texte); }
     #s5-phrase { position: relative; display: inline-block; margin-top: 8px; font-size: 32px; color: var(--terre); }
     #s5-barre { position: absolute; left: -6px; right: -6px; top: 54%; height: 5px; background: var(--coquelicot); transform-origin: left center; }
     #s5-curseur { position: absolute; left: 0; top: 0; width: 66px; height: 66px; z-index: 20; }
