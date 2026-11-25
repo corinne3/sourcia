@@ -7,9 +7,16 @@ Hackathon SAED, défi 1 : passer de **milliers de documents** à **environ 50 so
 
 > Projet de Corinne Bergès, issu de TransfIA (projet personnel open source) : même socle technique (modèles locaux ou cloud par configuration, recherche hybride, traces, évaluation), nouveau métier.
 
+**Essayer tout de suite, sans compte :** [sourcia.13-53-71-254.sslip.io](https://sourcia.13-53-71-254.sslip.io/)
+
+### La vidéo de présentation (1 min 15)
+
+<!-- Pour mettre la vidéo : sur github.com, modifier ce fichier, glisser sourcia-demo.mp4 à la place de la ligne de l'image ci-dessous, puis enregistrer. -->
+[![La vidéo de présentation de SourcIA](docs/video-apercu.jpg)](https://sourcia.13-53-71-254.sslip.io/)
+
 **Le parcours de l'enseignant, dans le navigateur :**
 
-| 1. Catalogue | 2. Mon dossier | 3. Mon corpus | 4. Mes supports |
+| 1. Catalogue | 2. Mon dossier | 3. Mon contenu | 4. Mes supports |
 |---|---|---|---|
 | chercher dans les sources collectées (Arvalis, Terres Inovia, chambres d'agriculture…) | garder les documents utiles, ajouter les siens (PDF privés) | séquences rattachées aux capacités du diplôme, chaque point clé avec sa source (document, page, extrait, lien) | QCM, cartes, présentation, infographie, fiche technique, glossaire, podcast |
 
