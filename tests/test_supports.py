@@ -60,7 +60,10 @@ def test_every_support_is_produced(corpus_dir, model_ctx):
     assert folder.parent == corpus_dir / "supports" and folder.name.startswith("supports-")
     assert {p.name for p in paths} == {"supports.json", "qcm_apprenants.md", "qcm_corrige.md", "qcm_moodle.gift.txt",
                                        "cartes_anki.csv", "cartes.html", "infographie.html", "presentation.pptx",
-                                       "fiche_technique.md", "glossaire.md", "podcast_script.md"}
+                                       "fiche_technique.md", "glossaire.md", "podcast_script.md",
+                                       # pages à imprimer au style du site (SAED)
+                                       "qcm_eleves.html", "qcm_corrige.html", "fiche_technique.html",
+                                       "glossaire.html", "podcast.html"}
     again = load_supports(folder)
     assert again.fichiers == sup.fichiers and again.qcm == sup.qcm
     assert sup.sequences == [1, 2, 3]
@@ -151,9 +154,9 @@ def test_presentation_slides_notes_and_pictures(corpus_dir):
     assert len(slides) == expected_slides(sup, cp, corpus_dir) == 1 + 3 + 1 + 1 + 1
     first = " ".join(sh.text_frame.text for sh in slides[0].shapes if sh.has_text_frame)
     assert cp.titre in first and cp.referentiel["nom"] in first and "C4.2" in first
-    assert all(s.background.fill.fore_color.rgb == RGBColor.from_string("F7F8F3") for s in slides)   # fond craie
+    assert all(s.background.fill.fore_color.rgb == RGBColor.from_string("F7F6FC") for s in slides)   # fond du site
     titre = next(sh for sh in slides[0].shapes if sh.has_text_frame and sh.text_frame.text == cp.titre)
-    assert titre.text_frame.paragraphs[0].runs[0].font.name == "Century Gothic"
+    assert titre.text_frame.paragraphs[0].runs[0].font.name == "Georgia"
     seq1 = " ".join(sh.text_frame.text for sh in slides[1].shapes if sh.has_text_frame)
     assert "Objectif" in seq1 and CHIP_RE.search(seq1)                            # étiquette de référence
     seq1_notes = slides[1].notes_slide.notes_text_frame.text

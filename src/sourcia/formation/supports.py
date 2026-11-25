@@ -439,7 +439,9 @@ def write_supports(sup: Supports, cp, corpus_dir: Path, folder: Path | None = No
     folder.mkdir(parents=True, exist_ok=True)
     files: dict[str, str | bytes] = {}
     if "qcm" in sup.supports and sup.qcm:
-        files["qcm_apprenants.md"] = qcm_markdown(sup, cp, corrige=False)
+        files["qcm_eleves.html"] = qcm_html(sup, cp, corrige=False)          # à imprimer
+        files["qcm_corrige.html"] = qcm_html(sup, cp, corrige=True)
+        files["qcm_apprenants.md"] = qcm_markdown(sup, cp, corrige=False)   # texte modifiable
         files["qcm_corrige.md"] = qcm_markdown(sup, cp, corrige=True)
         files["qcm_moodle.gift.txt"] = qcm_gift(sup, cp)
     if "cartes" in sup.supports and sup.cartes:
@@ -448,10 +450,13 @@ def write_supports(sup: Supports, cp, corpus_dir: Path, folder: Path | None = No
     if "infographie" in sup.supports:
         files["infographie.html"] = infographie_html(sup, cp)
     if sup.fiche_technique:
+        files["fiche_technique.html"] = fiche_html(sup.fiche_technique, cp)
         files["fiche_technique.md"] = fiche_markdown(sup.fiche_technique)
     if sup.glossaire:
+        files["glossaire.html"] = glossaire_html(sup.glossaire, cp)
         files["glossaire.md"] = glossaire_markdown(sup.glossaire, cp)
     if sup.podcast:
+        files["podcast.html"] = podcast_html(sup.podcast, cp)
         files["podcast_script.md"] = podcast_markdown(sup.podcast)
     paths = []
     for name, content in files.items():
@@ -535,18 +540,14 @@ def cartes_csv(sup: Supports) -> str:
 
 
 FONTS_DIR = Path(__file__).resolve().parents[1] / "api" / "static" / "fonts"
-PLANTES = {   # les pousses de la charte (mêmes dessins que l'interface), en SVG
-    "pousse": '<svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="43" rx="16" ry="5" fill="#b9a98a"/><path d="M26 42V25" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 31c-8 0-11-6-11-10 7 0 11 4 11 10z" fill="#4e9b63"/><path d="M26 28c7 0 11-6 11-10-7 0-11 4-11 10z" fill="#2e7d4b"/></svg>',
-    "epi": '<svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="46" rx="16" ry="5" fill="#b9a98a"/><path d="M26 45V17" stroke="#b88a1c" stroke-width="3" stroke-linecap="round"/><g fill="#e0a82e"><ellipse cx="21.5" cy="14" rx="3.3" ry="5.4" transform="rotate(-22 21.5 14)"/><ellipse cx="30.5" cy="14" rx="3.3" ry="5.4" transform="rotate(22 30.5 14)"/><ellipse cx="21" cy="23" rx="3.3" ry="5.4" transform="rotate(-22 21 23)"/><ellipse cx="31" cy="23" rx="3.3" ry="5.4" transform="rotate(22 31 23)"/><ellipse cx="26" cy="7" rx="3.1" ry="5.4"/></g></svg>',
-}
 
 
 def embedded_fonts() -> str:
-    """Les polices de la charte DANS le fichier (base64) : la page reste belle hors ligne et imprimée."""
+    """La police du texte DANS le fichier (base64) : la page reste lisible hors ligne et imprimée. Les titres sont
+    en Georgia, présente sur tous les ordinateurs (comme le site, au style SAED)."""
     import base64
 
-    faces = [("Fredoka", "fredoka.woff2", "500 600"),
-             ("Atkinson Hyperlegible", "atkinson-hyperlegible-normal.woff2", "400"),
+    faces = [("Atkinson Hyperlegible", "atkinson-hyperlegible-normal.woff2", "400"),
              ("Atkinson Hyperlegible", "atkinson-hyperlegible-gras.woff2", "700")]
     css = []
     for family, name, weight in faces:
@@ -558,22 +559,55 @@ def embedded_fonts() -> str:
     return "".join(css)
 
 
-CHARTE_CSS = """:root{--craie:#f7f8f3;--blanc:#fff;--terre:#2a231c;--terre-douce:#5e5145;--trait:#dcd8c9;--sillon:#b9a98a;
---bleuet:#2f4fb8;--colza:#f5c518;--colza-pale:#fdf3c4;--prairie:#2e7d4b;--prairie-pale:#e3f1e6;--prairie-texte:#1f5a35;
---ble:#efe3be;--ble-texte:#6b5418}
-*{box-sizing:border-box}body{margin:0;background:var(--craie);color:var(--terre);
-font:11pt/1.5 "Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-h1,h2,h3{font-family:"Fredoka","Trebuchet MS",system-ui,sans-serif;font-weight:600;line-height:1.15;margin:0}
-.ref{display:inline-block;font-size:8.5pt;font-weight:700;color:var(--ble-texte);background:var(--ble);
-padding:0 7px 0 11px;white-space:nowrap;clip-path:polygon(7px 0,100% 0,100% 100%,7px 100%,0 50%)}
-.pied{font-size:8pt;color:var(--terre-douce);border-top:2px dotted var(--trait);margin-top:6mm;padding-top:3mm}
-.pied ul{margin:2mm 0;padding-left:4mm}.pied li{margin-bottom:1mm}"""
+# Style des supports = style du site (SAED) : bleu nuit, lavande, titres Georgia, texte Atkinson Hyperlegible
+CHARTE_CSS = """:root{--nuit:#090773;--nuit-fonce:#05044d;--lavande:#eeebf9;--lavande-2:#e2dfef;--violet:#9a8bd0;
+--texte:#202033;--texte-doux:#626176;--fond:#f7f6fc;--blanc:#fff;--vert:#2e7d4b;--vert-pale:#e3f1e6;--vert-texte:#1f5a35;
+--ambre-pale:#fff3d6;--ambre-texte:#6b4a00}
+*{box-sizing:border-box}html{background:var(--fond)}
+body{margin:0 auto;max-width:200mm;padding:10mm 8mm;color:var(--texte);
+font:10.5pt/1.55 "Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h1,h2,h3{color:var(--nuit);margin:0;line-height:1.15}
+h1{font:700 24pt/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.02em;margin:3mm 0 2mm}
+h2{font:700 14pt/1.2 "Segoe UI","Atkinson Hyperlegible",system-ui,sans-serif;margin:7mm 0 3mm;letter-spacing:-.01em}
+h3{font:700 11.5pt/1.3 "Segoe UI","Atkinson Hyperlegible",system-ui,sans-serif}
+.marque{display:flex;align-items:center;gap:3mm;padding-bottom:4mm;border-bottom:1px solid var(--lavande-2)}
+.logo{width:9mm;height:9.5mm;display:grid;place-items:center;border-radius:3mm 3mm 1mm 3mm;background:var(--nuit);color:#fff;
+font:italic 700 15pt Georgia,serif}
+.nom{font:800 13pt/1 "Segoe UI",system-ui,sans-serif;color:var(--nuit);letter-spacing:-.03em}
+.nom small{display:block;margin-top:1mm;font:700 6.5pt/1 "Atkinson Hyperlegible",sans-serif;letter-spacing:.13em;color:#71619f}
+.entete{margin:6mm 0 5mm}
+.pastille{display:inline-block;padding:1mm 3mm;border-radius:99px;background:var(--lavande);color:var(--nuit);
+font:700 7.5pt/1.4 "Atkinson Hyperlegible",sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.entete p{margin:0;color:var(--texte-doux)}
+.dip{display:inline-block;margin-top:2mm;padding:.8mm 3mm;border-radius:99px;border:1px solid var(--lavande-2);
+background:var(--blanc);color:#534675;font-size:8.5pt;font-weight:700}
+.ref{display:inline-block;margin-left:1mm;padding:0 2mm;border-radius:1.5mm;background:var(--lavande);color:#493779;
+font-size:8pt;font-weight:700;white-space:nowrap;vertical-align:1px}
+.carte-blanche{background:var(--blanc);border:1px solid var(--lavande-2);border-radius:4mm;padding:4mm 5mm;break-inside:avoid}
+.a-verifier{display:inline-block;margin-left:1mm;padding:0 2mm;border-radius:99px;background:var(--ambre-pale);
+color:var(--ambre-texte);font-size:7.5pt;font-weight:700}
+.pied{margin-top:8mm;padding-top:3mm;border-top:1px solid var(--lavande-2);font-size:8pt;color:var(--texte-doux)}
+.pied strong{color:var(--nuit)}.pied ul{margin:2mm 0;padding-left:4mm}.pied li{margin-bottom:1mm}
+@page{size:A4;margin:12mm}
+@media print{html{background:#fff}body{padding:0;max-width:none}}
+@media screen and (max-width:800px){body{padding:5mm}}"""
 
 
 def _page(title: str, body: str, extra_css: str) -> str:
     e = html.escape
-    return (f'<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>{e(title)}</title>'
+    return (f'<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" '
+            f'content="width=device-width, initial-scale=1"><title>{e(title)}</title>'
             f"<style>{embedded_fonts()}\n{CHARTE_CSS}\n{extra_css}</style></head><body>{body}</body></html>\n")
+
+
+def _entete(cp, genre: str, titre: str, lignes: list[str] | None = None) -> str:
+    """Le haut de chaque support : la marque SourcIA, le type de support, le titre, le diplôme visé."""
+    e = html.escape
+    diplome = f'<span class="dip">{e(cp.referentiel["nom"])}</span>' if cp.referentiel else ""
+    extra = "".join(f"<p>{e(x)}</p>" for x in (lignes or []))
+    return ('<div class="marque"><span class="logo" aria-hidden="true">S</span>'
+            '<span class="nom">SourcIA<small>RESSOURCES PÉDAGOGIQUES</small></span></div>'
+            f'<header class="entete"><span class="pastille">{e(genre)}</span><h1>{e(titre)}</h1>{extra}{diplome}</header>')
 
 
 def _sources_html(cp, refs) -> str:
@@ -582,39 +616,63 @@ def _sources_html(cp, refs) -> str:
     return f"<ul>{items}</ul>" if items else ""
 
 
+def _pied(cp, refs, phrase: str) -> str:
+    return (f'<footer class="pied"><strong>Sources</strong> : chaque information renvoie à son document et à sa page.'
+            f"{_sources_html(cp, refs)}{html.escape(phrase)}</footer>")
+
+
 def _chip(ref) -> str:
     return f'<span class="ref">{html.escape((ref.numero or "Source") + ", page " + str(ref.page))}</span>'
 
 
+LABEL_RE = re.compile(r"\[(?P<num>[^,\]]+),\s*p\.\s*(?P<page>\d+)\]")
+
+
+def _chip_label(label: str) -> str:
+    """« [S1, p. 3] » (fiche, glossaire, podcast) en étiquette « S1, page 3 »."""
+    m = LABEL_RE.search(label or "")
+    return f'<span class="ref">{html.escape(m["num"] + ", page " + m["page"])}</span>' if m else ""
+
+
+def _refs_from_labels(cp, labels) -> list:
+    """Les références (document) citées par des étiquettes « [S1, p. 3] », pour la liste des sources."""
+    by_num = {b.numero: b.doc_id for b in cp.bibliographie if b.numero}
+    out = []
+    for lab in labels:
+        m = LABEL_RE.search(lab or "")
+        if m and m["num"] in by_num:
+            out.append(SimpleNamespace(doc_id=by_num[m["num"]]))
+    return out
+
+
+# --- cartes
 def cartes_html(sup: Supports, cp) -> str:
-    """Cartes à découper comme des sachets de graines : question à gauche, réponse et source à droite, on plie."""
+    """Cartes à découper : question à gauche, réponse et source à droite ; on découpe, on plie au milieu."""
     e = html.escape
     cards = "".join(
-        f'<article class="carte"><div class="recto"><p class="seq">{PLANTES["pousse"]}Séquence {c.sequence}</p>'
+        f'<article class="carte"><div class="recto"><p class="seq">Séquence {c.sequence}</p>'
         f'<p class="q">{e(c.recto)}</p></div><div class="verso">'
         + (f'<p class="rep">Réponse : <strong>{e(c.reponse)}</strong></p>' if c.reponse else "")
         + f'<p class="r">{e(c.phrase or c.verso)}</p>{_chip(c.reference)}'
         "</div></article>" for c in sup.cartes)
-    body = (f"<header><h1>Cartes de révision</h1><p>{e(cp.titre)} : découpez sur les pointillés, pliez au milieu. "
-            "La question est devant, la réponse et sa source derrière.</p></header>"
-            f'<main class="cartes">{cards}</main><footer class="pied"><strong>Sources</strong>'
-            f"{_sources_html(cp, [c.reference for c in sup.cartes])}"
-            "Cartes préparées avec SourcIA à partir de sources vérifiées. À relire avant de les distribuer.</footer>")
-    css = """@page{size:A4;margin:12mm}body{padding:8mm;max-width:210mm;margin:auto}
-header h1{font-size:22pt}header p{color:var(--terre-douce);margin:2mm 0 6mm}
-.cartes{display:grid;gap:5mm}
-.carte{display:grid;grid-template-columns:1fr 1fr;min-height:46mm;break-inside:avoid;border:2px dashed var(--sillon);
+    body = (_entete(cp, "Cartes de révision", cp.titre,
+                    ["Découpez sur les pointillés et pliez au milieu : la question devant, la réponse et sa source derrière."])
+            + f'<main class="cartes">{cards}</main>'
+            + _pied(cp, [c.reference for c in sup.cartes],
+                    "Cartes préparées avec SourcIA à partir de sources vérifiées. À relire avant de les distribuer."))
+    css = """.cartes{display:grid;gap:5mm}
+.carte{display:grid;grid-template-columns:1fr 1fr;min-height:44mm;break-inside:avoid;border:1.5px dashed var(--violet);
 border-radius:4mm;background:var(--blanc);overflow:hidden}
-.recto{padding:4mm 5mm;border-right:2px dashed var(--sillon)}.verso{padding:4mm 5mm;background:var(--prairie-pale)}
-.seq{display:flex;align-items:center;gap:2mm;margin:0 0 2mm;font:600 9pt "Fredoka",sans-serif;color:var(--prairie-texte)}
-.seq svg{width:7mm;height:7mm}.q{margin:0;font-size:12pt}.r{margin:0 0 2mm;font-size:10pt;color:var(--terre-douce)}
-.rep{margin:0 0 2mm;font-size:12pt;color:var(--prairie-texte)}.rep strong{font:600 14pt "Fredoka",sans-serif}
-@media print{body{padding:0;background:#fff}}"""
+.recto{padding:4mm 5mm;border-right:1.5px dashed var(--violet)}.verso{padding:4mm 5mm;background:var(--lavande)}
+.seq{margin:0 0 2mm;font-size:7.5pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#71619f}
+.q{margin:0;font-size:11.5pt}.r{margin:0 0 2mm;font-size:9.5pt;color:var(--texte-doux)}
+.rep{margin:0 0 2mm;font-size:11pt;color:var(--nuit)}.rep strong{font:700 13pt Georgia,serif}"""
     return _page(f"Cartes : {cp.titre}", body, css)
 
 
+# --- infographie
 def infographie_html(sup: Supports, cp) -> str:
-    """Page A4 : bandeau titre, chiffres clés en grandes cartes, le parcours des séquences, les sources."""
+    """Page A4 : le titre, les chiffres clés en grandes cartes, le parcours des séquences, les sources."""
     e = html.escape
     d = cp.demande
     nums = numbers(cp)
@@ -628,37 +686,75 @@ def infographie_html(sup: Supports, cp) -> str:
             continue
         r = make_ref(seq.points[0].reference, nums)
         refs.append(r)
-        etapes.append(f'<li><span class="pot">{i}</span><div><h3>{e(seq.titre)}</h3>'
+        etapes.append(f'<li><span class="num">{i}</span><div><h3>{e(seq.titre)}</h3>'
                       f"<p>{e(seq.points[0].texte)} {_chip(r)}</p></div></li>")
     bloc_chiffres = (f'<h2>Les chiffres clés</h2><div class="chiffres">{chiffres}</div>' if chiffres else
                      '<p class="sans">Pas de chiffre dans ces séquences : l’infographie présente l’essentiel du cours.</p>')
-    diplome = f'<p class="dip">{e(cp.referentiel["nom"])}</p>' if cp.referentiel else ""
-    body = (f'<header><div class="plante">{PLANTES["epi"]}</div><div><h1>{e(cp.titre)}</h1>'
-            f"<p>{e(upper_first(d.public_description()))}</p>{diplome}</div></header>"
-            f"<main>{bloc_chiffres}<h2>L’essentiel, séquence par séquence</h2>"
+    body = (_entete(cp, "Infographie", cp.titre, [upper_first(d.public_description())])
+            + f"<main>{bloc_chiffres}<h2>L’essentiel, séquence par séquence</h2>"
             f'<ol class="parcours">{"".join(etapes)}</ol></main>'
-            '<footer class="pied"><strong>Sources</strong> : chaque information renvoie à son document et à sa page.'
-            f"{_sources_html(cp, refs)}Infographie préparée avec SourcIA. À relire avant diffusion. "
-            "Pour un PDF : imprimer cette page depuis le navigateur, au format A4.</footer>")
-    css = """@page{size:A4;margin:10mm}body{width:190mm;margin:8mm auto;padding:0}
-header{display:flex;gap:6mm;align-items:center;background:var(--blanc);border:2px solid var(--trait);border-radius:6mm;
-padding:6mm 7mm}header .plante svg{width:22mm;height:22mm}header h1{font-size:24pt}
-header p{margin:1mm 0 0;color:var(--terre-douce)}header .dip{display:inline-block;margin-top:2mm;padding:1mm 4mm;
-border-radius:3mm;background:var(--colza-pale);color:#6a5300;font-weight:700;font-size:9.5pt}
-h2{font-size:15pt;margin:7mm 0 3mm}
-.chiffres{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}
-.chiffre{background:var(--blanc);border:2px solid var(--trait);border-top:5px solid var(--colza);border-radius:4mm;padding:3mm 4mm}
-.val{margin:0;font:600 21pt/1.1 "Fredoka",sans-serif;color:var(--bleuet)}.phrase{margin:1.5mm 0 2mm;font-size:9.5pt}
-.sans{margin:6mm 0 0;padding:3mm 4mm;border:2px dashed var(--sillon);border-radius:4mm;color:var(--terre-douce)}
+            + _pied(cp, refs, "Infographie préparée avec SourcIA. À relire avant diffusion. "
+                              "Pour un PDF : imprimer cette page depuis le navigateur, au format A4."))
+    css = """.chiffres{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}
+.chiffre{background:var(--blanc);border:1px solid var(--lavande-2);border-top:4px solid var(--nuit);border-radius:4mm;padding:3mm 4mm}
+.val{margin:0;font:700 22pt/1.1 Georgia,serif;color:var(--nuit)}.phrase{margin:1.5mm 0 2mm;font-size:9.5pt}
+.sans{margin:6mm 0 0;padding:3mm 4mm;border:1.5px dashed var(--violet);border-radius:4mm;color:var(--texte-doux)}
 .parcours{list-style:none;margin:0;padding:0;position:relative}
-.parcours::before{content:"";position:absolute;left:5.5mm;top:4mm;bottom:4mm;border-left:3px dashed var(--sillon)}
+.parcours::before{content:"";position:absolute;left:5mm;top:4mm;bottom:4mm;border-left:2px solid var(--lavande-2)}
 .parcours li{position:relative;display:flex;gap:4mm;margin-bottom:4mm;break-inside:avoid}
-.pot{flex:none;width:11mm;height:11mm;border-radius:50%;display:grid;place-items:center;background:var(--colza-pale);
-border:2px solid var(--colza);font:600 12pt "Fredoka",sans-serif;z-index:1}
-.parcours h3{font-size:12pt;margin:1mm 0}.parcours p{margin:0;font-size:10pt}
-@media print{body{margin:0;background:#fff}}
-@media screen and (max-width:800px){body{width:auto;margin:4mm}.chiffres{grid-template-columns:1fr}}"""
+.num{flex:none;width:10mm;height:10mm;border-radius:50%;display:grid;place-items:center;background:var(--nuit);color:#fff;
+font:700 11pt Georgia,serif;z-index:1}
+.parcours h3{margin:1mm 0}.parcours p{margin:0;font-size:10pt}
+@media screen and (max-width:800px){.chiffres{grid-template-columns:1fr}}"""
     return _page(f"Infographie : {cp.titre}", body, css)
+
+
+# --- QCM (élève et corrigé)
+def qcm_html(sup: Supports, cp, corrige: bool) -> str:
+    """Le QCM prêt à imprimer : cases à cocher pour l'élève ; bonne réponse, explication et source dans le corrigé."""
+    e = html.escape
+    blocs, n = [], 0
+    for i in sup.sequences:
+        qs = [q for q in sup.qcm if q.sequence == i]
+        if not qs:
+            continue
+        items = []
+        for q in qs:
+            n += 1
+            choix = "".join(
+                f'<li class="{"bonne" if corrige and j == q.bonne_reponse else ""}"><span class="case" aria-hidden="true">'
+                f'{"✓" if corrige and j == q.bonne_reponse else ""}</span><b>{LETTERS[j]}.</b> {e(c)}</li>'
+                for j, c in enumerate(q.choix))
+            explication = ""
+            if corrige:
+                modele = '<span class="a-verifier">proposée par le modèle, contrôlée</span>' if q.origine == "modele" else ""
+                explication = (f'<p class="explication"><b>Réponse {LETTERS[q.bonne_reponse]}.</b> {e(q.explication)} '
+                               f"{_chip(q.reference)}{modele}</p>")
+            items.append(f'<li class="question carte-blanche"><p class="enonce"><span class="n">{n}</span>{e(q.enonce)}</p>'
+                         f'<ol class="choix">{choix}</ol>{explication}</li>')
+        blocs.append(f"<h2>{e(_seq_title(cp, i))}</h2><ol class=\"questions\">{''.join(items)}</ol>")
+    genre = "QCM, corrigé" if corrige else "QCM"
+    consigne = ("Corrigé pour l'enseignant : la bonne réponse, son explication et sa source." if corrige
+                else "Une seule bonne réponse par question : cochez la case.")
+    eleve = ('<p class="identite"><span>Nom :</span><span>Prénom :</span><span>Classe :</span><span>Date :</span></p>'
+             if not corrige else "")
+    body = (_entete(cp, genre, cp.titre, [consigne]) + eleve + "".join(blocs)
+            + (_pied(cp, [q.reference for q in sup.qcm], "Questions construites à partir des sources citées. "
+                                                          "À relire avant usage.") if corrige else
+               '<footer class="pied">QCM préparé avec SourcIA à partir de sources vérifiées.</footer>'))
+    css = """.identite{display:grid;grid-template-columns:repeat(4,1fr);gap:4mm;margin:0 0 4mm}
+.identite span{border-bottom:1px solid var(--violet);padding-bottom:5mm;font-weight:700;color:var(--nuit);font-size:9pt}
+.questions{list-style:none;margin:0;padding:0;display:grid;gap:3.5mm}
+.enonce{display:flex;gap:3mm;margin:0 0 2.5mm;font-weight:700}
+.n{flex:none;width:7mm;height:7mm;border-radius:50%;display:grid;place-items:center;background:var(--nuit);color:#fff;
+font:700 9pt Georgia,serif}
+.choix{list-style:none;margin:0 0 0 10mm;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1.5mm 5mm}
+.choix li{display:flex;align-items:center;gap:2mm;padding:1.2mm 2.5mm;border-radius:2mm}
+.case{flex:none;width:4.2mm;height:4.2mm;border:1.5px solid var(--violet);border-radius:1mm;display:grid;place-items:center;
+font-size:8pt;font-weight:700;color:#fff}
+.choix li.bonne{background:var(--vert-pale);color:var(--vert-texte)}.choix li.bonne .case{background:var(--vert);border-color:var(--vert)}
+.explication{margin:2.5mm 0 0 10mm;padding:2mm 3mm;border-left:3px solid var(--vert);background:#f6faf7;font-size:9.5pt}"""
+    return _page(f"{'Corrigé du QCM' if corrige else 'QCM'} : {cp.titre}", body, css)
 
 
 # --- fiche, glossaire, podcast
@@ -694,6 +790,63 @@ def podcast_markdown(p: dict) -> str:
     out += [f"**{r['voix'].capitalize()}** : {r['texte']}" + (f" {r['ref']}" if r.get("ref") else "") + "\n"
             for r in p["repliques"]]
     return "\n".join(out)
+
+
+# --- fiche technique, glossaire, podcast
+def fiche_html(f: dict, cp) -> str:
+    e = html.escape
+    def items(key, cls):
+        return "".join(f'<li class="{cls} carte-blanche"><span class="n">{k}</span><p>{e(x["texte"])} '
+                       f"{_chip_label(x['ref'])}</p></li>" for k, x in enumerate(f.get(key, []), 1))
+    vigilance = (f'<h2>Points de vigilance</h2><ol class="liste">{items("vigilance", "vigil")}</ol>'
+                 if f.get("vigilance") else "")
+    labels = [x["ref"] for k in ("recommandations", "vigilance") for x in f.get(k, [])]
+    body = (_entete(cp, "Fiche technique", fiche_title(f["titre"]), ["Chaque recommandation renvoie à sa source. À relire."])
+            + f'<h2>Recommandations</h2><ol class="liste">{items("recommandations", "reco")}</ol>{vigilance}'
+            + _pied(cp, _refs_from_labels(cp, labels), "Fiche préparée avec SourcIA à partir de sources vérifiées."))
+    css = """.liste{list-style:none;margin:0;padding:0;display:grid;gap:3mm}
+.liste li{display:flex;gap:3mm;align-items:flex-start}.liste p{margin:0}
+.reco{border-left:4px solid var(--nuit)}.vigil{border-left:4px solid #d39a1f;background:var(--ambre-pale)}
+.n{flex:none;width:7mm;height:7mm;border-radius:50%;display:grid;place-items:center;background:var(--lavande);color:var(--nuit);
+font:700 9pt Georgia,serif}.vigil .n{background:#fbe2a6;color:var(--ambre-texte)}"""
+    return _page(f"Fiche technique : {fiche_title(f['titre'])}", body, css)
+
+
+def glossaire_html(g: list[dict], cp) -> str:
+    e = html.escape
+    termes = sorted(g, key=lambda x: normalize(x["terme"]))
+    rows = "".join(
+        f'<div class="terme carte-blanche"><dt>{e(x["terme"])}</dt><dd>{e(x["definition"])} {_chip_label(x["ref"])}'
+        + ("" if x.get("sourcee", True) else '<span class="a-verifier">définition proposée, à vérifier</span>')
+        + "</dd></div>" for x in termes)
+    body = (_entete(cp, "Glossaire", cp.titre, ["Les mots du cours, avec la source où ils apparaissent."])
+            + f'<dl class="glossaire">{rows}</dl>'
+            + _pied(cp, _refs_from_labels(cp, [x["ref"] for x in g]), "Glossaire préparé avec SourcIA."))
+    css = """.glossaire{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:3mm}
+dt{font:700 12pt Georgia,serif;color:var(--nuit);margin-bottom:1mm}dd{margin:0;font-size:9.8pt}
+@media screen and (max-width:800px){.glossaire{grid-template-columns:1fr}}"""
+    return _page(f"Glossaire : {cp.titre}", body, css)
+
+
+def podcast_html(p: dict, cp) -> str:
+    e = html.escape
+    mots = sum(len(r["texte"].split()) for r in p["repliques"])
+    duree = max(1, round(mots / 150))
+    rows = "".join(
+        f'<div class="replique {e(r["voix"])}"><p class="voix">{e(r["voix"].capitalize())}</p>'
+        f'<p>{e(r["texte"])} {_chip_label(r.get("ref", ""))}</p></div>' for r in p["repliques"])
+    body = (_entete(cp, "Script de podcast", p["titre"],
+                    [f"Script à deux voix, l'expert cite ses sources. Environ {duree} min à la lecture. À relire."])
+            + f'<main class="dialogue">{rows}</main>'
+            + _pied(cp, _refs_from_labels(cp, [r.get("ref", "") for r in p["repliques"]]),
+                    "Script préparé avec SourcIA à partir de sources vérifiées."))
+    css = """.dialogue{display:grid;gap:3mm}
+.replique{max-width:82%;padding:3mm 4.5mm;border-radius:4mm;break-inside:avoid}
+.replique p{margin:0}.replique .voix{margin-bottom:1mm;font-size:7.5pt;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.animateur{background:var(--lavande);border-bottom-left-radius:1mm}.animateur .voix{color:#71619f}
+.expert{justify-self:end;background:var(--blanc);border:1px solid var(--lavande-2);border-bottom-right-radius:1mm}
+.expert .voix{color:var(--nuit)}"""
+    return _page(f"Podcast : {p['titre']}", body, css)
 
 
 # --- présentation : formation/presentation.py (modèle de diapositives « Du champ à la classe »)
