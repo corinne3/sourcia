@@ -12,7 +12,11 @@ Hackathon SAED, défi 1 : passer de **milliers de documents** à **environ 50 so
 ### La vidéo de présentation (1 min 15)
 
 <!-- Pour mettre la vidéo : sur github.com, modifier ce fichier, glisser sourcia-demo.mp4 à la place de la ligne de l'image ci-dessous, puis enregistrer. -->
-[![La vidéo de présentation de SourcIA](docs/video-apercu.jpg)](https://sourcia.13-53-71-254.sslip.io/)
+
+
+https://github.com/user-attachments/assets/bd57cc5d-902a-4ffc-8920-8158348fadf6
+
+
 
 **Le parcours de l'enseignant, dans le navigateur :**
 
