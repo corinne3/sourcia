@@ -10,6 +10,8 @@ Le serveur tourne en UN processus : une liste en mémoire suffit ; après un red
 """
 from __future__ import annotations
 
+import json
+
 import logging
 import re
 import threading
@@ -28,6 +30,9 @@ from sourcia.formation.supports import (EMPTY_MESSAGE, SANS_MODELE, build_suppor
 logger = logging.getLogger(__name__)
 SID_RE = re.compile(r"^supports-\d{8}-\d{6}(-\d+)?$")
 FILES = {"supports.json": "application/json", "qcm_apprenants.md": "text/markdown", "qcm_corrige.md": "text/markdown",
+         # pages à imprimer, au style du site (SAED)
+         "qcm_eleves.html": "text/html", "qcm_corrige.html": "text/html", "fiche_technique.html": "text/html",
+         "glossaire.html": "text/html", "podcast.html": "text/html",
          "qcm_moodle.gift.txt": "text/plain", "cartes_anki.csv": "text/csv", "cartes.html": "text/html",
          "infographie.html": "text/html", "fiche_technique.md": "text/markdown", "glossaire.md": "text/markdown",
          "podcast_script.md": "text/markdown",
@@ -103,9 +108,32 @@ class SupportsJobs:
 
     def _status(self, corpus_dir: Path, folder: Path) -> dict:
         st = read_status(folder)
+        if not st.get("statut") and (folder / "supports.json").is_file():
+            st = self._from_supports_json(folder)       # production faite en ligne de commande : pas de statut.json
         if st.get("statut") == "en_cours" and str(corpus_dir.resolve()) not in self.running:
             st = st | {"statut": "erreur", "erreur": "construction interrompue (serveur arrêté) : relancez-la"}
         return st
+
+    @staticmethod
+    def _from_supports_json(folder: Path) -> dict:
+        """Le statut d'une production sans statut.json (commande « sourcia supports ») : lu dans supports.json."""
+        try:
+            sup = json.loads((folder / "supports.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"id": folder.name, "statut": "erreur", "erreur": "supports.json illisible"}
+        files = [f for f in sup.get("fichiers", []) if (folder / f).is_file()]
+        return {"id": folder.name, "statut": "pret", "cree_le": sup.get("cree_le", ""), "sequences": sup.get("sequences", []),
+                "supports": sup.get("supports", []), "fichiers": files, "questions": len(sup.get("qcm", [])),
+                "cartes": len(sup.get("cartes", [])), "remarques": sup.get("remarques", []), "demande_par": "ligne de commande"}
+
+    def delete(self, corpus_dir: Path, sid: str) -> None:
+        """Supprime une production terminée (jamais celle en cours de construction)."""
+        import shutil
+
+        folder = self.folder(corpus_dir, sid)
+        if read_status(folder).get("statut") == "en_cours" and str(corpus_dir.resolve()) in self.running:
+            raise HTTPException(409, "Cette production est en cours : attendez la fin pour la supprimer")
+        shutil.rmtree(folder)
 
     def folder(self, corpus_dir: Path, sid: str) -> Path:
         folder = corpus_dir / "supports" / sid

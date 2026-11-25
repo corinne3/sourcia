@@ -19,7 +19,7 @@ from starlette.background import BackgroundTask
 
 from sourcia.collect.store import file_sha1
 from sourcia.collect.web import WebCollector
-from sourcia.comptes import COOKIE, Comptes, Sessions
+from sourcia.comptes import COOKIE, VISITEUR_HEURES, Comptes, Quotas, Sessions, is_visitor
 from sourcia.core.models import Candidate, Document, Fiche
 from sourcia.core.text import normalize
 from sourcia.export.exporters import export
@@ -217,19 +217,37 @@ def create_dossiers_router(ctx):
     comptes = Comptes(ctx.settings.path("comptes.json"))
     sessions = Sessions(comptes)
     store = Dossiers(ctx)
+    settings = ctx.settings
+    quotas = Quotas(settings.path("quotas.json"), {"corpus": settings.limite_visiteur_corpus,
+                                                   "supports": settings.limite_visiteur_supports})
+
+    def https(request: Request) -> bool:
+        return request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https"
 
     def identity(request: Request, response: Response,
                  credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
-        """L'enseignant connecté : par son jeton (en-tête Authorization) ou par le cookie de session."""
+        """L'enseignant connecté : par son jeton (en-tête Authorization) ou par le cookie de session.
+        En accès libre, un visiteur sans rien reçoit un compte anonyme (cookie signé, 30 jours)."""
         response.headers["Cache-Control"] = "private, no-store"
         email = comptes.identify(credentials.credentials) if credentials else sessions.verify(request.cookies.get(COOKIE))
         if email:
             return email
+        if settings.acces_libre and not credentials:
+            email, cookie = sessions.create_visitor()
+            response.set_cookie(COOKIE, cookie, max_age=VISITEUR_HEURES * 3600, httponly=True, samesite="strict",
+                                secure=https(request), path="/api")
+            return email
         raise HTTPException(401, "Jeton enseignant requis", headers={"WWW-Authenticate": "Bearer"})
 
+    def quota(email: str, kind: str) -> None:
+        """Un visiteur ne lance que quelques corpus et supports par jour (la clé du modèle est partagée)."""
+        if quotas.use(email, kind) is None:
+            quoi = "corpus" if kind == "corpus" else "productions de supports"
+            raise HTTPException(429, f"Limite de la démonstration atteinte : {quotas.limits[kind]} {quoi} par jour et "
+                                     "par visiteur. Revenez demain, ou demandez un compte enseignant à la personne "
+                                     "qui gère SourcIA.")
+
     # --- session : on saisit son jeton une fois, un cookie protégé prend le relais (déclaré avant /{folder_id})
-    def https(request: Request) -> bool:
-        return request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https"
 
     @router.post("/session")
     def login(req: Login, request: Request, response: Response):
@@ -246,7 +264,7 @@ def create_dossiers_router(ctx):
 
     @router.get("/session")
     def current_session(email: str = Depends(identity)):
-        return {"email": email}
+        return {"email": email, "visiteur": is_visitor(email), "reste": quotas.remaining(email)}
 
     @router.delete("/session", status_code=204)
     def logout():
@@ -272,6 +290,34 @@ def create_dossiers_router(ctx):
         with store.db() as db:
             db.execute("INSERT INTO folders (id, title, owner) VALUES (?, ?, ?)", (folder_id, title, email))
         return {"id": folder_id, "title": title, "role": "proprietaire"}
+
+    @router.post("/exemple", status_code=201)
+    def example_folder(tasks: BackgroundTasks, email: str = Depends(identity)):
+        """Un dossier d'exemple prêt à l'emploi : quelques documents publics du catalogue sur le sorgho fourrager,
+        déjà cochés et traités en tâche de fond. Pour découvrir le parcours sans rien chercher."""
+        picked, seen = [], set()
+        for hit in ctx.index.search("sorgho fourrager valeur alimentaire variétés", k=60):
+            doc = ctx.store.get(hit.doc_id)
+            if doc and not doc.private and doc.status != "error" and doc.id not in seen                     and "sorgho" in normalize(doc.title):           # un exemple qui parle bien du sujet
+                seen.add(doc.id)
+                picked.append(doc)
+            if len(picked) >= 4:
+                break
+        if not picked:
+            raise HTTPException(409, "Le catalogue est vide : l'exemple ne peut pas être préparé.")
+        folder_id = uuid.uuid4().hex
+        copies = []
+        with store.db(write=True) as db:
+            db.execute("INSERT INTO folders (id, title, owner) VALUES (?, ?, ?)",
+                       (folder_id, "Exemple : sorgho fourrager", email))
+            for source in picked:                        # même copie que l'ajout depuis le catalogue
+                copy = source.model_copy(update={"id": uuid.uuid4().hex, "error": None})
+                db.execute("INSERT INTO documents (id, folder, catalog_id, payload) VALUES (?, ?, ?, ?)",
+                           (copy.id, folder_id, source.id, copy.model_dump_json()))
+                copies.append(copy.id)
+        for document_id in copies:
+            tasks.add_task(store.process, document_id)
+        return {"id": folder_id, "title": "Exemple : sorgho fourrager", "documents": len(copies)}
 
     @router.get("/{folder_id}")
     def detail(folder_id: str, q: str = "", kind: str = "", status: str = "",
@@ -498,4 +544,5 @@ def create_dossiers_router(ctx):
 
     add_corpus_routes(router, ctx, store, identity)
     router.identity = identity                     # réutilisée par les routes du catalogue (mode serveur)
+    router.quota, router.quotas = quota, quotas    # limite des visiteurs, aussi pour le catalogue
     return router

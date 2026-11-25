@@ -1,21 +1,22 @@
-"""Présentation .pptx des supports, au modèle « Du champ à la classe » (python-pptx).
+"""Présentation .pptx des supports, au style du site (SAED : bleu nuit, lavande, titres Georgia) (python-pptx).
 
 Diapos : titre (avec le parcours des séquences dessiné comme un sillon), une ou plusieurs diapos par séquence
 (numéro dans un pot, objectif, un point par carte avec sa référence), les illustrations encadrées, les chiffres
 clés en grand, les sources. Les références complètes (point, extrait exact, [S1, p. N]) sont dans les notes.
-Polices : Century Gothic (titres) et Calibri (texte), présentes avec Microsoft Office ; ailleurs, le logiciel en
-prend une proche. Un même PLAN des diapos sert à les dessiner et à les compter (``expected_slides``).
+Polices : Georgia (titres, comme le site) et Calibri (texte), présentes avec Microsoft Office ; ailleurs, le
+logiciel en prend une proche. Les noms des couleurs viennent de l'ancienne charte ; leurs valeurs sont celles du site. Un même PLAN des diapos sert à les dessiner et à les compter (``expected_slides``).
 """
 from __future__ import annotations
 
 import math
 from pathlib import Path
 
-TITRES, TEXTE = "Century Gothic", "Calibri"
-COULEURS = {"craie": "F7F8F3", "blanc": "FFFFFF", "terre": "2A231C", "terre_douce": "5E5145", "trait": "DCD8C9",
-            "sillon": "B9A98A", "bleuet": "2F4FB8", "colza": "F5C518", "colza_pale": "FDF3C4",
-            "prairie": "2E7D4B", "prairie_pale": "E3F1E6", "prairie_texte": "1F5A35", "ble": "EFE3BE",
-            "ble_texte": "6B5418"}
+TITRES, TEXTE = "Georgia", "Calibri"
+# style du site (SAED) : fond lavande très clair, bleu nuit pour les titres et les repères, lavande pour les cartes
+COULEURS = {"craie": "F7F6FC", "blanc": "FFFFFF", "terre": "202033", "terre_douce": "626176", "trait": "E2DFEF",
+            "sillon": "9A8BD0", "bleuet": "090773", "colza": "090773", "colza_pale": "EEEBF9",
+            "prairie": "090773", "prairie_pale": "EEEBF9", "prairie_texte": "30206C", "ble": "EEEBF9",
+            "ble_texte": "493779"}
 LARGEUR, HAUTEUR = 13.333, 7.5                      # pouces, format 16:9
 ZONE_POINTS = (2.6, 6.75)                           # haut et bas de la zone des cartes sur une diapo de séquence
 # Calibri 16 pt sur 11,5 pouces : environ 130 caractères par ligne mesurés sur un rendu PowerPoint (22/11) ;
@@ -153,7 +154,8 @@ def presentation_pptx(sup, cp, corpus_dir: Path, path: Path) -> Path:
             f.size = Pt(opts.get("size", size))
             f.bold = opts.get("bold", bold)
             f.italic = opts.get("italic", italic)
-            f.color.rgb = rgb[opts.get("color", color)]
+            c = opts.get("color", color)
+            f.color.rgb = rgb["bleuet" if f.name == TITRES and c == "terre" else c]    # titres en bleu nuit
         return tf
 
     def text(s, x, y, w, h, runs, **kw):
@@ -165,9 +167,9 @@ def presentation_pptx(sup, cp, corpus_dir: Path, path: Path) -> Path:
         s.notes_slide.notes_text_frame.text = "\n".join(lines)
 
     def pot(s, x, y, d, label, size):
-        c = box(s, x, y, d, d, MSO_SHAPE.OVAL, fill="colza_pale", line="colza", line_pt=2.25)
-        write(c, label, size=size, font=TITRES, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
-              margins=(0, 0))
+        c = box(s, x, y, d, d, MSO_SHAPE.OVAL, fill="bleuet", line="bleuet", line_pt=1)   # pastille du site
+        write(c, label, size=size, font=TITRES, bold=True, color="blanc", align=PP_ALIGN.CENTER,
+              anchor=MSO_ANCHOR.MIDDLE, margins=(0, 0))
 
     def footer(s, sources_line):
         if sources_line:

@@ -4,21 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dossiers pédagogiques · SourcIA</title>
-<link rel="stylesheet" href="/assets/sourcia.css">
+<link rel="stylesheet" href="/assets/sourcia.css?v=saed-20261125b">
 </head>
 <body class="folders">
-<header class="page-header"><div class="header-content">
-  <div class="marque"><p class="logo"><a href="/">SourcIA</a></p>
-    <h1 class="sub">Votre espace enseignant : dossier, corpus et supports</h1></div>
-  <nav class="steps" aria-label="Les quatre étapes du parcours">
-    <a href="/" data-step="catalogue"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="41" rx="16" ry="5" fill="#b9a98a"/><ellipse cx="26" cy="33" rx="5.5" ry="7.5" fill="#8a6a3b" transform="rotate(20 26 33)"/><path d="M24 29c1-3 3-4 5-4" stroke="#c9a46a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></span><span class="nom">1. Catalogue</span><span class="aide">trouver des sources</span></a>
-    <a href="/dossiers#dossier" data-step="dossier"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="43" rx="16" ry="5" fill="#b9a98a"/><path d="M26 42V25" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 31c-8 0-11-6-11-10 7 0 11 4 11 10z" fill="#4e9b63"/><path d="M26 28c7 0 11-6 11-10-7 0-11 4-11 10z" fill="#2e7d4b"/></svg></span><span class="nom">2. Mon dossier</span><span class="aide">ranger et cocher</span></a>
-    <a href="/dossiers#corpus" data-step="corpus"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="45" rx="16" ry="5" fill="#b9a98a"/><path d="M26 44V15" stroke="#2e7d4b" stroke-width="3" stroke-linecap="round"/><path d="M26 35c-9 0-13-6-13-11 8 0 13 5 13 11z" fill="#4e9b63"/><path d="M26 28c9 0 13-6 13-11-8 0-13 5-13 11z" fill="#2e7d4b"/><g fill="#2f4fb8"><circle cx="26" cy="7.5" r="3.6"/><circle cx="31.5" cy="11.5" r="3.6"/><circle cx="29.5" cy="17" r="3.6"/><circle cx="22.5" cy="17" r="3.6"/><circle cx="20.5" cy="11.5" r="3.6"/></g><circle cx="26" cy="12.5" r="3" fill="#f5c518"/></svg></span><span class="nom">3. Mon corpus</span><span class="aide">préparer le contenu</span></a>
-    <a href="/dossiers#supports" data-step="supports"><span class="pot"><svg viewBox="0 0 52 52" aria-hidden="true"><ellipse cx="26" cy="46" rx="16" ry="5" fill="#b9a98a"/><path d="M26 45V17" stroke="#b88a1c" stroke-width="3" stroke-linecap="round"/><path d="M26 38c-7 0-10-4-10-8 6 0 10 3 10 8z" fill="#c9a24a"/><g fill="#e0a82e"><ellipse cx="21.5" cy="14" rx="3.3" ry="5.4" transform="rotate(-22 21.5 14)"/><ellipse cx="30.5" cy="14" rx="3.3" ry="5.4" transform="rotate(22 30.5 14)"/><ellipse cx="21" cy="23" rx="3.3" ry="5.4" transform="rotate(-22 21 23)"/><ellipse cx="31" cy="23" rx="3.3" ry="5.4" transform="rotate(22 31 23)"/><ellipse cx="26" cy="7" rx="3.1" ry="5.4"/></g></svg></span><span class="nom">4. Mes supports</span><span class="aide">QCM, cartes, diapos</span></a>
-  </nav>
-</div></header>
-<main>
-<form id="login">
+<a class="skip-link" href="#contenu">Aller au contenu</a><header class="page-header"><div class="header-content"><div class="marque"><a class="brand" href="/" aria-label="SourcIA — accueil"><span class="brand-symbol" aria-hidden="true">S</span><span>SourcIA<small>RESSOURCES PÉDAGOGIQUES</small></span></a></div><nav class="steps" aria-label="Les quatre étapes du parcours"><a href="/" data-step="catalogue"><span class="step-number" aria-hidden="true">1</span><span class="nom">Catalogue</span></a><a href="/dossiers#dossier" data-step="dossier"><span class="step-number" aria-hidden="true">2</span><span class="nom">Mon dossier</span></a><a href="/dossiers#corpus" data-step="corpus"><span class="step-number" aria-hidden="true">3</span><span class="nom">Mon contenu</span></a><a href="/dossiers#supports" data-step="supports"><span class="step-number" aria-hidden="true">4</span><span class="nom">Mes supports</span></a></nav></div></header>
+<main id="contenu"><div class="intro"><span class="eyebrow">VOTRE ESPACE ENSEIGNANT</span><h1>Votre prochain cours <em>commence ici.</em></h1><p>Rassemblez vos sources dans un dossier, préparez le contenu de votre cours et créez vos supports.</p></div>
+<form id="login"><span class="eyebrow">CONNEXION ENSEIGNANT</span><h2>Retrouvez vos dossiers</h2><p class="sub">Votre espace pour passer des sources au cours.</p>
   <label>Jeton enseignant <input id="token" type="password" required autocomplete="off"></label>
   <p class="aide-jeton">Le jeton vous est donné par la personne qui gère SourcIA dans votre établissement, parfois sous
     la forme d’un lien qui vous connecte d’un clic. Une fois saisi, vous restez connecté 12 heures sur cet ordinateur,
@@ -38,6 +29,15 @@
       <p id="account" class="compte"></p>
       <button id="logout" class="secondary" type="button">Se déconnecter</button>
     </div>
+  </section>
+  <section id="bienvenue" hidden>
+    <h2>Pour commencer</h2>
+    <ol class="guide">
+      <li><strong>Créez un dossier</strong> pour votre cours, juste au-dessus, ou essayez tout de suite avec un exemple.</li>
+      <li><strong>Ajoutez des sources</strong> du catalogue ou vos propres PDF. Elles sont cochées pour la suite.</li>
+      <li><strong>Préparez le contenu</strong> du cours (étape 3), puis <strong>produisez vos supports</strong> (étape 4).</li>
+    </ol>
+    <button type="button" id="exemple">Essayer avec un exemple : le sorgho fourrager</button>
   </section>
   <div id="detail" hidden>
     <section id="imports">
@@ -64,7 +64,7 @@
         <label>Tri <select name="sort"><option value="ajout">Ordre d’ajout</option><option value="titre">Titre</option><option value="date">Date</option></select></label>
       </form>
       <ul id="documents"></ul>
-      <h3>Connaissances du corpus sélectionné</h3>
+      <h3>Ce que disent les documents cochés</h3>
       <ul id="summary"></ul>
       <button type="button" id="zip" disabled>Télécharger la sélection en ZIP</button>
     </section>
@@ -82,13 +82,14 @@
   <p id="step-hint" class="sub" hidden>Choisissez ou créez un dossier ci-dessus pour continuer.</p>
   <div id="step-corpus" class="step-panel" hidden>
     <section>
-      <h2>Mon corpus pédagogique</h2>
-      <p class="sub">Le corpus est construit à partir des <strong>seuls documents cochés et prêts</strong> de ce dossier
-        et des acquis visés. Chaque information renvoie à son document, à sa page et à l’extrait exact.</p>
+      <h2>Le contenu de mon cours</h2>
+      <p class="sub">SourcIA prépare les séquences du cours à partir des <strong>seuls documents cochés et prêts</strong>
+        de ce dossier. Chaque information renvoie à son document, à sa page et à l’extrait exact.</p>
       <p id="corpus-ready" role="status" aria-live="polite"></p>
       <form id="corpus-form">
         <label class="wide">Sujet de la formation <textarea name="sujet" required maxlength="500"
           placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
+        <details class="wide reglages"><summary>Adapter au public et à la durée (facultatif)</summary><div class="row">
         <label>Apprenants <select name="apprenants">
           <option value="etudiants">étudiants</option><option value="eleves">élèves</option><option value="apprentis">apprentis</option>
           <option value="salaries">salariés</option><option value="chefs_entreprise">chefs d’entreprise</option>
@@ -102,6 +103,7 @@
           <option value="confirme">confirmé</option></select></label>
         <label>Durée (min) <input type="number" name="duree_min" value="120" min="10" max="2400"></label>
         <label>Séquences <input type="number" name="sequences" value="4" min="1" max="12"></label>
+        </div></details>
         <label class="check wide"><input type="checkbox" name="diplomante" id="corpus-diplomante"> Formation diplômante
           (séquences rattachées aux capacités du référentiel)</label>
         <div id="corpus-diplome" class="wide" hidden>
@@ -112,13 +114,13 @@
         <label class="check wide"><input type="checkbox" name="autoriser_documents_prives"> Autoriser l’envoi de mes
           documents privés (PDF téléversés) au modèle en ligne</label>
         <p class="sub wide">Sans cette case, vos PDF téléversés ne sont jamais envoyés à un modèle en ligne : ils sont
-          laissés de côté et le corpus le signale. Avec un modèle local, ils sont toujours utilisés.</p>
-        <button id="corpus-go">Construire le corpus</button>
+          laissés de côté et le contenu le signale. Avec un modèle local, ils sont toujours utilisés.</p>
+        <button id="corpus-go">Préparer le contenu</button>
       </form>
       <p id="corpus-status" class="status" role="status" aria-live="polite"></p>
     </section>
     <section>
-      <h2>Corpus du dossier</h2>
+      <h2>Contenus préparés</h2>
       <ul id="corpus-list"></ul>
     </section>
     <section id="corpus-view" class="corpus-view" hidden></section>
@@ -126,23 +128,23 @@
   <div id="step-supports" class="step-panel" hidden>
     <section>
       <h2>Mes supports</h2>
-      <p class="sub">Les supports sont faits à partir du corpus seulement : chaque question, carte ou diapo garde la
-        référence [S1, p. N] de son information.</p>
+      <p class="sub">Les supports sont faits à partir du contenu préparé à l’étape 3 : chaque question, carte ou diapo
+        garde la référence de son information (document et page).</p>
       <p id="supports-empty" class="sub" hidden></p>
       <form id="supports-form" hidden>
-        <label class="wide">Corpus <select name="corpus" id="supports-corpus"></select></label>
+        <label class="wide">Contenu <select name="corpus" id="supports-corpus"></select></label>
         <fieldset class="wide"><legend>Séquences</legend><div class="chk" id="supports-seqs"></div></fieldset>
         <fieldset class="wide"><legend>Supports</legend><div class="chk" id="supports-kinds">
           <label><input type="checkbox" value="qcm" checked> QCM (élèves, corrigé, Moodle)</label>
           <label><input type="checkbox" value="cartes" checked> Cartes (Anki, à découper)</label>
           <label><input type="checkbox" value="presentation" checked> Présentation (.pptx)</label>
           <label><input type="checkbox" value="infographie" checked> Infographie (A4)</label>
-          <label><input type="checkbox" value="fiche"> Fiche technique <span class="tag">avec modèle, plus long</span></label>
-          <label><input type="checkbox" value="glossaire"> Glossaire <span class="tag">avec modèle</span></label>
-          <label><input type="checkbox" value="podcast"> Script de podcast <span class="tag">avec modèle</span></label>
+          <label><input type="checkbox" value="fiche"> Fiche technique <span class="tag">rédigé par l’IA, plus long</span></label>
+          <label><input type="checkbox" value="glossaire"> Glossaire <span class="tag">rédigé par l’IA</span></label>
+          <label><input type="checkbox" value="podcast"> Script de podcast <span class="tag">rédigé par l’IA</span></label>
         </div></fieldset>
-        <label class="check wide"><input type="checkbox" name="avec_modele"> Le modèle complète le QCM (chaque question
-          est contrôlée contre l’extrait cité)</label>
+        <label class="check wide"><input type="checkbox" name="avec_modele"> L’IA ajoute des questions au QCM (chacune est
+          vérifiée dans le document cité)</label>
         <button id="supports-go">Produire les supports</button>
       </form>
       <p id="supports-status" class="status" role="status" aria-live="polite"></p>
@@ -153,7 +155,7 @@
     </section>
   </div>
 </div>
-</main>
+</main><footer class="site-footer"><div><strong>SourcIA</strong><span>Du champ à la classe · Challenge IA SAED</span></div><p>Des sources citées, des contenus à vérifier et à adapter par l’enseignant.</p></footer>
 <script>
 'use strict';
 const byId = id => document.getElementById(id);
@@ -230,10 +232,26 @@ async function loadFolders(preferred) {
   const options = [new Option('Choisir un dossier', '')];
   for (const entry of folders) options.push(new Option(entry.title, entry.id));
   byId('folders').replaceChildren(...options);
-  byId('folders').value = folders.some(entry => entry.id === preferred) ? preferred : '';
+  // on rouvre le dossier demandé, sinon le dernier ouvert sur cet ordinateur, sinon le seul qui existe
+  const last = localStorage.getItem('sourcia-dossier');
+  const wanted = [preferred, last, folders.length === 1 ? folders[0].id : ''].find(id => id && folders.some(f => f.id === id));
+  byId('folders').value = wanted || '';
   folder = byId('folders').value;
+  byId('bienvenue').hidden = Boolean(folder);
   await loadDetail();
 }
+
+// le compteur du jour d'un visiteur, affiché avant d'atteindre la limite (rappelé après chaque lancement)
+async function refreshAccount() {
+  const response = await fetch(base + '/session', {cache: 'no-store'}).catch(() => null);
+  if (!response || !response.ok) return;
+  const session = await response.json();
+  if (!session.visiteur) return;
+  const reste = session.reste || {};
+  byId('account').textContent = 'Mode visiteur : vos dossiers restent dans ce navigateur pendant un mois. '
+    + `Aujourd’hui, il vous reste ${reste.corpus ?? 0} contenu(s) à préparer et ${reste.supports ?? 0} production(s) de supports.`;
+}
+window.refreshAccount = refreshAccount;
 
 async function loadDetail() {
   clearTimeout(timer);
@@ -309,10 +327,15 @@ async function connect(jeton) {
   await openWorkspace(session.email);
 }
 
-async function openWorkspace(email) {
+async function openWorkspace(email, visiteur = false) {
   account = email;
   token = '';
-  byId('account').textContent = 'Connecté : ' + email;
+  // accès libre : un compte visiteur est créé tout seul, sans jeton ; il garde ses dossiers dans ce navigateur
+  byId('account').textContent = visiteur
+    ? 'Mode visiteur : vos dossiers restent dans ce navigateur pendant un mois.'
+    : 'Connecté : ' + email;
+  byId('logout').hidden = visiteur;
+  if (visiteur) refreshAccount();
   await loadFolders();
   byId('token').value = '';
   byId('workspace').hidden = false;
@@ -335,7 +358,10 @@ window.addEventListener('hashchange', () => { useLink(); });
 (async () => {
   if (await useLink()) return;
   const response = await fetch(base + '/session', {cache: 'no-store'}).catch(() => null);
-  if (response && response.ok) await openWorkspace((await response.json()).email).catch(error => message(error.message, true));
+  if (response && response.ok) {
+    const session = await response.json();
+    await openWorkspace(session.email, session.visiteur).catch(error => message(error.message, true));
+  }
 })();
 
 byId('logout').onclick = () => {
@@ -360,6 +386,16 @@ byId('logout').onclick = () => {
   message('');
 };
 
+byId('exemple').addEventListener('click', async () => {
+  byId('exemple').disabled = true;
+  try {
+    const created = await json(base + '/exemple', {method: 'POST', body: '{}'});
+    await loadFolders(created.id);
+    message('Dossier d’exemple créé : ses ' + created.documents + ' documents sont en cours de traitement. '
+      + 'Quand ils sont prêts, passez à l’étape 3 « Mon contenu ».');
+  } catch (error) { message(error.message, true); } finally { byId('exemple').disabled = false; }
+});
+
 submit('create', async data => {
   const created = await json(base, {method: 'POST', body: JSON.stringify(Object.fromEntries(data))});
   byId('create').reset();
@@ -369,6 +405,8 @@ submit('create', async data => {
 
 byId('folders').onchange = () => {
   folder = byId('folders').value;
+  if (folder) localStorage.setItem('sourcia-dossier', folder);
+  byId('bienvenue').hidden = Boolean(folder);
   byId("detail").hidden = true;
   byId("notification").textContent = "";
   byId('results').replaceChildren();
@@ -524,6 +562,6 @@ byId('zip').onclick = async () => {
   }
 };
 </script>
-<script src="/assets/parcours.js"></script>
+<script src="/assets/parcours.js?v=saed-20261125b"></script>
 </body>
 </html>

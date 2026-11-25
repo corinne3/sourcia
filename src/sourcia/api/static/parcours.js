@@ -11,10 +11,21 @@
     ajoute_couverture: 'ajouté pour couvrir la capacité, à valider', deja_valide: 'déjà validé',
     valide: 'validé', refuse: 'refusé'};
   const FICHIERS = {
-    'qcm_apprenants.md': 'QCM pour les élèves', 'qcm_corrige.md': 'QCM corrigé', 'qcm_moodle.gift.txt': 'QCM Moodle (GIFT)',
-    'cartes_anki.csv': 'Cartes pour Anki (CSV)', 'cartes.html': 'Cartes à découper', 'infographie.html': 'Infographie A4',
-    'presentation.pptx': 'Présentation', 'fiche_technique.md': 'Fiche technique', 'glossaire.md': 'Glossaire',
-    'podcast_script.md': 'Script de podcast', 'supports.json': 'Données (JSON)'};
+    'qcm_eleves.html': 'QCM pour les élèves', 'qcm_corrige.html': 'QCM corrigé', 'cartes.html': 'Cartes à découper',
+    'infographie.html': 'Infographie A4', 'fiche_technique.html': 'Fiche technique', 'glossaire.html': 'Glossaire',
+    'podcast.html': 'Script de podcast', 'presentation.pptx': 'Présentation (PowerPoint)',
+    'qcm_moodle.gift.txt': 'QCM pour Moodle (GIFT)', 'cartes_anki.csv': 'Cartes pour Anki (CSV)',
+    'qcm_apprenants.md': 'QCM élèves', 'qcm_corrige.md': 'QCM corrigé', 'fiche_technique.md': 'Fiche technique',
+    'glossaire.md': 'Glossaire', 'podcast_script.md': 'Podcast', 'supports.json': 'Données (JSON)'};
+  const GROUPES = [
+    ['À imprimer ou projeter', 'Les pages s’ouvrent dans un nouvel onglet : imprimez-les ou enregistrez-les en PDF.',
+      ['qcm_eleves.html', 'qcm_corrige.html', 'cartes.html', 'infographie.html', 'fiche_technique.html', 'glossaire.html',
+       'podcast.html', 'presentation.pptx']],
+    ['À importer', 'Dans Moodle (banque de questions, format GIFT) ou dans Anki (fichier, importer).',
+      ['qcm_moodle.gift.txt', 'cartes_anki.csv']],
+    ['Texte modifiable', 'Le même contenu en texte simple, pour le retoucher dans un traitement de texte.',
+      ['qcm_apprenants.md', 'qcm_corrige.md', 'fiche_technique.md', 'glossaire.md', 'podcast_script.md']],
+  ];
   const NOMS = {qcm: 'QCM', cartes: 'cartes', presentation: 'présentation', infographie: 'infographie',
     fiche: 'fiche technique', glossaire: 'glossaire', podcast: 'podcast'};
   const state = {step: 'dossier', corpus: '', timer: null, images: [], refs: null, loading: 0};
@@ -100,7 +111,11 @@
     byId('step-supports').hidden = !logged || step !== 'supports' || !folder;
     if (!logged || !folder) return;
     const run = step === 'corpus' ? refreshCorpus : step === 'supports' ? refreshSupports : null;
-    if (run) run().catch(error => message(error.message, true));
+    if (run) {
+      message('');                                  // le message de l'étape précédente ne reste pas affiché
+      byId('step-' + step).scrollIntoView({block: 'start'});
+      run().catch(error => message(error.message, true));
+    }
   }
 
   function goto(step) {
@@ -130,6 +145,8 @@
     const [detail, list] = await Promise.all([json(folderUrl()), json(corpusUrl())]);
     if (current !== folder || state.step !== 'corpus') return;
     await loadReferentiels();
+    const sujet = byId('corpus-form').elements.sujet;
+    if (!sujet.value.trim()) sujet.value = (detail.title || '').replace(/^Exemple\s*:\s*/i, '');
     const ready = detail.documents.filter(d => d.selected && d.status === 'pret');
     const waiting = detail.documents.filter(d => d.selected && d.status !== 'pret' && d.status !== 'erreur');
     const privateDocs = ready.filter(d => d.private).length;
@@ -147,7 +164,7 @@
     }
     byId('corpus-go').disabled = !ready.length || list.some(c => c.statut === 'en_cours');
     renderCorpusList(list);
-    if (list.some(c => c.statut === 'en_cours')) {
+    if (list.some(c => c.statut === 'en_cours') || (waiting.length && !ready.length)) {
       state.timer = setTimeout(() => refreshCorpus().catch(error => message(error.message, true)), POLL_MS);
     }
   }
@@ -155,24 +172,24 @@
   function renderCorpusList(list) {
     const ul = byId('corpus-list');
     if (!list.length) {
-      ul.replaceChildren(el('li', {className: 'empty', text: 'Aucun corpus pour ce dossier : remplissez la demande ci-dessus.'}));
+      ul.replaceChildren(el('li', {className: 'empty', text: 'Aucun contenu préparé pour ce dossier : remplissez la demande ci-dessus.'}));
       return;
     }
     ul.replaceChildren(...list.map(c => {
       const li = el('li', {dataset: {id: c.id}}, el('strong', {text: c.sujet || c.id}), ' ', badge(c.statut),
         el('div', {className: 'meta', text: `Lancé le ${dateFr(c.cree_le)} avec ${c.documents ?? '?'} document(s)` +
-          (c.demande_par ? `, par ${c.demande_par}` : '') + '.'}));
+          (c.demande_par && !c.demande_par.endsWith('@visiteur.sourcia') ? `, par ${c.demande_par}` : '') + '.'}));
       if (c.statut === 'en_cours') li.append(el('div', {className: 'meta',
         text: 'Construction en cours : avec un vrai modèle, compter plusieurs minutes. La page se met à jour seule.'}));
       if (c.statut === 'erreur') li.append(el('div', {className: 'alert', text: c.erreur || 'Échec de la construction.'}));
       if (c.exclus_prives && c.exclus_prives.length) li.append(el('div', {className: 'alert',
         text: `Documents privés laissés de côté (modèle en ligne, sans votre accord) : ${c.exclus_prives.join(', ')}.`}));
       const empty = c.statut === 'pret' && c.points === 0;      // le modèle n'a écrit aucun point clé
-      if (empty) li.append(el('div', {className: 'alert', text: 'Corpus vide : le modèle n’a écrit aucun point clé ' +
-        '(il n’a pas répondu correctement). Vérifiez que le modèle est joignable, puis construisez à nouveau le corpus.'}));
+      if (empty) li.append(el('div', {className: 'alert', text: 'Contenu vide : l’IA n’a écrit aucun point clé ' +
+        '(il n’a pas répondu correctement). Vérifiez que le modèle est joignable, puis préparez à nouveau le contenu.'}));
       if (c.statut === 'pret') {
         li.append(el('div', {className: 'file-actions'},
-          action('Voir le corpus', () => openCorpus(c.id), false),
+          action('Voir le contenu', () => openCorpus(c.id), false),
           action('Word', () => download(corpusUrl(c.id) + '/corpus_pedagogique.docx', 'corpus_pedagogique.docx')),
           action('JSON', () => download(corpusUrl(c.id) + '/corpus.json', 'corpus.json')),
           empty ? null : action('Produire les supports', async () => { state.corpus = c.id; goto('supports'); })));
@@ -303,8 +320,8 @@
     const empty = byId('supports-empty');
     empty.hidden = Boolean(ready.length);
     if (!ready.length) {
-      empty.replaceChildren('Aucun corpus prêt avec des points clés dans ce dossier. ',
-        el('a', {href: '#corpus', text: 'Construisez d’abord un corpus dans « Mon corpus »'}), '.');
+      empty.replaceChildren('Aucun contenu prêt dans ce dossier. ',
+        el('a', {href: '#corpus', text: 'Préparez d’abord le contenu dans « Mon contenu »'}), '.');
       byId('supports-list').replaceChildren();
       return;
     }
@@ -335,7 +352,7 @@
   function renderSupportsList(cid, list) {
     const ul = byId('supports-list');
     if (!list.length) {
-      ul.replaceChildren(el('li', {className: 'empty', text: 'Aucun support pour ce corpus : choisissez ci-dessus.'}));
+      ul.replaceChildren(el('li', {className: 'empty', text: 'Aucun support pour ce contenu : choisissez ci-dessus.'}));
       return;
     }
     ul.replaceChildren(...list.map(s => {
@@ -347,11 +364,23 @@
       for (const r of s.remarques || []) li.append(el('div', {className: 'meta', text: 'À savoir : ' + r}));
       if (s.statut === 'pret') {
         const path = name => corpusUrl(cid) + '/supports/' + encodeURIComponent(s.id) + '/' + encodeURIComponent(name);
-        li.append(el('div', {className: 'file-actions'}, ...(s.fichiers || []).flatMap(name => {
-          const label = FICHIERS[name] || name;
-          const buttons = [action(label, () => download(path(name), name))];
-          if (name.endsWith('.html')) buttons.push(action('Ouvrir pour imprimer', () => openInTab(path(name))));
-          return buttons;
+        // trois groupes : à imprimer ou projeter (pages et diapos), à importer (Moodle, Anki), texte modifiable
+        const files = s.fichiers || [];
+        for (const [titre, aide, noms] of GROUPES) {
+          const presents = noms.filter(name => files.includes(name));
+          if (!presents.length) continue;
+          li.append(el('div', {className: 'groupe-fichiers'}, el('p', {className: 'groupe-titre', text: titre}),
+            el('p', {className: 'meta', text: aide}),
+            el('div', {className: 'file-actions'}, ...presents.map(name => name.endsWith('.html')
+              ? action(FICHIERS[name], () => openInTab(path(name)), false)     // s'ouvre, prêt à imprimer
+              : action(FICHIERS[name], () => download(path(name), name))))));
+        }
+      }
+      if (s.statut === 'pret' || s.statut === 'erreur') {      // les essais ne s'empilent plus
+        li.append(el('div', {className: 'file-actions'}, action('Supprimer cette production', async () => {
+          if (!confirm('Supprimer cette production de supports ? Ses fichiers seront effacés.')) return;
+          await request(corpusUrl(cid) + '/supports/' + encodeURIComponent(s.id), {method: 'DELETE'});
+          await refreshSupports();
         })));
       }
       return li;
@@ -378,6 +407,7 @@
     byId('corpus-go').disabled = true;
     try {
       const started = await json(corpusUrl(), {method: 'POST', body: JSON.stringify(body)});
+      if (window.refreshAccount) window.refreshAccount();            // visiteur : le compteur du jour baisse
       state.corpus = started.id;
       status('corpus-status', 'Construction lancée. La liste ci-dessous se met à jour toute seule.');
       await refreshCorpus();
@@ -405,6 +435,7 @@
     try {
       const body = {sequences, supports, avec_modele: new FormData(event.currentTarget).get('avec_modele') === 'on'};
       await json(corpusUrl(state.corpus) + '/supports', {method: 'POST', body: JSON.stringify(body)});
+      if (window.refreshAccount) window.refreshAccount();
       status('supports-status', 'Production lancée. La liste ci-dessous se met à jour toute seule.');
       await loadSupports(state.corpus);
     } catch (error) {

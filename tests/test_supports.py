@@ -60,7 +60,10 @@ def test_every_support_is_produced(corpus_dir, model_ctx):
     assert folder.parent == corpus_dir / "supports" and folder.name.startswith("supports-")
     assert {p.name for p in paths} == {"supports.json", "qcm_apprenants.md", "qcm_corrige.md", "qcm_moodle.gift.txt",
                                        "cartes_anki.csv", "cartes.html", "infographie.html", "presentation.pptx",
-                                       "fiche_technique.md", "glossaire.md", "podcast_script.md"}
+                                       "fiche_technique.md", "glossaire.md", "podcast_script.md",
+                                       # pages à imprimer au style du site (SAED)
+                                       "qcm_eleves.html", "qcm_corrige.html", "fiche_technique.html",
+                                       "glossaire.html", "podcast.html"}
     again = load_supports(folder)
     assert again.fichiers == sup.fichiers and again.qcm == sup.qcm
     assert sup.sequences == [1, 2, 3]
@@ -151,9 +154,9 @@ def test_presentation_slides_notes_and_pictures(corpus_dir):
     assert len(slides) == expected_slides(sup, cp, corpus_dir) == 1 + 3 + 1 + 1 + 1
     first = " ".join(sh.text_frame.text for sh in slides[0].shapes if sh.has_text_frame)
     assert cp.titre in first and cp.referentiel["nom"] in first and "C4.2" in first
-    assert all(s.background.fill.fore_color.rgb == RGBColor.from_string("F7F8F3") for s in slides)   # fond craie
+    assert all(s.background.fill.fore_color.rgb == RGBColor.from_string("F7F6FC") for s in slides)   # fond du site
     titre = next(sh for sh in slides[0].shapes if sh.has_text_frame and sh.text_frame.text == cp.titre)
-    assert titre.text_frame.paragraphs[0].runs[0].font.name == "Century Gothic"
+    assert titre.text_frame.paragraphs[0].runs[0].font.name == "Georgia"
     seq1 = " ".join(sh.text_frame.text for sh in slides[1].shapes if sh.has_text_frame)
     assert "Objectif" in seq1 and CHIP_RE.search(seq1)                            # étiquette de référence
     seq1_notes = slides[1].notes_slide.notes_text_frame.text
@@ -486,3 +489,59 @@ def test_fiche_title_glossary_plural_and_audience(corpus_dir):
     sup = build_supports(cp, None, ["infographie"])
     raw = (write_supports(sup, cp, corpus_dir)[0].parent / "infographie.html").read_text(encoding="utf-8")
     assert f"<p>{upper_first(cp.demande.public_description())}</p>" in raw
+
+
+# ---------------------------------------------------------------------- formats d'import (Moodle, Anki)
+def check_gift(text: str) -> int:
+    """Contrôle un fichier GIFT selon les règles de Moodle ; renvoie le nombre de questions."""
+    def bare(s, ch):                                   # caractères spéciaux non échappés
+        return len(re.findall(r"(?<!\\)" + re.escape(ch), s))
+    n = 0
+    for line in text.splitlines():
+        if line.startswith("$CATEGORY:"):
+            assert "\\" not in line, line                                 # Moodle n'enlève pas les échappements ici
+            continue
+        if not line.startswith("::Q"):
+            assert not line.strip() or line.startswith("//"), line
+            continue
+        n += 1
+        m = re.fullmatch(r"::Q\d+:: (?P<stem>.+?) \{ (?P<answers>.+) \}", line)
+        assert m, line
+        stem, answers = m["stem"], m["answers"]
+        assert all(bare(stem, ch) == 0 for ch in "~=#{}:"), stem         # énoncé : tout est échappé
+        options, _, feedback = answers.partition(" #### ")
+        marks = re.findall(r"(?:^|\s)(?<!\\)([=~])", options)
+        assert marks.count("=") == 1 and len(marks) >= 3, options        # une seule bonne réponse
+        assert all(bare(feedback, ch) == 0 for ch in "~={}#"), feedback
+    return n
+
+
+def test_moodle_and_anki_files_are_valid(corpus_dir):
+    cp = load_corpus(corpus_dir)
+    sup = build_supports(cp, None, ["qcm", "cartes"])
+    folder = write_supports(sup, cp, corpus_dir)[0].parent
+    gift = (folder / "qcm_moodle.gift.txt").read_text(encoding="utf-8")
+    assert check_gift(gift) == len(sup.qcm)
+    assert f"$CATEGORY: {cp.titre.replace(':', ' -')}/" in gift
+    lines = (folder / "cartes_anki.csv").read_text(encoding="utf-8").splitlines()
+    rows = list(csv.reader([x for x in lines if not x.startswith("#")], delimiter=";"))
+    assert len(rows) == len(sup.cartes) and all(len(r) == 3 and r[0] and r[1] for r in rows)
+
+
+def test_print_pages_in_the_site_style(corpus_dir, model_ctx):
+    """Les pages à imprimer : style du site (SAED), polices incluses, l'élève n'a pas les réponses."""
+    cp = load_corpus(corpus_dir)
+    sup = build_supports(cp, None, SUPPORTS, ctx=model_ctx)
+    folder = write_supports(sup, cp, corpus_dir)[0].parent
+    pages = {n: (folder / n).read_text(encoding="utf-8") for n in
+             ("qcm_eleves.html", "qcm_corrige.html", "cartes.html", "infographie.html")}
+    for name in ("fiche_technique.html", "glossaire.html", "podcast.html"):
+        if (folder / name).exists():
+            pages[name] = (folder / name).read_text(encoding="utf-8")
+    for name, page in pages.items():
+        assert "RESSOURCES PÉDAGOGIQUES" in page and "#090773" in page, name               # charte du site
+        assert "data:font/woff2;base64," in page and "fonts.googleapis" not in page, name  # rien à télécharger
+        assert "@page{size:A4" in page, name                                               # prête à imprimer
+    eleve, corrige = pages["qcm_eleves.html"], pages["qcm_corrige.html"]
+    assert "Nom :" in eleve and 'class="bonne"' not in eleve and "Réponse" not in eleve
+    assert corrige.count('class="bonne"') == len(sup.qcm) and CHIP_RE.search(corrige)

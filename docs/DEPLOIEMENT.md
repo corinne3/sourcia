@@ -86,6 +86,10 @@ docker compose restart
 
 ## 4. Les comptes
 
+Avec `acces_libre: true` (réglage par défaut de `config/serveur.yaml`, pour le prototype), il n'y a rien à faire :
+chaque visiteur a un compte anonyme sans jeton, limité à 3 corpus et 3 productions de supports par jour. Les comptes
+ci-dessous restent utiles pour les vrais enseignants (pas de limite) et pour le compte démo du jury.
+
 ```powershell
 docker compose exec sourcia sourcia comptes ajouter prenom.nom@lycee.fr --url https://adresse-publique
 docker compose exec sourcia sourcia comptes demo --url https://adresse-publique

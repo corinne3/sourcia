@@ -193,12 +193,14 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
         return FileResponse(safe(export_dir, name), filename=name)
 
     @app.post("/api/formation")
-    def formation(req: FormationRequest, _: str | None = Depends(required)):
+    def formation(req: FormationRequest, email: str | None = Depends(required)):
         from sourcia.formation.builder import FormationBuilder
         from sourcia.formation.render import write
 
         if not req.doc_ids:
             raise HTTPException(400, "aucun document : faire d'abord une sélection")
+        if email:
+            dossiers.quota(email, "corpus")                # visiteur : quelques formations par jour
         form = FormationBuilder(ctx).build(req.demande, req.doc_ids, n_seq=req.sequences, n_quiz=req.quiz)
         paths = write(form, ctx, form_dir)
         return {"dossier": paths[0].parent.name, "fichiers": [p.name for p in paths],
@@ -245,7 +247,15 @@ def create_app(config: str | None = None, ctx=None) -> FastAPI:
 
     @app.post("/api/supports", status_code=202)
     def supports_start(req: CatalogueSupportsRequest, tasks: BackgroundTasks, email: str | None = Depends(required)):
-        return jobs.start(catalog_corpus(req.corpus_id), req, tasks, email or "page web")
+        folder = catalog_corpus(req.corpus_id)
+        if email:
+            dossiers.quota(email, "supports")
+        try:
+            return jobs.start(folder, req, tasks, email or "page web")
+        except HTTPException:
+            if email:
+                dossiers.quotas.refund(email, "supports")
+            raise
 
     @app.get("/api/supports/{corpus_id}")
     def supports_list(corpus_id: str):

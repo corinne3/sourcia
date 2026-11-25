@@ -127,6 +127,12 @@ Chaque commande `comptes` affiche un lien de connexion : c'est un secret, à tra
 lancer une formation ou des supports demande d'être connecté (sinon n'importe qui pourrait vider le quota Gemini).
 Le serveur refuse de démarrer sans `SOURCIA_SESSION_SECRET`. La recherche y est « légère » (pas de PyTorch).
 
+**Accès libre** (`acces_libre: true`, activé dans `config/serveur.yaml` pour le prototype) : personne n'a de jeton à
+saisir. Chaque visiteur reçoit automatiquement un compte anonyme, gardé un mois dans son navigateur, et ne voit que
+ses propres dossiers. Pour protéger la clé Gemini partagée, un visiteur lance au plus 3 corpus et 3 productions de
+supports par jour (`limite_visiteur_corpus`, `limite_visiteur_supports`). Les comptes avec jeton marchent toujours
+et ne sont pas limités. Pour revenir aux jetons obligatoires : `acces_libre: false`.
+
 Chez un hébergeur (Render, Railway, Fly.io, serveur de l'établissement…), il faut **Docker, un disque persistant monté
 sur `/data` et le HTTPS** : le pas à pas complet (secrets, premier lancement, sauvegarde, mises à jour) est dans
 [`docs/DEPLOIEMENT.md`](docs/DEPLOIEMENT.md).
@@ -229,7 +235,8 @@ sourcia comptes retirer prenom.nom@lycee.fr
 
 **Session** : l'enseignant saisit son jeton une fois (ou ouvre son lien) ; un cookie protégé (HttpOnly,
 SameSite=Strict, Secure en HTTPS) le garde connecté 12 heures, sur toutes les pages, catalogue compris.
-« Se déconnecter » ferme la session. `SOURCIA_SESSION_SECRET` (au moins 32 caractères aléatoires) garde les sessions
+« Se déconnecter » ferme la session. En accès libre, un visiteur sans jeton a un compte anonyme (voir « Mettre en
+ligne »). `SOURCIA_SESSION_SECRET` (au moins 32 caractères aléatoires) garde les sessions
 après un redémarrage : sur son PC, sans elle, il suffit de se reconnecter ; **en mode serveur, elle est obligatoire**.
 
 **Démonstration** : `sourcia comptes demo` crée le compte `demo@sourcia.local` avec un dossier déjà rempli de

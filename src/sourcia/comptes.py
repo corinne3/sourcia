@@ -13,6 +13,11 @@ Le cookie contient l'adresse, l'heure d'expiration et le début de l'empreinte d
 est retiré ou son jeton remplacé, les sessions ouvertes avec l'ancien jeton ne marchent plus.
 La clé de signature vient de ``SOURCIA_SESSION_SECRET`` ; sans elle, une clé est tirée au démarrage (les sessions
 ne survivent alors pas à un redémarrage du serveur : il suffit de se reconnecter).
+
+Accès libre (``acces_libre: true``, pour un prototype) : un visiteur sans jeton reçoit un compte anonyme, tout entier
+dans son cookie signé (``visiteur-<hasard>@visiteur.sourcia``, 30 jours) : rien n'est ajouté à ``comptes.json``.
+Chacun ne voit que ses dossiers. Les ``Quotas`` limitent ce qu'un visiteur lance par jour (corpus, supports), pour
+protéger la clé du modèle en ligne.
 """
 from __future__ import annotations
 
@@ -22,8 +27,9 @@ import hmac
 import json
 import os
 import secrets
+import threading
 import time
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 ENV_ACCOUNTS = "SOURCIA_DOSSIER_ACCOUNTS"
@@ -31,6 +37,13 @@ ENV_SECRET = "SOURCIA_SESSION_SECRET"
 COOKIE = "sourcia_session"
 SESSION_HOURS = 12
 DEMO_EMAIL = "demo@sourcia.local"
+VISITEUR_DOMAINE = "@visiteur.sourcia"
+VISITEUR_MARQUE = "visiteur"                   # à la place de l'empreinte d'un jeton, dans le cookie d'un visiteur
+VISITEUR_HEURES = 30 * 24                      # un visiteur garde ses dossiers un mois dans le même navigateur
+
+
+def is_visitor(email: str | None) -> bool:
+    return bool(email) and email.endswith(VISITEUR_DOMAINE)
 
 
 def new_token() -> str:
@@ -156,6 +169,13 @@ class Sessions:
         data = base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
         return f"{data}.{self._sign(data)}"
 
+    def create_visitor(self) -> tuple[str, str]:
+        """Un compte visiteur anonyme : (adresse, cookie). Rien n'est enregistré : le cookie signé suffit."""
+        email = f"visiteur-{secrets.token_hex(6)}{VISITEUR_DOMAINE}"
+        payload = f"{email}|{int(time.time()) + VISITEUR_HEURES * 3600}|{VISITEUR_MARQUE}"
+        data = base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
+        return email, f"{data}.{self._sign(data)}"
+
     def verify(self, value: str | None) -> str | None:
         """L'adresse de la session si le cookie est intact, pas expiré, et que le compte a toujours ce jeton."""
         if not value or "." not in value:
@@ -169,4 +189,63 @@ class Sessions:
                 return None
         except (ValueError, UnicodeDecodeError):
             return None
+        if is_visitor(email):                    # signé par ce serveur : le visiteur n'a pas de jeton à vérifier
+            return email if fp == VISITEUR_MARQUE else None
         return email if any(hmac.compare_digest(fp, x[:16]) for x in self.comptes.fingerprints(email)) else None
+
+
+class Quotas:
+    """Ce qu'un visiteur lance par jour (corpus, supports), dans ``<data_dir>/quotas.json``. Les comptes avec jeton
+    ne sont pas comptés. On ne garde que le jour en cours."""
+
+    def __init__(self, path: Path, limits: dict[str, int]):
+        self.path = Path(path)
+        self.limits = limits
+        self.lock = threading.Lock()
+
+    def use(self, email: str, kind: str) -> int | None:
+        """Compte un lancement ; renvoie ce qui reste, ou None si la limite du jour est déjà atteinte."""
+        if not is_visitor(email):
+            return self.limits.get(kind, 0)
+        today = date.today().isoformat()
+        with self.lock:
+            try:
+                data = json.loads(self.path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                data = {}
+            if data.get("jour") != today:
+                data = {"jour": today, "comptes": {}}
+            used = data["comptes"].setdefault(email, {}).get(kind, 0)
+            if used >= self.limits.get(kind, 0):
+                return None
+            data["comptes"][email][kind] = used + 1
+            self._write(data)
+            return self.limits[kind] - used - 1
+
+    def remaining(self, email: str) -> dict[str, int] | None:
+        """Ce qui reste aujourd'hui à un visiteur (None pour un compte avec jeton : pas de limite)."""
+        if not is_visitor(email):
+            return None
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            data = {}
+        used = data.get("comptes", {}).get(email, {}) if data.get("jour") == date.today().isoformat() else {}
+        return {k: max(0, n - used.get(k, 0)) for k, n in self.limits.items()}
+
+    def refund(self, email: str, kind: str) -> None:
+        """Rend un lancement compté pour rien (le lancement a été refusé ensuite)."""
+        if not is_visitor(email):
+            return
+        with self.lock:
+            try:
+                data = json.loads(self.path.read_text(encoding="utf-8"))
+                n = data["comptes"][email][kind]
+            except (OSError, ValueError, KeyError):
+                return
+            data["comptes"][email][kind] = max(0, n - 1)
+            self._write(data)
+
+    def _write(self, data: dict) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
