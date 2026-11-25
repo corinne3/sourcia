@@ -376,3 +376,8 @@ pre { border-width:1px; }
   .home #go { width:100%; } .site-footer > div { gap:6px; }
 }
 @media print { .page-header,.site-footer,.skip-link { display:none; } body { background:#fff; } main { width:100%; } }
+
+/* Mes supports : les fichiers rangés en trois groupes */
+.groupe-fichiers { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--trait); }
+.groupe-fichiers .groupe-titre { margin: 0; font-weight: 700; color: var(--bleuet); }
+.groupe-fichiers .meta { margin: 2px 0 0; font-size: .85rem; }

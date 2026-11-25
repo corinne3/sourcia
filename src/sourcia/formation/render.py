@@ -52,11 +52,18 @@ def _gift_escape(s: str) -> str:
     return " ".join(s.split())
 
 
+def _gift_category(s: str) -> str:
+    """Nom de catégorie Moodle : Moodle ne retire pas les barres d'échappement dans $CATEGORY, et une barre oblique
+    y crée une sous-catégorie ; on remplace donc ces caractères au lieu de les échapper."""
+    return " ".join(s.replace(":", " -").replace("/", "-").split())
+
+
 def to_gift(form) -> str:
     out = [f"// {form.titre} — généré par SourcIA, à relire avant usage", ""]
     k = 0
     for s in form.sequences:
-        out += [f"$CATEGORY: {_gift_escape(s.titre)}", ""]
+        # rangées dans Moodle sous « le cours / la séquence »
+        out += [f"$CATEGORY: {_gift_category(form.titre)}/{_gift_category(s.titre)}", ""]
         for q in s.quiz:
             k += 1
             opts = " ".join(("=" if j == q.bonne_reponse else "~") + _gift_escape(c) for j, c in enumerate(q.choix))

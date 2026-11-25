@@ -11,10 +11,21 @@
     ajoute_couverture: 'ajouté pour couvrir la capacité, à valider', deja_valide: 'déjà validé',
     valide: 'validé', refuse: 'refusé'};
   const FICHIERS = {
-    'qcm_apprenants.md': 'QCM pour les élèves', 'qcm_corrige.md': 'QCM corrigé', 'qcm_moodle.gift.txt': 'QCM Moodle (GIFT)',
-    'cartes_anki.csv': 'Cartes pour Anki (CSV)', 'cartes.html': 'Cartes à découper', 'infographie.html': 'Infographie A4',
-    'presentation.pptx': 'Présentation', 'fiche_technique.md': 'Fiche technique', 'glossaire.md': 'Glossaire',
-    'podcast_script.md': 'Script de podcast', 'supports.json': 'Données (JSON)'};
+    'qcm_eleves.html': 'QCM pour les élèves', 'qcm_corrige.html': 'QCM corrigé', 'cartes.html': 'Cartes à découper',
+    'infographie.html': 'Infographie A4', 'fiche_technique.html': 'Fiche technique', 'glossaire.html': 'Glossaire',
+    'podcast.html': 'Script de podcast', 'presentation.pptx': 'Présentation (PowerPoint)',
+    'qcm_moodle.gift.txt': 'QCM pour Moodle (GIFT)', 'cartes_anki.csv': 'Cartes pour Anki (CSV)',
+    'qcm_apprenants.md': 'QCM élèves', 'qcm_corrige.md': 'QCM corrigé', 'fiche_technique.md': 'Fiche technique',
+    'glossaire.md': 'Glossaire', 'podcast_script.md': 'Podcast', 'supports.json': 'Données (JSON)'};
+  const GROUPES = [
+    ['À imprimer ou projeter', 'Les pages s’ouvrent dans un nouvel onglet : imprimez-les ou enregistrez-les en PDF.',
+      ['qcm_eleves.html', 'qcm_corrige.html', 'cartes.html', 'infographie.html', 'fiche_technique.html', 'glossaire.html',
+       'podcast.html', 'presentation.pptx']],
+    ['À importer', 'Dans Moodle (banque de questions, format GIFT) ou dans Anki (fichier, importer).',
+      ['qcm_moodle.gift.txt', 'cartes_anki.csv']],
+    ['Texte modifiable', 'Le même contenu en texte simple, pour le retoucher dans un traitement de texte.',
+      ['qcm_apprenants.md', 'qcm_corrige.md', 'fiche_technique.md', 'glossaire.md', 'podcast_script.md']],
+  ];
   const NOMS = {qcm: 'QCM', cartes: 'cartes', presentation: 'présentation', infographie: 'infographie',
     fiche: 'fiche technique', glossaire: 'glossaire', podcast: 'podcast'};
   const state = {step: 'dossier', corpus: '', timer: null, images: [], refs: null, loading: 0};
@@ -347,12 +358,17 @@
       for (const r of s.remarques || []) li.append(el('div', {className: 'meta', text: 'À savoir : ' + r}));
       if (s.statut === 'pret') {
         const path = name => corpusUrl(cid) + '/supports/' + encodeURIComponent(s.id) + '/' + encodeURIComponent(name);
-        li.append(el('div', {className: 'file-actions'}, ...(s.fichiers || []).flatMap(name => {
-          const label = FICHIERS[name] || name;
-          const buttons = [action(label, () => download(path(name), name))];
-          if (name.endsWith('.html')) buttons.push(action('Ouvrir pour imprimer', () => openInTab(path(name))));
-          return buttons;
-        })));
+        // trois groupes : à imprimer ou projeter (pages et diapos), à importer (Moodle, Anki), texte modifiable
+        const files = s.fichiers || [];
+        for (const [titre, aide, noms] of GROUPES) {
+          const presents = noms.filter(name => files.includes(name));
+          if (!presents.length) continue;
+          li.append(el('div', {className: 'groupe-fichiers'}, el('p', {className: 'groupe-titre', text: titre}),
+            el('p', {className: 'meta', text: aide}),
+            el('div', {className: 'file-actions'}, ...presents.map(name => name.endsWith('.html')
+              ? action(FICHIERS[name], () => openInTab(path(name)), false)     // s'ouvre, prêt à imprimer
+              : action(FICHIERS[name], () => download(path(name), name))))));
+        }
       }
       return li;
     }));

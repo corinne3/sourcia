@@ -45,7 +45,7 @@ def test_steps_bar_on_both_pages(client):
     assert "aria-current" not in re.search(r'<nav class="steps".*?</nav>', DOSSIERS, re.S).group(0)  # posé par le script
     page = client.get("/dossiers").text
     assert 'id="step-corpus"' in page and 'id="step-supports"' in page
-    assert page.index('<script src="/assets/parcours.js">') > page.index("</script>")   # après le script de Kalil
+    assert page.index('<script src="/assets/parcours.js?v=') > page.index("</script>")   # après le script de Kalil
 
 
 def test_every_element_used_by_the_script_exists():
