@@ -1,0 +1,118 @@
+<template>
+  <style>
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; src: url("assets/app/fonts/atkinson-hyperlegible-gras.woff2") format("woff2"); }
+    @font-face { font-family: "Atkinson Hyperlegible"; font-style: italic; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-italique.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; overflow: hidden; background: var(--craie); font-family: "Atkinson Hyperlegible", sans-serif;
+      color: var(--terre); font-size: 30px; line-height: 1.5; }
+    /* l'aperçu du corpus de l'app (écran « Mon corpus »), à 1,7× */
+    #s5-camera { position: absolute; inset: 0; transform-origin: 0 0; }
+    #s5-vue { position: absolute; left: 110px; right: 110px; top: 60px; background: var(--blanc); border: 2px solid var(--trait);
+      border-radius: 30px; padding: 44px 56px 30px; }
+    #s5-vue h2 { font-family: var(--titre); font-weight: 700; font-size: 56px; line-height: 1.12; color: var(--bleuet); }
+    .meta { margin-top: 10px; font-size: 28px; color: var(--terre-douce); }
+    .sequence { margin-top: 28px; padding-top: 24px; border-top: 3px dotted var(--trait); }
+    .sequence h3 { font-family: var(--ui); font-weight: 700; color: var(--bleuet); letter-spacing: -.02em; font-size: 40px; line-height: 1.2; margin-bottom: 10px; }
+    .sequence p { margin-top: 6px; }
+    .tag { display: inline-block; margin-left: 10px; padding: 3px 18px; border-radius: 999px; font-size: 28px; font-weight: 700;
+      background: var(--colza-pale); color: var(--colza-texte); }
+    #s5-capacite { padding: 4px 10px; margin-left: -10px; border-radius: 12px; }
+    ul.points { list-style: none; margin-top: 18px; }
+    ul.points li { position: relative; padding: 8px 0 14px 24px; margin-bottom: 12px; border-left: 7px solid var(--prairie); }
+    .ref { display: inline-block; margin-left: 12px; padding: 2px 18px 2px 26px; font-size: 28px; font-weight: 700; white-space: nowrap;
+      color: var(--ble-texte); background: var(--ble); border-radius: 10px; padding: 2px 16px; }
+    .resume { font-size: 28px; color: var(--terre-douce); margin-top: 6px; }
+    #s5-extrait { margin-top: 12px; padding: 18px 24px; border-radius: 18px; background: var(--craie); border: 3px solid var(--trait); }
+    #s5-extrait .titre { font-size: 28px; font-weight: 700; color: var(--terre-douce); }
+    #s5-extrait q { display: block; margin-top: 6px; font-style: italic; color: var(--terre-douce); }
+    #s5-extrait .lien { margin-top: 8px; font-size: 28px; color: var(--bleuet); text-decoration: underline; text-underline-offset: 5px; }
+    .mot { background-image: linear-gradient(transparent 62%, #bfe0c8 62%); background-repeat: no-repeat; background-size: 0% 100%; }
+    /* ce qui a été retiré : une ligne du carnet de contrôle du corpus (corpus.json) */
+    #s5-retire { position: absolute; left: 110px; right: 110px; bottom: 70px; padding: 30px 40px; border-radius: 28px;
+      background: var(--coquelicot-pale); border: 3px solid #efc2b8; }
+    #s5-retire .label { font-family: var(--ui); font-weight: 700; font-size: 36px; color: var(--coquelicot-texte); }
+    #s5-phrase { position: relative; display: inline-block; margin-top: 8px; font-size: 32px; color: var(--terre); }
+    #s5-barre { position: absolute; left: -6px; right: -6px; top: 54%; height: 5px; background: var(--coquelicot); transform-origin: left center; }
+    #s5-curseur { position: absolute; left: 0; top: 0; width: 66px; height: 66px; z-index: 20; }
+    #s5-curseur svg { width: 66px; height: 66px; transform-origin: 12px 8px; }
+  </style>
+  <div id="root" data-composition-id="s5" data-width="1920" data-height="1080">
+    <div id="s5-camera" data-layout-allow-overflow>
+      <div id="s5-vue">
+        <h2>Conduite du sorgho fourrager en conditions sèches</h2>
+        <p class="meta">Construit à partir de 5 document(s), en 3 séquence(s), pour le diplôme BTSA ACS’Agri : Analyse, conduite et stratégie de l’entreprise agricole.</p>
+        <article class="sequence">
+          <h3 id="s5-titre">Séquence 1 : Sélection variétale et potentiel agronomique</h3>
+          <p id="s5-objectif"><b>Objectif : </b>Comparer les performances des variétés de sorgho fourrager pour optimiser le rendement en conditions sèches. (40 min)</p>
+          <p id="s5-capacite"><b>Capacité : </b>C4.4 – Concevoir un système biotechnique durable et résilient <span class="tag" id="s5-avalider">proposé par l’IA, à valider</span></p>
+          <ul class="points">
+            <li id="s5-p1">Le sorgho fourrager est une culture particulièrement adaptée aux conditions séchantes, permettant de constituer des stocks de fourrage de qualité. <span class="ref">S1, page 1</span></li>
+            <li id="s5-p2"><span class="mot" id="s5-mot1">La valeur énergétique, exprimée en UFL</span> (Unité Fourragère Lait), est le critère principal pour classer les variétés selon leur usage : ensilage (E), usages industriels (PI) ou doubles usages (DU). <span class="ref" id="s5-ref">S2, page 1</span>
+              <div id="s5-extrait">
+                <div class="titre">Extrait du document</div>
+                <q><span class="mot" id="s5-mot2">La valeur énergétique exprimée en UFL</span> (**) est un critère de classification des variétés en fonction de leur usage potentiel.</q>
+                <div class="lien">S2. Arvalis (2018). Sorgho fourrager : valeurs agronomiques et énergétiques 2017. arvalis.fr</div>
+              </div>
+            </li>
+          </ul>
+        </article>
+      </div>
+    </div>
+    <div id="s5-retire" class="clip" data-start="10.9" data-duration="3.9">
+      <div class="label">Non retrouvé dans les sources : retiré du corpus</div>
+      <div id="s5-phrase">« L’utilisation de variétés à gène BMR peut entraîner une sensibilité accrue à la verse… »<i id="s5-barre"></i></div>
+    </div>
+    <div id="s5-curseur"><svg viewBox="0 0 32 32"><path d="M6 3l19 15-8.5 1.2L21 28l-4 1.8-4.6-8.9L6 26z" fill="#2a231c" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const root = document.querySelector('[data-composition-id="s5"]');
+    const curseur = document.getElementById("s5-curseur");
+    const passages = [{ t: 0, x: 1980, y: 1100 }, { t: 7.0, x: 1980, y: 1100 }, { t: 7.75, sel: "#s5-ref" }, { t: 10.3, sel: "#s5-ref" }, { t: 10.9, x: 1980, y: 1100 }];
+    // position dans la mise en page, puis la caméra (zoom 1,3, origine en haut à gauche, décalage -150, -560),
+    // qui est au repos quand le curseur vise l'étiquette (7,75 à 10,3 s)
+    function point(p) {
+      if (!p.sel) return [p.x, p.y];
+      let el = document.querySelector(p.sel), x = 0, y = 0;
+      const w = el.offsetWidth, h = el.offsetHeight;
+      while (el && el !== root) { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; }
+      return [(x + w * 0.5) * 1.3 - 150, (y + h * 0.55) * 1.3 - 560];
+    }
+    const ease = gsap.parseEase("power2.inOut");
+    function placer(t) {
+      let i = passages.findIndex((p) => p.t > t);
+      if (i === -1) i = passages.length;
+      const a = passages[Math.max(0, i - 1)], b = passages[Math.min(passages.length - 1, i)];
+      const [ax, ay] = point(a), [bx, by] = point(b);
+      const k = b.t === a.t ? 1 : ease(Math.min(1, Math.max(0, (t - a.t) / (b.t - a.t))));
+      gsap.set(curseur, { x: ax + (bx - ax) * k, y: ay + (by - ay) * k });
+    }
+    const horloge = { t: 0 };
+    tl.fromTo(horloge, { t: 0 }, { t: 14.8, duration: 14.8, ease: "none", onUpdate: () => placer(horloge.t) }, 0);
+
+    // ---- le corpus se construit : titre, séquence, objectif, capacité, puis les points clés
+    tl.fromTo("#s5-vue", { opacity: 0, filter: "blur(10px)", scale: 0.97 }, { opacity: 1, filter: "blur(0px)", scale: 1, duration: 0.5, ease: "expo.out" }, 0);
+    tl.fromTo(["#s5-titre", "#s5-objectif", "#s5-capacite"], { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.35 }, 0.6);
+    tl.set(["#s5-p1", "#s5-p2"], { opacity: 0 }, 0);
+    tl.set("#s5-extrait", { opacity: 0, clipPath: "inset(0% 0% 100% 0% round 18px)" }, 0);
+    // « rattachées aux capacités du BTSA »
+    tl.fromTo("#s5-capacite", { backgroundColor: "rgba(253,243,196,0)" }, { backgroundColor: "rgba(253,243,196,1)", duration: 0.4, ease: "power2.inOut" }, 3.5);
+    tl.fromTo("#s5-avalider", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" }, 3.7);
+    tl.fromTo(["#s5-p1", "#s5-p2"], { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.3 }, 4.5);
+    // ---- gros plan sur le point 2 et sa référence
+    tl.to("#s5-camera", { scale: 1.3, x: -150, y: -560, duration: 0.7, ease: "power2.inOut" }, 6.2);
+    tl.fromTo("#s5-ref", { scale: 1 }, { scale: 1.15, duration: 0.15, yoyo: true, repeat: 1 }, 7.0);
+    // clic sur l'étiquette : l'extrait exact du document s'ouvre (comme « Extrait du document » dans l'app)
+    tl.fromTo("#s5-curseur svg", { scale: 1 }, { scale: 0.82, duration: 0.08, yoyo: true, repeat: 1 }, 7.85);
+    tl.to("#s5-extrait", { opacity: 1, clipPath: "inset(0% 0% 0% 0% round 18px)", duration: 0.5, ease: "expo.out" }, 7.9);
+    // les mêmes mots, dans le point clé et dans l'extrait
+    tl.to("#s5-mot1", { backgroundSize: "100% 100%", duration: 0.6, ease: "power2.inOut" }, 8.7);
+    tl.to("#s5-mot2", { backgroundSize: "100% 100%", duration: 0.6, ease: "power2.inOut" }, 9.2);
+    // ---- recul : ce que les documents ne disent pas est retiré
+    tl.to("#s5-camera", { scale: 1, x: 0, y: -330, filter: "blur(4px)", opacity: 0.45, duration: 0.6, ease: "power2.inOut" }, 10.7);
+    tl.fromTo("#s5-retire", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "expo.out" }, 10.9);
+    tl.fromTo("#s5-barre", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.inOut" }, 12.3);
+    tl.to("#s5-retire", { opacity: 0, filter: "blur(8px)", duration: 0.2, ease: "power3.in" }, 14.55);
+    window.__timelines["s5"] = tl;
+  </script>
+</template>

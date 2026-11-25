@@ -1,0 +1,36 @@
+<template>
+  <style>
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; src: url("assets/app/fonts/atkinson-hyperlegible-gras.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #fcfbff 0, #f2effa 100%);
+      font-family: "Atkinson Hyperlegible", sans-serif; color: var(--terre); }
+    #s8-bloc { position: absolute; left: 0; right: 0; top: 190px; display: grid; justify-items: center; text-align: center; }
+    #s8-marque { display: flex; align-items: center; gap: 36px; }
+    #s8-logo { width: 170px; height: 180px; display: grid; place-items: center; border-radius: 50px 50px 14px 50px;
+      background: var(--bleuet); color: #fff; font: italic 700 134px/1 var(--titre); }
+    #s8-nom { font: 800 172px/1 var(--ui); color: var(--bleuet); letter-spacing: -.05em; text-align: left; }
+    #s8-nom small { display: block; margin-top: 14px; font: 700 30px/1 "Atkinson Hyperlegible", sans-serif; letter-spacing: .14em; color: #71619f; }
+    #s8-devise { margin-top: 48px; font: 700 66px/1.1 var(--titre); color: var(--bleuet); }
+    #s8-devise em { font-style: normal; text-decoration: underline; text-decoration-color: #b5a7db; text-decoration-thickness: 6px; text-underline-offset: 12px; }
+    #s8-lien { margin-top: 52px; font: 700 40px/1 var(--ui); color: #fff; background: var(--bleuet); padding: 24px 52px; border-radius: 999px; }
+    #s8-evenement { margin-top: 34px; font-size: 34px; color: var(--terre-douce); }
+  </style>
+  <div id="root" data-composition-id="s8" data-composition-variables='[{"id":"lien","type":"string","label":"Adresse de l’app","default":"sourcia.13-53-71-254.sslip.io"},{"id":"evenement","type":"string","label":"Événement","default":"Hackathon SAED 2026, défi 1"}]' data-width="1920" data-height="1080">
+    <div id="s8-bloc">
+      <div id="s8-marque"><span id="s8-logo" aria-hidden="true">S</span><div id="s8-nom">SourcIA<small>RESSOURCES PÉDAGOGIQUES</small></div></div>
+      <div id="s8-devise">Du champ <em>à la classe</em></div>
+      <div id="s8-lien" data-var-text="lien">sourcia.13-53-71-254.sslip.io</div>
+      <div id="s8-evenement" data-var-text="evenement">Hackathon SAED 2026, défi 1</div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // la marque est portée : le logo se pose, le nom se dévoile, puis la devise et l'adresse
+    tl.fromTo("#s8-logo", { scale: 0.35, opacity: 0, rotation: -10 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.6, ease: "back.out(1.5)" }, 0.1);
+    tl.fromTo("#s8-nom", { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.6, ease: "power3.out" }, 0.45);
+    tl.fromTo("#s8-devise", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.22 }, 1.2);
+    tl.fromTo("#s8-lien", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.6)" }, 1.9);
+    tl.fromTo("#s8-evenement", { opacity: 0 }, { opacity: 1, duration: 0.25 }, 2.3);
+    window.__timelines["s8"] = tl;
+  </script>
+</template>

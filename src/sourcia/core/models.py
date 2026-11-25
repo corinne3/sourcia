@@ -18,6 +18,21 @@ def doc_id_for(url: str) -> str:
     return hashlib.sha1(url.strip().encode()).hexdigest()[:16]
 
 
+class LinkCheck(BaseModel):
+    """Suivi du lien d'un document (``sourcia check-links``). Absent tant que le lien n'a pas été vérifié.
+
+    ``url`` et ``id`` ne changent jamais (les fiches renvoient à ``document_id``) : un lien déplacé
+    garde son adresse d'origine et la nouvelle est dans ``new_url`` (voir ``Document.current_url``)."""
+
+    state: Literal["ok", "moved", "dead", "unreachable"]   # unreachable : panne passagère possible
+    checked_at: str                              # date de la dernière vérification (AAAA-MM-JJ)
+    http_status: int | None = None
+    new_url: str | None = None                   # nouvelle adresse (redirection, ou même contenu retrouvé ailleurs)
+    failures: int = 0                            # échecs à la suite ; « dead » au bout de 3 (ou 404/410 tout de suite)
+    since: str | None = None                     # date du premier échec de la série
+    detail: str | None = None                    # explication lisible
+
+
 class Document(BaseModel):
     """Un document trouvé par la collecte (pas encore lu)."""
 
@@ -35,6 +50,14 @@ class Document(BaseModel):
     kind: Literal["pdf", "texte", "page", "donnees", "video", "image", "audio"] = "pdf"   # nature de la ressource
     status: Literal["listed", "downloaded", "extracted", "qualified", "error"] = "listed"
     error: str | None = None
+    link: LinkCheck | None = None                # suivi du lien (facultatif : ok, déplacé, mort, injoignable)
+
+    @property
+    def current_url(self) -> str:
+        """Adresse à afficher ou exporter : la nouvelle si le document a été déplacé, sinon ``url``."""
+        if self.link and self.link.state == "moved" and self.link.new_url:
+            return self.link.new_url
+        return self.url
 
 
 class Field_(BaseModel):

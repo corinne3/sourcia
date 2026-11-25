@@ -11,6 +11,25 @@ from datetime import date
 from sourcia.core.models import Field_, Fiche
 from sourcia.core.text import normalize, split_sentences
 
+# Mots du vocabulaire qui, sans leurs accents, sont aussi des mots courants : cherchés AVEC leurs accents
+# (vu le 23/11 : 121 documents classés « maïs » à cause de la conjonction « mais »).
+AMBIGUS_SANS_ACCENT = {"mais"}
+
+
+def themes_of(text: str, keywords=None, vocab=None, normalized: str | None = None) -> list[str]:
+    """Thèmes d'un texte : mots-clés de la source + vocabulaire trouvé en DÉBUT de mot (« fourrage » trouve
+    « fourragère », mais « foin » ne trouve plus « sainfoin ») ; « maïs » seulement écrit avec son tréma."""
+    t = normalized if normalized is not None else normalize(text)
+    low = text.lower()
+    found = []
+    for w in vocab or []:
+        nw = normalize(w)
+        hay, word = (low, w.lower()) if nw in AMBIGUS_SANS_ACCENT else (t, nw)
+        if re.search(rf"\b{re.escape(word)}", hay):
+            found.append(w)
+    return sorted(set((keywords or []) + found))[:12]
+
+
 ORGANISMES = [
     ("Chambre d'agriculture", r"chambres? d.agriculture[^.,;\n]{0,40}"),
     ("Arvalis", r"arvalis"),
@@ -190,7 +209,6 @@ def qualify_rules(text: str, doc_date: str | None = None, keywords: list[str] | 
     f.chiffrage_economique = (Field_(value=True, evidence=_sentence_with(text, MONEY_RE), confidence=0.6, method="regles")
                               if m else Field_(value=False, confidence=0.3, method="regles"))
     # thèmes : mots-clés de la source + vocabulaire du domaine trouvé dans le texte
-    found = [w for w in (themes_vocab or []) if normalize(w) in t]
-    f.themes = sorted(set((keywords or []) + found))[:12]
+    f.themes = themes_of(text, keywords, themes_vocab, t)
     f.passes.append("regles")
     return f

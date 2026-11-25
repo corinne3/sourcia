@@ -324,6 +324,8 @@ Pour pouvoir tout coder sans attendre, chaque question a une **valeur par défau
 sourcia doctor                                   vérifier l'installation
 sourcia demo                                     tout le pipeline sur les exemples fictifs
 sourcia demande ma_demande.yaml                  modèle de demande structurée à remplir
+sourcia collect-sites [--site <nom>]             M1 : chaque jour, les sites de config/sites.yaml (PDF, articles, rapport)
+sourcia check-links [--etat dead,unreachable]    M1 : suivi des liens (déplacés, morts, injoignables)
 sourcia add-site <adresse> [--medias]            M1 : un site (PDF, et vidéos, photos, données)
 sourcia import-catalog <fichier> --source <nom>  M1 : un catalogue (RD Agri…)
 sourcia add-folder <dossier>                     M1 : documents privés

@@ -1,0 +1,37 @@
+# Serveur en ligne (image Docker, docs/DEPLOIEMENT.md) : Gemini et recherche légère, données dans /data.
+#
+# Secrets donnés au serveur par l'hébergeur, JAMAIS dans ce fichier ni dans l'image :
+#   GEMINI_API_KEY          clé Gemini (niveau payant pour de vrais utilisateurs : le gratuit est réservé aux essais)
+#   SOURCIA_SESSION_SECRET  au moins 32 caractères aléatoires (les connexions survivent aux redémarrages)
+# ⚠️ Les documents PRIVÉS ne sont jamais envoyés au modèle sans l'accord de l'enseignant (verrou dans le code).
+name: serveur
+serveur: true                  # connexion obligatoire pour ce qui appelle le modèle ou écrit sur le disque
+acces_libre: true              # prototype : pas de jeton, chaque visiteur a son compte anonyme (cookie, 30 jours)
+limite_visiteur_corpus: 3      # par visiteur et par jour : protège la clé Gemini partagée
+limite_visiteur_supports: 3
+data_dir: /data                # volume persistant (comptes, dossiers, catalogue) ; SOURCIA_DATA_DIR le remplace
+formation_threshold: 0.6       # Gemini reformule davantage qu'un petit modèle (même réglage que gcp.yaml)
+
+llm:
+  provider: litellm
+  model: gemini/gemini-3.1-flash-lite
+  temperature: 0.0
+  max_tokens: 700
+  timeout_s: 120
+
+embedder:
+  kind: hashing                # recherche « légère » : pas de modèle d'embeddings ni de PyTorch dans l'image
+  dim: 256
+
+search:
+  min_dense_sim: 0.15
+  reranker: lexical
+
+qualify:
+  llm_pass: false              # fiches des nouveaux documents par les règles : rapide, sans appel au modèle
+
+collect:
+  delay_s: 1.0
+
+observability:
+  energy: estimate

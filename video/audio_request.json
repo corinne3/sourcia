@@ -1,0 +1,52 @@
+{
+  "provider": "gemini",
+  "tts_model": "gemini-3.8-flash-tts",
+  "voice": "Kore",
+  "lang": "fr",
+  "style": "Voix française chaleureuse et posée, comme une formatrice qui présente un outil à des collègues enseignants. Rythme naturel, articulé, sans emphase publicitaire. Courte pause entre les phrases.",
+  "lines": [
+    {
+      "id": "v1",
+      "text": "Arvalis, Terres Inovia, les chambres d'agriculture : plus de six cents fiches techniques sur le sorgho, le maïs, les prairies."
+    },
+    {
+      "id": "v2",
+      "text": "Pour préparer un cours, lesquelles choisir ? Lesquelles sont à jour ? Et comment en faire des supports pour la classe ?"
+    },
+    {
+      "id": "v3",
+      "text": "SourcIA vous accompagne, du champ à la classe, en quatre étapes."
+    },
+    {
+      "id": "v4",
+      "text": "Dans le catalogue, on choisit un thème, ici le sorgho, et on ajoute les documents utiles à son dossier."
+    },
+    {
+      "id": "v5",
+      "text": "On peut aussi ajouter ses propres PDF : sans votre accord, ils ne partent jamais vers un modèle en ligne."
+    },
+    {
+      "id": "v6",
+      "text": "SourcIA prépare alors le contenu du cours : des séquences rattachées aux capacités du BTSA."
+    },
+    {
+      "id": "v7",
+      "text": "Chaque point clé renvoie à sa source, avec la page et l'extrait exact. Ce que les documents ne disent pas est retiré."
+    },
+    {
+      "id": "v8",
+      "text": "Puis viennent les supports : un QCM, des cartes de révision, une présentation, une infographie, une fiche technique, un glossaire, et même un podcast."
+    },
+    {
+      "id": "v9",
+      "text": "Des sources vérifiées, des supports prêts pour la classe. Et c'est l'enseignant qui décide."
+    },
+    {
+      "id": "v10",
+      "text": "SourcIA. Du champ à la classe."
+    }
+  ],
+  "bgm": {
+    "mode": "none"
+  }
+}

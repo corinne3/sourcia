@@ -1,0 +1,14 @@
+# Rendus et fichiers de travail de HyperFrames
+renders/
+.hyperframes/
+node_modules/
+
+# Captures et supports produits par l'app : ils citent des documents de tiers (Arvalis, Terres Inovia…),
+# comme data/ à la racine, ils ne vont pas dans git
+capture/
+assets/supports/
+
+# Fichiers audio générés (gros) : se refont avec audio_request.json (voix) et VOIX.md (musique)
+assets/bgm/
+audio_meta.json
+.thumbnails/

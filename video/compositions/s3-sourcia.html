@@ -1,0 +1,52 @@
+<template>
+  <style>
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; src: url("assets/app/fonts/atkinson-hyperlegible-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; src: url("assets/app/fonts/atkinson-hyperlegible-gras.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #fcfbff 0, #f2effa 100%);
+      font-family: "Atkinson Hyperlegible", sans-serif; }
+    /* la marque du site : le « S » dans son carré, le nom, la mention */
+    #s3-marque { position: absolute; left: 160px; top: 170px; display: flex; align-items: center; gap: 44px; }
+    #s3-logo { width: 190px; height: 200px; display: grid; place-items: center; border-radius: 56px 56px 16px 56px;
+      background: var(--bleuet); color: #fff; font: italic 700 150px/1 var(--titre); }
+    #s3-nom { font: 800 168px/1 var(--ui); color: var(--bleuet); letter-spacing: -.05em; }
+    #s3-nom small { display: block; margin-top: 18px; font: 700 34px/1 "Atkinson Hyperlegible", sans-serif; letter-spacing: .14em;
+      color: #71619f; }
+    #s3-devise { position: absolute; left: 160px; top: 440px; display: inline-block; padding: 12px 30px; border-radius: 999px;
+      background: #e9e4f7; color: var(--bleuet); font: 700 30px/1.3 "Atkinson Hyperlegible", sans-serif; letter-spacing: .12em; }
+    /* les 4 étapes, comme la barre du site : une pastille numérotée et un nom */
+    #s3-etapes { position: absolute; left: 160px; right: 160px; top: 620px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; }
+    .etape { display: flex; align-items: center; gap: 26px; padding: 30px 34px; border-radius: 999px; background: var(--blanc);
+      border: 2px solid var(--trait); }
+    .etape .num { flex: none; width: 82px; height: 82px; display: grid; place-items: center; border-radius: 50%;
+      background: #eeebf8; color: #65538d; font: 700 40px/1 var(--ui); }
+    .etape .nom { font: 700 40px/1.1 var(--ui); color: var(--bleuet); letter-spacing: -.02em; }
+  </style>
+  <div id="root" data-composition-id="s3" data-width="1920" data-height="1080">
+    <div id="s3-marque"><span id="s3-logo" aria-hidden="true">S</span><div id="s3-nom">SourcIA<small>RESSOURCES PÉDAGOGIQUES</small></div></div>
+    <div id="s3-devise" class="clip" data-start="0" data-duration="5">DU CHAMP À LA CLASSE</div>
+    <div id="s3-etapes">
+      <div class="etape" id="s3-e1"><span class="num" id="s3-n1">1</span><span class="nom">Catalogue</span></div>
+      <div class="etape" id="s3-e2"><span class="num" id="s3-n2">2</span><span class="nom">Mon dossier</span></div>
+      <div class="etape" id="s3-e3"><span class="num" id="s3-n3">3</span><span class="nom">Mon contenu</span></div>
+      <div class="etape" id="s3-e4"><span class="num" id="s3-n4">4</span><span class="nom">Mes supports</span></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // le logo arrive en ressort doux, puis le nom se dévoile de gauche à droite
+    tl.fromTo("#s3-logo", { scale: 0.4, opacity: 0, rotation: -8 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.6, ease: "back.out(1.5)" }, 0.05);
+    tl.fromTo("#s3-nom", { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.55, ease: "power3.out" }, 0.35);
+    tl.fromTo("#s3-devise", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2 }, 0.85);
+    // les 4 étapes s'allument l'une après l'autre (la pastille passe au bleu nuit, comme l'étape en cours sur le site)
+    ["1", "2", "3", "4"].forEach((k, i) => {
+      const t = 1.15 + i * 0.5;
+      tl.fromTo("#s3-e" + k, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "expo.out" }, t);
+      tl.fromTo("#s3-n" + k, { backgroundColor: "#eeebf8", color: "#65538d" }, { backgroundColor: "#090773", color: "#ffffff", duration: 0.3 }, t + 0.25);
+    });
+    // transition : on entre dans l'étape 1 par sa pastille (zoom à travers) ; son blanc devient le plan suivant
+    tl.to(["#s3-marque", "#s3-devise", "#s3-e2", "#s3-e3", "#s3-e4", "#s3-e1 .nom", "#s3-n1"],
+      { opacity: 0, filter: "blur(10px)", duration: 0.25, ease: "power2.in" }, 4.35);
+    tl.to("#s3-e1", { scale: 9, duration: 0.55, ease: "power3.in" }, 4.4);
+    window.__timelines["s3"] = tl;
+  </script>
+</template>

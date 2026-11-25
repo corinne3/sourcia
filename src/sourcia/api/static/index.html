@@ -4,58 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SourcIA</title>
-<style>
-  :root{--ink:#17241d;--muted:#5d6b63;--line:#d8e0db;--bg:#f5f7f4;--card:#fff;--accent:#1f7a4d;--accent2:#e3f1e8;--warn:#9a5a12;--warn2:#fbf0e1}
-  @media (prefers-color-scheme: dark){:root{--ink:#e6ece8;--muted:#9aa8a0;--line:#2f3b35;--bg:#121815;--card:#1a221e;--accent:#5cc28f;--accent2:#1f3329;--warn:#e7a95a;--warn2:#3a2c1b}}
-  *{box-sizing:border-box}
-  [hidden]{display:none!important}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-  header,main{max-width:1040px;margin:auto;padding:0 16px}
-  header{padding-top:18px}
-  h1{margin:0;font-size:24px}
-  h2{font-size:18px;margin:22px 0 8px}
-  .sub{color:var(--muted)}
-  form,.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:12px}
-  fieldset{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0}
-  legend{font-weight:600;padding:0 6px}
-  textarea{width:100%;min-height:56px;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
-  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
-  label{font-size:13px;color:var(--muted);display:grid;gap:3px}
-  .chk{display:flex;flex-wrap:wrap;gap:6px 14px}
-  .chk label{display:flex;gap:5px;align-items:center;color:var(--ink);font-size:14px}
-  input,select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
-  input[type=number]{width:90px}
-  input[type=checkbox]{width:auto}
-  button{font:inherit;font-weight:600;padding:9px 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
-  button:disabled{opacity:.5}
-  .status{color:var(--muted);margin:10px 0}
-  .doc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
-  .doc h3{margin:0 0 4px;font-size:16px}
-  a{color:var(--accent)}
-  .meta{font-size:13px;color:var(--muted)}
-  .alert{display:inline-block;background:var(--warn2);color:var(--warn);border-radius:6px;padding:1px 7px;font-size:12px;margin:4px 4px 0 0}
-  .tag{display:inline-block;background:var(--accent2);color:var(--accent);border-radius:6px;padding:1px 7px;font-size:12px;margin-right:4px}
-  table{border-collapse:collapse;width:100%;font-size:13px}
-  td,th{border-top:1px solid var(--line);padding:5px 6px;vertical-align:top;text-align:left}
-  td.q{color:var(--muted);font-style:italic}
-  .caps{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
-  .caps label{display:flex;gap:6px;align-items:flex-start;color:var(--ink)}
-  .caps .child{margin-left:18px}
-  pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}
-  .exports a{margin-right:10px}
-</style>
+<link rel="stylesheet" href="/assets/sourcia.css?v=saed-20261125b">
 </head>
-<body>
-<header>
-  <h1>SourcIA</h1>
-  <div class="sub">Trouver et qualifier les sources de R&amp;D, puis préparer sa formation : chaque contenu renvoie à sa source.</div>
-  <div class="sub" id="etat"></div>
-</header>
-<main>
-  <h2>1. Ma demande</h2>
+<body class="home">
+<a class="skip-link" href="#contenu">Aller au contenu</a><header class="page-header"><div class="header-content"><div class="marque"><a class="brand" href="/" aria-label="SourcIA — accueil"><span class="brand-symbol" aria-hidden="true">S</span><span>SourcIA<small>RESSOURCES PÉDAGOGIQUES</small></span></a></div><nav class="steps" aria-label="Les quatre étapes du parcours"><a href="/" data-step="catalogue" aria-current="page"><span class="step-number" aria-hidden="true">1</span><span class="nom">Catalogue</span></a><a href="/dossiers#dossier" data-step="dossier"><span class="step-number" aria-hidden="true">2</span><span class="nom">Mon dossier</span></a><a href="/dossiers#corpus" data-step="corpus"><span class="step-number" aria-hidden="true">3</span><span class="nom">Mon contenu</span></a><a href="/dossiers#supports" data-step="supports"><span class="step-number" aria-hidden="true">4</span><span class="nom">Mes supports</span></a></nav></div></header>
+<main id="contenu"><div class="intro"><span class="eyebrow">DU CHAMP À LA CLASSE</span><h1>Des sources fiables pour <em>préparer vos cours.</em></h1><p>Explorez les ressources agricoles, rassemblez vos documents et transformez-les en supports adaptés à vos apprenants.</p><p id="etat" aria-live="polite"></p></div>
+  <h2 class="section-title">Que souhaitez-vous enseigner ?</h2>
   <form id="f">
-    <label>Sujet<textarea id="sujet" placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
-    <fieldset><legend>Moi et ma formation</legend>
+    <label>Sujet<textarea id="sujet" required rows="2" placeholder="Ex. : sorgho fourrager en conditions sèches"></textarea></label>
+<details class="search-options"><summary>Adapter la recherche à ma formation et à mon public<span>Profil, niveau, ressources et objectifs</span></summary><div class="options-content">    <fieldset><legend>Moi et ma formation</legend>
       <div class="row">
         <label>Je suis
           <select id="profil"><option value="formateur">formateur</option><option value="enseignant">enseignant</option>
@@ -112,51 +69,74 @@
     <fieldset><legend>Mon contenu personnel (privé : jamais envoyé à un modèle en ligne)</legend>
       <textarea id="notes" placeholder="Tes notes, exemples, consignes : elles sont ajoutées aux sources et citées comme « contenu personnel »."></textarea>
     </fieldset>
-    <div class="row"><button id="go">Trouver les sources</button>
-      <label>Lecture par le modèle des N premières<input type="number" id="llm_top" value="0"></label></div>
+    <label>Lecture approfondie par l’IA (nombre de sources, 0 pour aucune : plus lent)<input type="number" id="llm_top" value="0" min="0" max="30"></label>
+</div></details>
+    <div class="row"><button id="go">Trouver les sources</button></div>
   </form>
 
-  <div class="status" id="status"></div>
+  <div class="status" id="status" role="status"></div>
   <div class="exports" id="exports"></div>
-  <div id="res"></div>
-
-  <div id="fpanel" hidden>
-    <h2>2. Ma formation à partir de ces sources</h2>
-    <div class="panel">
-      <div class="row">
-        <label>Séquences<input type="number" id="nseq" value="4"></label>
-        <label>QCM par séquence<input type="number" id="nquiz" value="4"></label>
-        <button id="gof">Créer la formation</button>
-      </div>
-      <div class="sub">Compter 1 à 3 minutes par appel au modèle en local. Ce qui n'est pas retrouvé dans les sources est retiré et listé.</div>
+  <div id="ajout" class="panel ajout-dossier" hidden>
+    <p><strong>Gardez les sources utiles :</strong> ajoutez-les à un dossier, puis préparez votre cours dans
+      « Mon dossier ».</p>
+    <div class="row">
+      <label>Ajouter dans <select id="dossier-cible"></select></label>
+      <a class="bouton-lien" href="/dossiers#dossier" id="ouvrir-dossier">Ouvrir mon dossier</a>
     </div>
-    <div class="status" id="fstatus"></div>
-    <div class="exports" id="fexports"></div>
-    <div id="rpanel" hidden>
-      <h2>3. Validation du rattachement au référentiel (enseignant)</h2>
-      <div class="panel"><table id="rtable"></table>
-        <div class="row"><label>Validé par<input id="valideur" placeholder="Nom de l'enseignant"></label><button id="gov">Enregistrer la validation</button></div>
-        <div class="status" id="vstatus"></div></div>
-    </div>
-    <pre id="fsupport" hidden></pre>
+    <p id="ajout-status" class="status" role="status" aria-live="polite"></p>
   </div>
-</main>
+  <div id="res"></div>
+</main><footer class="site-footer"><div><strong>SourcIA</strong><span>Du champ à la classe · Challenge IA SAED</span></div><p>Des sources citées, des contenus à vérifier et à adapter par l’enseignant.</p></footer>
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const checked = id => [...$(id).querySelectorAll("input:checked")].map(i => i.value);
 const num = id => $(id).value ? parseInt($(id).value, 10) : null;
 const LABEL = {organisme:"Organisme",annee:"Année des résultats",annee_publication:"Année de publication",lieu:"Lieu",contexte_pedoclimatique:"Contexte pédoclimatique",type:"Type",modalites:"Modalités",repetitions:"Répétitions",chiffrage_economique:"Chiffrage économique"};
-let LAST = null, REFS = [], DOSSIER = null;
+let LAST = null, REFS = [];
 
-fetch("/api/etat").then(r => r.json()).then(e => {
-  $("etat").textContent = `${e.documents.documents ?? 0} documents · ${e.fiches} fiches · modèle ${e.modele} · ${e.build}` + (e.index ? "" : " · ⚠️ index absent");
-}).catch(() => {});
-fetch("/api/referentiels").then(r => r.json()).then(list => {
+async function api(path, options) {
+  const response = await fetch(path, options);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const detail = Array.isArray(body.detail) ? body.detail.map(item => item.msg).join(" · ") : body.detail;
+    throw new Error(detail || "Le serveur a répondu avec le code " + response.status + ".");
+  }
+  return response.json();
+}
+
+function status(id, text, error = false) {
+  $(id).dataset.error = error;
+  $(id).textContent = text;
+}
+
+function sourceTitle(source) {
+  const title = esc(source.titre || source.url || "Source");
+  if (source.prive) return title + ' <span class="tag">privé</span>';
+  try {
+    const url = new URL(source.url);
+    if (url.protocol === "https:" || url.protocol === "http:") {
+      return `<a href="${esc(url.href)}" target="_blank" rel="noopener">${title}</a>`;
+    }
+  } catch {}
+  return title;
+}
+
+api("/api/etat").then(e => {
+  if (!e.documents.documents) {     // serveur neuf : le catalogue s'importe à part (scripts/catalogue_paquet.py)
+    status("etat", "Le catalogue est vide : la personne qui gère SourcIA doit d’abord l’importer (ou lancer la collecte).", true);
+    return;
+  }
+  $("etat").textContent = `${e.documents.documents ?? 0} documents agricoles · ${e.fiches} fiches disponibles` + (e.index ? "" : " · ⚠️ index absent");
+}).catch(() => status("etat", "Impossible de lire l’état du catalogue."));
+api("/api/referentiels").then(list => {
   REFS = list;
   $("diplome").innerHTML = list.map(r => `<option value="${esc(r.id)}">${esc(r.nom)} (v${esc(r.version)})</option>`).join("");
   showCaps();
-}).catch(() => {});
+}).catch(() => {
+  $("diplomante").disabled = true;
+  status("status", "Les référentiels sont indisponibles.");
+});
 function showCaps() {
   const r = REFS.find(x => x.id === $("diplome").value);
   $("caps").innerHTML = r ? r.capacites.map(c => `<label class="${c.parent ? "child" : ""}"><input type="checkbox" value="${esc(c.code)}"><span><b>${esc(c.code)}</b> ${esc(c.libelle)}</span></label>`).join("") : "";
@@ -178,72 +158,108 @@ function demande() {
 $("f").addEventListener("submit", async ev => {
   ev.preventDefault();
   const d = demande();
-  if (!d.sujet) return;
-  $("go").disabled = true; $("res").innerHTML = ""; $("exports").innerHTML = ""; $("fpanel").hidden = true;
-  $("status").textContent = "Recherche et qualification en cours…";
+  if ($("go").disabled) return;
+  if (!d.sujet) {
+    status("status", "Indiquez le sujet de la formation.", true);
+    $("sujet").focus();
+    return;
+  }
+  LAST = null;
+  $("go").disabled = true; $("res").innerHTML = ""; $("exports").innerHTML = ""; $("ajout").hidden = true;
+  status("status", "Recherche et qualification en cours…");
   const t0 = performance.now();
   try {
-    const r = await fetch("/api/selection", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({demande: d, llm_top: num("llm_top") || 0})});
-    if (!r.ok) throw new Error((await r.json()).detail || r.status);
-    const data = await r.json();
+    const data = await api("/api/selection", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({demande: d, llm_top: num("llm_top") || 0})});
     LAST = {demande: d, doc_ids: data.documents.map(x => x.id)};
-    $("fpanel").hidden = !data.documents.length;
-    $("status").textContent = `${data.documents.length} sources en ${((performance.now() - t0) / 1000).toFixed(1)} s.`;
+    if (data.documents.length) await prepareDossiers(d.sujet);
+    status("status", data.documents.length
+      ? `${data.documents.length} source(s) trouvée(s) en ${((performance.now() - t0) / 1000).toFixed(1)} s.`
+      : "Aucune source trouvée. Essayez un autre sujet ou élargissez vos critères.");
     $("exports").innerHTML = data.exports.length ? "Exporter (pour NotebookLM ou un tableur) : " + data.exports.map(n => `<a href="/api/export/${encodeURIComponent(n)}">${esc(n.split(".").pop().toUpperCase())}</a>`).join("") : "";
     $("res").innerHTML = data.documents.map(x => `
       <div class="doc">
-        <h3>${x.rang}. ${x.prive ? esc(x.titre) + ' <span class="tag">privé</span>' : `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre || x.url)}</a>`}</h3>
-        <div class="meta">${esc(x.source)} · score ${x.score} ${x.type ? `· <span class="tag">${esc(x.type)}</span>` : ""}${x.nature && x.nature !== "pdf" ? `<span class="tag">${esc(x.nature)}</span>` : ""}</div>
-        <div>${esc(x.justification.split(" — ⚠️")[0])}</div>
+        <h3>${x.rang}. ${sourceTitle(x)}</h3>
+        <div class="meta">${esc(x.source)}${x.type ? ` <span class="tag">${esc(x.type)}</span>` : ""}${x.nature && x.nature !== "pdf" ? `<span class="tag">${esc(x.nature)}</span>` : ""}</div>
+        <div>${esc((x.justification || "").split(" — ⚠️")[0])}</div>
         ${(x.alertes ? x.alertes.split(" ; ") : []).map(a => `<span class="alert">⚠️ ${esc(a)}</span>`).join("")}
+        <div class="doc-actions">${x.prive ? '<span class="tag">document privé</span>' : `<button type="button" data-ajout="${esc(x.id)}">Ajouter à mon dossier</button>`}</div>
         <details data-id="${esc(x.id)}"><summary>Fiche et preuves</summary><div>…</div></details>
       </div>`).join("");
     document.querySelectorAll("details[data-id]").forEach(el => el.addEventListener("toggle", async () => {
       if (!el.open || el.dataset.loaded) return;
-      el.dataset.loaded = 1;
-      const f = await (await fetch("/api/fiche/" + el.dataset.id)).json();
-      el.querySelector("div").innerHTML = "<table>" + Object.entries(f.champs).map(([k, c]) =>
-        `<tr><td>${LABEL[k] || k}</td><td>${c.value === null ? "—" : esc(c.value)}<br><small>confiance ${c.confidence.toFixed(2)} (${esc(c.method)})</small></td><td class="q">${c.evidence ? "« " + esc(c.evidence) + " »" : ""}</td></tr>`).join("") + "</table>";
+      el.dataset.loaded = "loading";
+      const content = el.querySelector("div");
+      content.textContent = "Chargement de la fiche…";
+      try {
+        const f = await api("/api/fiche/" + encodeURIComponent(el.dataset.id));
+        content.className = "table-scroll";
+        content.innerHTML = "<table>" + Object.entries(f.champs).map(([k, c]) =>
+          `<tr><td>${esc(LABEL[k] || k)}</td><td>${c.value === null ? "—" : esc(c.value)}<br><small>confiance ${c.confidence.toFixed(2)} (${esc(c.method)})</small></td><td class="q">${c.evidence ? "« " + esc(c.evidence) + " »" : ""}</td></tr>`).join("") + "</table>";
+        el.dataset.loaded = "true";
+      } catch (error) {
+        delete el.dataset.loaded;
+        content.textContent = "Fiche indisponible. Refermez-la puis réessayez.";
+      }
     }));
   } catch (e) {
-    $("status").textContent = "Erreur : " + e.message;
+    status("status", "Erreur : " + e.message, true);
   } finally { $("go").disabled = false; }
 });
 
-$("gof").addEventListener("click", async ev => {
-  ev.preventDefault();
-  if (!LAST) return;
-  $("gof").disabled = true; $("fsupport").hidden = true; $("fexports").innerHTML = ""; $("rpanel").hidden = true;
-  $("fstatus").textContent = "Création du support en cours…";
-  try {
-    const r = await fetch("/api/formation", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({...LAST, sequences: num("nseq") || 4, quiz: num("nquiz") ?? 4})});
-    if (!r.ok) throw new Error((await r.json()).detail || r.status);
-    const f = await r.json();
-    DOSSIER = f.dossier;
-    $("fstatus").textContent = `Support prêt : ${f.appels_modele} appels au modèle, ${f.duree_s} s. À relire avant diffusion.`;
-    $("fexports").innerHTML = "Télécharger : " + f.fichiers.map(n => `<a href="/api/formation/${encodeURIComponent(f.dossier)}/${encodeURIComponent(n)}">${esc(n)}</a>`).join("");
-    $("fsupport").textContent = f.support; $("fsupport").hidden = false;
-    if (f.rattachements.length) {
-      $("rpanel").hidden = false;
-      $("rtable").innerHTML = "<tr><th>#</th><th>Séquence</th><th>Capacité proposée</th><th>Statut</th><th>Valider</th><th>Code corrigé</th></tr>" +
-        f.rattachements.map(x => `<tr><td>${x.n}</td><td>${esc(x.sequence)}</td><td>${x.capacite ? `<b>${esc(x.capacite)}</b> ${esc(x.libelle)}` : "—"}</td><td>${esc(x.statut)}</td>
-          <td><input type="checkbox" data-n="${x.n}" ${x.capacite ? "checked" : ""}></td><td><input data-c="${x.n}" size="6"></td></tr>`).join("");
-    }
-  } catch (e) {
-    $("fstatus").textContent = "Erreur : " + e.message;
-  } finally { $("gof").disabled = false; }
-});
+// --- garder les sources : un dossier choisi (ou un nouveau, au nom du sujet), un bouton par source
+const NOUVEAU = "__nouveau__";
+let DOSSIERS_OK = false;
 
-$("gov").addEventListener("click", async ev => {
-  ev.preventDefault();
-  if (!DOSSIER || !$("valideur").value.trim()) { $("vstatus").textContent = "Indiquer le nom de l'enseignant."; return; }
-  const decisions = [...document.querySelectorAll("#rtable input[data-n]")].map(i => ({n: +i.dataset.n, valide: i.checked,
-    code_corrige: document.querySelector(`#rtable input[data-c="${i.dataset.n}"]`).value.trim()}));
-  const r = await fetch(`/api/formation/${encodeURIComponent(DOSSIER)}/rattachements`, {method: "POST", headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({valideur: $("valideur").value.trim(), decisions})});
-  const s = await r.json();
-  $("vstatus").textContent = r.ok ? `Validés : ${s.valides} · corrigés : ${s.corriges} · refusés : ${s.refuses}. Le support a été mis à jour.` : "Erreur : " + (s.detail || r.status);
+async function prepareDossiers(sujet) {
+  const box = $("ajout");
+  box.hidden = false;
+  const r = await fetch("/api/dossiers/session", {cache: "no-store"}).catch(() => null);
+  if (!r || !r.ok) {                      // sans accès libre ni connexion : on explique où se connecter
+    DOSSIERS_OK = false;
+    $("dossier-cible").closest("label").hidden = true;
+    status("ajout-status", "Pour garder des sources, connectez-vous d’abord dans « Mon dossier ».");
+    return;
+  }
+  DOSSIERS_OK = true;
+  $("dossier-cible").closest("label").hidden = false;
+  status("ajout-status", "");
+  const dossiers = await api("/api/dossiers");
+  const titre = sujet.length > 60 ? sujet.slice(0, 57) + "…" : sujet;
+  $("dossier-cible").innerHTML = `<option value="${NOUVEAU}">Nouveau dossier : ${esc(titre)}</option>` +
+    dossiers.filter(f => f.role !== "lecture").map(f => `<option value="${esc(f.id)}">${esc(f.title)}</option>`).join("");
+  const dernier = localStorage.getItem("sourcia-dossier");
+  if (dossiers.some(f => f.id === dernier)) $("dossier-cible").value = dernier;
+}
+
+async function dossierCible() {
+  let id = $("dossier-cible").value;
+  if (id === NOUVEAU) {                   // créé au premier ajout, au nom du sujet cherché
+    const created = await api("/api/dossiers", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({title: (LAST && LAST.demande.sujet || "Mon dossier").slice(0, 120)})});
+    id = created.id;
+    $("dossier-cible").insertAdjacentHTML("beforeend", `<option value="${esc(id)}">${esc(created.title)}</option>`);
+    $("dossier-cible").value = id;
+  }
+  localStorage.setItem("sourcia-dossier", id);       // « Mon dossier » rouvrira celui-ci
+  return id;
+}
+
+$("res").addEventListener("click", async ev => {
+  const b = ev.target.closest("button[data-ajout]");
+  if (!b || !DOSSIERS_OK) return;
+  b.disabled = true;
+  try {
+    const id = await dossierCible();
+    const r = await fetch(`/api/dossiers/${encodeURIComponent(id)}/catalogue`, {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({document_id: b.dataset.ajout})});
+    if (!r.ok && r.status !== 409) throw new Error((await r.json().catch(() => ({}))).detail || "Ajout impossible.");
+    b.replaceWith(Object.assign(document.createElement("span"), {className: "tag deja",
+      textContent: r.status === 409 ? "Déjà dans le dossier" : "Ajouté au dossier"}));
+    status("ajout-status", "Source ajoutée. Quand vous avez fini, ouvrez votre dossier pour préparer le cours.");
+  } catch (error) {
+    b.disabled = false;
+    status("ajout-status", "Erreur : " + error.message, true);
+  }
 });
 </script>
 </body>
