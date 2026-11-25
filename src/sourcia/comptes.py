@@ -222,6 +222,17 @@ class Quotas:
             self._write(data)
             return self.limits[kind] - used - 1
 
+    def remaining(self, email: str) -> dict[str, int] | None:
+        """Ce qui reste aujourd'hui à un visiteur (None pour un compte avec jeton : pas de limite)."""
+        if not is_visitor(email):
+            return None
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            data = {}
+        used = data.get("comptes", {}).get(email, {}) if data.get("jour") == date.today().isoformat() else {}
+        return {k: max(0, n - used.get(k, 0)) for k, n in self.limits.items()}
+
     def refund(self, email: str, kind: str) -> None:
         """Rend un lancement compté pour rien (le lancement a été refusé ensuite)."""
         if not is_visitor(email):

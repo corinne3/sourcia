@@ -381,3 +381,20 @@ pre { border-width:1px; }
 .groupe-fichiers { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--trait); }
 .groupe-fichiers .groupe-titre { margin: 0; font-weight: 700; color: var(--bleuet); }
 .groupe-fichiers .meta { margin: 2px 0 0; font-size: .85rem; }
+
+/* Catalogue : garder les sources dans un dossier */
+.ajout-dossier { margin: 14px 0 18px; display: grid; gap: 10px; }
+.ajout-dossier p { margin: 0; }
+.ajout-dossier .row { align-items: end; }
+.bouton-lien { display: inline-flex; align-items: center; min-height: 46px; padding: 10px 20px; border-radius: 99px;
+  border: 1px solid #cbc5df; background: #fff; color: var(--bleuet); font-weight: 700; text-decoration: none; }
+.bouton-lien:hover { background: var(--bleuet-pale); }
+.doc-actions { margin: 10px 0 4px; }
+.doc .deja { background: var(--prairie-pale); color: var(--prairie-texte); }
+/* Mes dossiers : le guide de départ */
+#bienvenue .guide { margin: 6px 0 16px; padding-left: 22px; line-height: 1.7; }
+details.reglages { border: 1px solid var(--trait); border-radius: 12px; padding: 10px 14px; background: #fff; }
+details.reglages > summary { cursor: pointer; font-weight: 700; color: var(--bleuet); }
+details.reglages .row { margin-top: 12px; }
+/* étapes 3 et 4 : le grand titre d'accueil s'efface, l'étape commence en haut */
+body.folders[data-step=corpus] .intro, body.folders[data-step=supports] .intro { display: none; }

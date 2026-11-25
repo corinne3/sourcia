@@ -145,6 +145,12 @@ def add_corpus_routes(router, ctx, store, identity) -> None:
             router.quotas.refund(email, "supports")      # refusé (corpus vide…) : rien n'a été lancé
             raise
 
+    @router.delete("/{folder_id}/corpus-pedagogique/{cid}/supports/{sid}", status_code=204)
+    def delete_supports(folder_id: str, cid: str, sid: str, email: str = Depends(identity)):
+        with store.db() as db:
+            store.folder(db, folder_id, email, write=True)
+        jobs.delete(corpus_folder(folder_id, cid), sid)
+
     @router.get("/{folder_id}/corpus-pedagogique/{cid}/supports")
     def list_supports(folder_id: str, cid: str, email: str = Depends(identity)):
         return jobs.list(ready_corpus(folder_id, cid, email))

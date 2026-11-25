@@ -126,6 +126,15 @@ class SupportsJobs:
                 "supports": sup.get("supports", []), "fichiers": files, "questions": len(sup.get("qcm", [])),
                 "cartes": len(sup.get("cartes", [])), "remarques": sup.get("remarques", []), "demande_par": "ligne de commande"}
 
+    def delete(self, corpus_dir: Path, sid: str) -> None:
+        """Supprime une production terminée (jamais celle en cours de construction)."""
+        import shutil
+
+        folder = self.folder(corpus_dir, sid)
+        if read_status(folder).get("statut") == "en_cours" and str(corpus_dir.resolve()) in self.running:
+            raise HTTPException(409, "Cette production est en cours : attendez la fin pour la supprimer")
+        shutil.rmtree(folder)
+
     def folder(self, corpus_dir: Path, sid: str) -> Path:
         folder = corpus_dir / "supports" / sid
         if not SID_RE.match(sid) or not folder.is_dir():

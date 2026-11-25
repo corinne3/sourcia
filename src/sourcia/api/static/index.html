@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SourcIA</title>
-<link rel="stylesheet" href="/assets/sourcia.css?v=saed-20261125">
+<link rel="stylesheet" href="/assets/sourcia.css?v=saed-20261125b">
 </head>
 <body class="home">
-<a class="skip-link" href="#contenu">Aller au contenu</a><header class="page-header"><div class="header-content"><div class="marque"><a class="brand" href="/" aria-label="SourcIA — accueil"><span class="brand-symbol" aria-hidden="true">S</span><span>SourcIA<small>RESSOURCES PÉDAGOGIQUES</small></span></a></div><nav class="steps" aria-label="Les quatre étapes du parcours"><a href="/" data-step="catalogue" aria-current="page"><span class="step-number" aria-hidden="true">1</span><span class="nom">Catalogue</span></a><a href="/dossiers#dossier" data-step="dossier"><span class="step-number" aria-hidden="true">2</span><span class="nom">Mon dossier</span></a><a href="/dossiers#corpus" data-step="corpus"><span class="step-number" aria-hidden="true">3</span><span class="nom">Mon corpus</span></a><a href="/dossiers#supports" data-step="supports"><span class="step-number" aria-hidden="true">4</span><span class="nom">Mes supports</span></a></nav></div></header>
+<a class="skip-link" href="#contenu">Aller au contenu</a><header class="page-header"><div class="header-content"><div class="marque"><a class="brand" href="/" aria-label="SourcIA — accueil"><span class="brand-symbol" aria-hidden="true">S</span><span>SourcIA<small>RESSOURCES PÉDAGOGIQUES</small></span></a></div><nav class="steps" aria-label="Les quatre étapes du parcours"><a href="/" data-step="catalogue" aria-current="page"><span class="step-number" aria-hidden="true">1</span><span class="nom">Catalogue</span></a><a href="/dossiers#dossier" data-step="dossier"><span class="step-number" aria-hidden="true">2</span><span class="nom">Mon dossier</span></a><a href="/dossiers#corpus" data-step="corpus"><span class="step-number" aria-hidden="true">3</span><span class="nom">Mon contenu</span></a><a href="/dossiers#supports" data-step="supports"><span class="step-number" aria-hidden="true">4</span><span class="nom">Mes supports</span></a></nav></div></header>
 <main id="contenu"><div class="intro"><span class="eyebrow">DU CHAMP À LA CLASSE</span><h1>Des sources fiables pour <em>préparer vos cours.</em></h1><p>Explorez les ressources agricoles, rassemblez vos documents et transformez-les en supports adaptés à vos apprenants.</p><p id="etat" aria-live="polite"></p></div>
   <h2 class="section-title">Que souhaitez-vous enseigner ?</h2>
   <form id="f">
@@ -69,35 +69,23 @@
     <fieldset><legend>Mon contenu personnel (privé : jamais envoyé à un modèle en ligne)</legend>
       <textarea id="notes" placeholder="Tes notes, exemples, consignes : elles sont ajoutées aux sources et citées comme « contenu personnel »."></textarea>
     </fieldset>
+    <label>Lecture approfondie par l’IA (nombre de sources, 0 pour aucune : plus lent)<input type="number" id="llm_top" value="0" min="0" max="30"></label>
 </div></details>
-    <div class="row"><button id="go">Trouver les sources</button>
-      <label>Sources à analyser avec l’IA<input type="number" id="llm_top" value="0"></label></div>
+    <div class="row"><button id="go">Trouver les sources</button></div>
   </form>
 
   <div class="status" id="status" role="status"></div>
   <div class="exports" id="exports"></div>
-  <div id="res"></div>
-
-  <div id="fpanel" hidden>
-    <h2>2. Ma formation à partir de ces sources</h2>
-    <div class="panel">
-      <div class="row">
-        <label>Séquences<input type="number" id="nseq" value="4"></label>
-        <label>QCM par séquence<input type="number" id="nquiz" value="4"></label>
-        <button id="gof">Créer la formation</button>
-      </div>
-      <div class="sub">Compter 1 à 3 minutes par appel au modèle en local. Ce qui n'est pas retrouvé dans les sources est retiré et listé.</div>
+  <div id="ajout" class="panel ajout-dossier" hidden>
+    <p><strong>Gardez les sources utiles :</strong> ajoutez-les à un dossier, puis préparez votre cours dans
+      « Mon dossier ».</p>
+    <div class="row">
+      <label>Ajouter dans <select id="dossier-cible"></select></label>
+      <a class="bouton-lien" href="/dossiers#dossier" id="ouvrir-dossier">Ouvrir mon dossier</a>
     </div>
-    <div class="status" id="fstatus" role="status"></div>
-    <div class="exports" id="fexports"></div>
-    <div id="rpanel" hidden>
-      <h2>3. Validation du rattachement au référentiel (enseignant)</h2>
-      <div class="panel"><div class="table-scroll"><table id="rtable"></table></div>
-        <div class="row"><label>Validé par<input id="valideur" placeholder="Nom de l'enseignant"></label><button id="gov">Enregistrer la validation</button></div>
-        <div class="status" id="vstatus" role="status"></div></div>
-    </div>
-    <pre id="fsupport" hidden></pre>
+    <p id="ajout-status" class="status" role="status" aria-live="polite"></p>
   </div>
+  <div id="res"></div>
 </main><footer class="site-footer"><div><strong>SourcIA</strong><span>Du champ à la classe · Challenge IA SAED</span></div><p>Des sources citées, des contenus à vérifier et à adapter par l’enseignant.</p></footer>
 <script>
 const $ = id => document.getElementById(id);
@@ -105,7 +93,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 const checked = id => [...$(id).querySelectorAll("input:checked")].map(i => i.value);
 const num = id => $(id).value ? parseInt($(id).value, 10) : null;
 const LABEL = {organisme:"Organisme",annee:"Année des résultats",annee_publication:"Année de publication",lieu:"Lieu",contexte_pedoclimatique:"Contexte pédoclimatique",type:"Type",modalites:"Modalités",repetitions:"Répétitions",chiffrage_economique:"Chiffrage économique"};
-let LAST = null, REFS = [], DOSSIER = null;
+let LAST = null, REFS = [];
 
 async function api(path, options) {
   const response = await fetch(path, options);
@@ -177,16 +165,13 @@ $("f").addEventListener("submit", async ev => {
     return;
   }
   LAST = null;
-  DOSSIER = null;
-  for (const id of ["fstatus", "fexports", "vstatus"]) status(id, "");
-  for (const id of ["fsupport", "rpanel"]) $(id).hidden = true;
-  $("go").disabled = true; $("res").innerHTML = ""; $("exports").innerHTML = ""; $("fpanel").hidden = true;
+  $("go").disabled = true; $("res").innerHTML = ""; $("exports").innerHTML = ""; $("ajout").hidden = true;
   status("status", "Recherche et qualification en cours…");
   const t0 = performance.now();
   try {
     const data = await api("/api/selection", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({demande: d, llm_top: num("llm_top") || 0})});
     LAST = {demande: d, doc_ids: data.documents.map(x => x.id)};
-    $("fpanel").hidden = !data.documents.length;
+    if (data.documents.length) await prepareDossiers(d.sujet);
     status("status", data.documents.length
       ? `${data.documents.length} source(s) trouvée(s) en ${((performance.now() - t0) / 1000).toFixed(1)} s.`
       : "Aucune source trouvée. Essayez un autre sujet ou élargissez vos critères.");
@@ -194,9 +179,10 @@ $("f").addEventListener("submit", async ev => {
     $("res").innerHTML = data.documents.map(x => `
       <div class="doc">
         <h3>${x.rang}. ${sourceTitle(x)}</h3>
-        <div class="meta">${esc(x.source)} · score ${x.score} ${x.type ? `· <span class="tag">${esc(x.type)}</span>` : ""}${x.nature && x.nature !== "pdf" ? `<span class="tag">${esc(x.nature)}</span>` : ""}</div>
+        <div class="meta">${esc(x.source)}${x.type ? ` <span class="tag">${esc(x.type)}</span>` : ""}${x.nature && x.nature !== "pdf" ? `<span class="tag">${esc(x.nature)}</span>` : ""}</div>
         <div>${esc((x.justification || "").split(" — ⚠️")[0])}</div>
         ${(x.alertes ? x.alertes.split(" ; ") : []).map(a => `<span class="alert">⚠️ ${esc(a)}</span>`).join("")}
+        <div class="doc-actions">${x.prive ? '<span class="tag">document privé</span>' : `<button type="button" data-ajout="${esc(x.id)}">Ajouter à mon dossier</button>`}</div>
         <details data-id="${esc(x.id)}"><summary>Fiche et preuves</summary><div>…</div></details>
       </div>`).join("");
     document.querySelectorAll("details[data-id]").forEach(el => el.addEventListener("toggle", async () => {
@@ -220,49 +206,59 @@ $("f").addEventListener("submit", async ev => {
   } finally { $("go").disabled = false; }
 });
 
-$("gof").addEventListener("click", async ev => {
-  ev.preventDefault();
-  if (!LAST || $("gof").disabled) return;
-  DOSSIER = null;
-  status("vstatus", "");
-  $("go").disabled = true;
-  $("gof").disabled = true; $("fsupport").hidden = true; $("fexports").innerHTML = ""; $("rpanel").hidden = true;
-  status("fstatus", "Création du support en cours…");
-  try {
-    const f = await api("/api/formation", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({...LAST, sequences: num("nseq") || 4, quiz: num("nquiz") ?? 4})});
-    DOSSIER = f.dossier;
-    $("fstatus").textContent = `Support prêt : ${f.appels_modele} appels au modèle, ${f.duree_s} s. À relire avant diffusion.`;
-    $("fexports").innerHTML = "Télécharger : " + f.fichiers.map(n => `<a href="/api/formation/${encodeURIComponent(f.dossier)}/${encodeURIComponent(n)}">${esc(n)}</a>`).join("");
-    $("fsupport").textContent = f.support; $("fsupport").hidden = false;
-    if (f.rattachements.length) {
-      $("rpanel").hidden = false;
-      $("rtable").innerHTML = "<tr><th>#</th><th>Séquence</th><th>Capacité proposée</th><th>Statut</th><th>Valider</th><th>Code corrigé</th></tr>" +
-        f.rattachements.map(x => `<tr><td>${x.n}</td><td>${esc(x.sequence)}</td><td>${x.capacite ? `<b>${esc(x.capacite)}</b> ${esc(x.libelle)}` : "—"}</td><td>${esc(x.statut)}</td>
-          <td><input type="checkbox" data-n="${x.n}" ${x.capacite ? "checked" : ""}></td><td><input data-c="${x.n}" size="6"></td></tr>`).join("");
-    }
-  } catch (e) {
-    status("fstatus", "Erreur : " + e.message, true);
-  } finally { $("gof").disabled = false; $("go").disabled = false; }
-});
+// --- garder les sources : un dossier choisi (ou un nouveau, au nom du sujet), un bouton par source
+const NOUVEAU = "__nouveau__";
+let DOSSIERS_OK = false;
 
-$("gov").addEventListener("click", async ev => {
-  ev.preventDefault();
-  if (!DOSSIER || !$("valideur").value.trim()) { $("vstatus").textContent = "Indiquer le nom de l'enseignant."; return; }
-  const decisions = [...document.querySelectorAll("#rtable input[data-n]")].map(i => ({n: +i.dataset.n, valide: i.checked,
-    code_corrige: document.querySelector(`#rtable input[data-c="${i.dataset.n}"]`).value.trim()}));
-  $("gov").disabled = $("go").disabled = $("gof").disabled = true;
-  status("vstatus", "Enregistrement en cours…");
+async function prepareDossiers(sujet) {
+  const box = $("ajout");
+  box.hidden = false;
+  const r = await fetch("/api/dossiers/session", {cache: "no-store"}).catch(() => null);
+  if (!r || !r.ok) {                      // sans accès libre ni connexion : on explique où se connecter
+    DOSSIERS_OK = false;
+    $("dossier-cible").closest("label").hidden = true;
+    status("ajout-status", "Pour garder des sources, connectez-vous d’abord dans « Mon dossier ».");
+    return;
+  }
+  DOSSIERS_OK = true;
+  $("dossier-cible").closest("label").hidden = false;
+  status("ajout-status", "");
+  const dossiers = await api("/api/dossiers");
+  const titre = sujet.length > 60 ? sujet.slice(0, 57) + "…" : sujet;
+  $("dossier-cible").innerHTML = `<option value="${NOUVEAU}">Nouveau dossier : ${esc(titre)}</option>` +
+    dossiers.filter(f => f.role !== "lecture").map(f => `<option value="${esc(f.id)}">${esc(f.title)}</option>`).join("");
+  const dernier = localStorage.getItem("sourcia-dossier");
+  if (dossiers.some(f => f.id === dernier)) $("dossier-cible").value = dernier;
+}
+
+async function dossierCible() {
+  let id = $("dossier-cible").value;
+  if (id === NOUVEAU) {                   // créé au premier ajout, au nom du sujet cherché
+    const created = await api("/api/dossiers", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({title: (LAST && LAST.demande.sujet || "Mon dossier").slice(0, 120)})});
+    id = created.id;
+    $("dossier-cible").insertAdjacentHTML("beforeend", `<option value="${esc(id)}">${esc(created.title)}</option>`);
+    $("dossier-cible").value = id;
+  }
+  localStorage.setItem("sourcia-dossier", id);       // « Mon dossier » rouvrira celui-ci
+  return id;
+}
+
+$("res").addEventListener("click", async ev => {
+  const b = ev.target.closest("button[data-ajout]");
+  if (!b || !DOSSIERS_OK) return;
+  b.disabled = true;
   try {
-    const result = await api(`/api/formation/${encodeURIComponent(DOSSIER)}/rattachements`, {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({valideur: $("valideur").value.trim(), decisions})
-    });
-    status("vstatus", `Validés : ${result.valides} · corrigés : ${result.corriges} · refusés : ${result.refuses}.`);
+    const id = await dossierCible();
+    const r = await fetch(`/api/dossiers/${encodeURIComponent(id)}/catalogue`, {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({document_id: b.dataset.ajout})});
+    if (!r.ok && r.status !== 409) throw new Error((await r.json().catch(() => ({}))).detail || "Ajout impossible.");
+    b.replaceWith(Object.assign(document.createElement("span"), {className: "tag deja",
+      textContent: r.status === 409 ? "Déjà dans le dossier" : "Ajouté au dossier"}));
+    status("ajout-status", "Source ajoutée. Quand vous avez fini, ouvrez votre dossier pour préparer le cours.");
   } catch (error) {
-    status("vstatus", "Erreur : " + error.message, true);
-  } finally {
-    $("gov").disabled = $("go").disabled = $("gof").disabled = false;
+    b.disabled = false;
+    status("ajout-status", "Erreur : " + error.message, true);
   }
 });
 </script>

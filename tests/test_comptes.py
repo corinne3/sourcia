@@ -99,7 +99,7 @@ def test_login_sets_protected_cookie_then_works_without_token(client):
     assert "Path=/api;" in cookie and "Secure" not in cookie and token not in cookie   # sert aussi au catalogue
     assert client.post("/api/dossiers", json={"title": "Avec cookie"}).status_code == 201   # sans en-tête
     assert [f["title"] for f in client.get("/api/dossiers").json()] == ["Avec cookie"]
-    assert client.get("/api/dossiers/session").json() == {"email": "d@lycee.fr", "visiteur": False}
+    assert client.get("/api/dossiers/session").json() == {"email": "d@lycee.fr", "visiteur": False, "reste": None}
     assert client.delete("/api/dossiers/session").status_code == 204                 # se déconnecter
     client.cookies.clear()                                                           # (le navigateur l'efface)
     assert client.get("/api/dossiers").status_code == 401
@@ -128,7 +128,7 @@ def test_removed_account_loses_its_session(client):
 def test_bearer_token_still_accepted_and_session_route_is_not_a_folder(client):
     h = {"Authorization": f"Bearer {ENV_TOKEN}"}
     assert client.get("/api/dossiers", headers=h).status_code == 200
-    assert client.get("/api/dossiers/session", headers=h).json() == {"email": "var@lycee.fr", "visiteur": False}
+    assert client.get("/api/dossiers/session", headers=h).json() == {"email": "var@lycee.fr", "visiteur": False, "reste": None}
     assert client.get("/api/dossiers/session").status_code == 401
 
 
@@ -140,7 +140,9 @@ def test_page_uses_session_and_connection_link():
     assert "window.addEventListener('hashchange', () => { useLink(); })" in html
     assert "token ? {Authorization: 'Bearer ' + token} : {}" in html                 # sinon : le cookie
     assert re.search(r"let account\b", html) and 'id="account"' in html
-    assert "localStorage" not in html and "sessionStorage" not in html               # jeton jamais enregistré
+    # jeton jamais enregistré : le navigateur ne garde que le numéro du dernier dossier ouvert
+    assert "sessionStorage" not in html
+    assert set(re.findall(r"localStorage\.\w+\('([^']+)'", html)) == {"sourcia-dossier"}
     assert "Boolean(account || token)" in (STATIC / "parcours.js").read_text(encoding="utf-8")
 
 

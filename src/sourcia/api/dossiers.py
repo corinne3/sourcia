@@ -264,7 +264,7 @@ def create_dossiers_router(ctx):
 
     @router.get("/session")
     def current_session(email: str = Depends(identity)):
-        return {"email": email, "visiteur": is_visitor(email)}
+        return {"email": email, "visiteur": is_visitor(email), "reste": quotas.remaining(email)}
 
     @router.delete("/session", status_code=204)
     def logout():
@@ -290,6 +290,34 @@ def create_dossiers_router(ctx):
         with store.db() as db:
             db.execute("INSERT INTO folders (id, title, owner) VALUES (?, ?, ?)", (folder_id, title, email))
         return {"id": folder_id, "title": title, "role": "proprietaire"}
+
+    @router.post("/exemple", status_code=201)
+    def example_folder(tasks: BackgroundTasks, email: str = Depends(identity)):
+        """Un dossier d'exemple prêt à l'emploi : quelques documents publics du catalogue sur le sorgho fourrager,
+        déjà cochés et traités en tâche de fond. Pour découvrir le parcours sans rien chercher."""
+        picked, seen = [], set()
+        for hit in ctx.index.search("sorgho fourrager valeur alimentaire variétés", k=60):
+            doc = ctx.store.get(hit.doc_id)
+            if doc and not doc.private and doc.status != "error" and doc.id not in seen                     and "sorgho" in normalize(doc.title):           # un exemple qui parle bien du sujet
+                seen.add(doc.id)
+                picked.append(doc)
+            if len(picked) >= 4:
+                break
+        if not picked:
+            raise HTTPException(409, "Le catalogue est vide : l'exemple ne peut pas être préparé.")
+        folder_id = uuid.uuid4().hex
+        copies = []
+        with store.db(write=True) as db:
+            db.execute("INSERT INTO folders (id, title, owner) VALUES (?, ?, ?)",
+                       (folder_id, "Exemple : sorgho fourrager", email))
+            for source in picked:                        # même copie que l'ajout depuis le catalogue
+                copy = source.model_copy(update={"id": uuid.uuid4().hex, "error": None})
+                db.execute("INSERT INTO documents (id, folder, catalog_id, payload) VALUES (?, ?, ?, ?)",
+                           (copy.id, folder_id, source.id, copy.model_dump_json()))
+                copies.append(copy.id)
+        for document_id in copies:
+            tasks.add_task(store.process, document_id)
+        return {"id": folder_id, "title": "Exemple : sorgho fourrager", "documents": len(copies)}
 
     @router.get("/{folder_id}")
     def detail(folder_id: str, q: str = "", kind: str = "", status: str = "",
